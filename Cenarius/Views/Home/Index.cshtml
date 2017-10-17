@@ -1,1 +1,56 @@
-﻿<h2>Welcome to ASP.NET MVC @ViewData["Version"] on @ViewData["Runtime"] dude!</h2>
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap-theme.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../../Styles/Cenarius.css" />
+
+    <!--CDN js-->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!--Underscore 1.6.0 is the latest compatible version-->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
+
+    <!--Local js libs-->
+    <script type="text/javascript" src="../../Libraries/js/cenarius-jsonform.js"></script>
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-8 cenarius-main-block col-sm-offset-2">
+
+                <center>
+                    <div>
+                        <h1>@ViewData["Heading"]</h1>
+                        (ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])
+                        <h2>@ViewData["Subheading"]</h2>
+                    </div>
+                </center>
+
+                <form id="jsonform_dummy"></form>
+                <div id="res" class="alert"></div>
+
+                @ViewData["SchemaTest"]
+                <script type="text/javascript">
+                    $('form').jsonForm(
+                        {
+                        @Html.Raw(@ViewData["Schema"]),
+
+                        @Html.Raw(@ViewData["Form"]),
+
+                        @Html.Raw(@ViewData["Params"])
+                        }
+                    )
+                </script>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>
