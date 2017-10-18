@@ -228,7 +228,7 @@ var fileDisplayTemplate = '<div class="_jsonform-preview">' +
 '<a href="<%= value.url %>"><%= value.name %></a> (<%= Math.ceil(value.size/1024) %>kB)' +
 '<% } %>' +
 '</div>' +
-'<a href="#" class="btn _jsonform-delete"><i class="glyphicon glyphicon-remove" title="Remove"></i></a> ';
+'<a href="#" class="btn btn-primary btn-md _jsonform-delete"><i class="glyphicon glyphicon-remove" title="Remove"></i></a> ';
 
 var inputFieldTemplate = function (type) {
   return {
@@ -439,7 +439,7 @@ jsonform.elementTypes = {
     }
   },
   'checkbox':{
-    'template': '<label class="checkbox cenarius-checkbox"><input type="checkbox" id="<%= id %>" ' +
+    'template': '<label class="checkbox cenarius-toggle-label"><input type="checkbox" data-toggle="toggle" id="<%= id %>" ' +
     'name="<%= node.name %>" value="1" <% if (value) {%>checked<% } %>' +
     '<%= (node.disabled? " disabled" : "")%>' +
     '<%= (node.schemaElement && node.schemaElement.required && (node.schemaElement.type !== "boolean") ? " required=\'required\'" : "") %>' +
@@ -762,8 +762,8 @@ jsonform.elementTypes = {
   'array': {
     'template': '<div id="<%= id %>"><ul class="_jsonform-array-ul" style="list-style-type:none;"><%= children %></ul>' +
     '<span class="_jsonform-array-buttons">' +
-    '<a href="#" class="btn _jsonform-array-addmore"><i class="glyphicon glyphicon-plus-sign" title="Add new"></i></a> ' +
-    '<a href="#" class="btn _jsonform-array-deletelast"><i class="glyphicon glyphicon-minus-sign" title="Delete last"></i></a>' +
+    '<a href="#" class="btn btn-info btn-md _jsonform-array-addmore"><i class="glyphicon glyphicon-plus-sign" title="Add new"></i></a> ' +
+    '<a href="#" class="btn btn-danger btn-md _jsonform-array-deletelast"><i class="glyphicon glyphicon-minus-sign" title="Delete last"></i></a>' +
     '</span>' +
     '</div>',
     'fieldtemplate': true,
@@ -825,13 +825,13 @@ jsonform.elementTypes = {
         }
       };
 
-      $('> span > a._jsonform-array-addmore', $nodeid).click(function (evt) {
+      $('span a._jsonform-array-addmore', $nodeid).click(function (evt) {
         evt.preventDefault();
         evt.stopPropagation();
         var idx = node.children.length;
         if (boundaries.maxItems >= 0) {
           if (node.children.length > boundaries.maxItems - 2) {
-            $nodeid.find('> span > a._jsonform-array-addmore')
+            $nodeid.find('span a._jsonform-array-addmore')
             .addClass('disabled');
           }
           if (node.children.length > boundaries.maxItems - 1) {
@@ -842,7 +842,7 @@ jsonform.elementTypes = {
         if ((boundaries.minItems <= 0) ||
           ((boundaries.minItems > 0) &&
             (node.children.length > boundaries.minItems - 1))) {
-          $nodeid.find('> span > a._jsonform-array-deletelast')
+          $nodeid.find('span a._jsonform-array-deletelast')
         .removeClass('disabled');
       }
     });
@@ -853,23 +853,23 @@ jsonform.elementTypes = {
         (curItems < boundaries.minItems)) {
         for (var i = 0; i < (boundaries.minItems - 1) && ($nodeid.find('> ul > li').length < boundaries.minItems); i++) {
           //console.log('Calling click: ',$nodeid);
-          //$('> span > a._jsonform-array-addmore', $nodeid).click();
+          //$('span a._jsonform-array-addmore', $nodeid).click();
           node.insertArrayItem(curItems, $nodeid.find('> ul').get(0));
         }
       }
       if ((boundaries.minItems > 0) &&
         (node.children.length <= boundaries.minItems)) {
-        $nodeid.find('> span > a._jsonform-array-deletelast')
+        $nodeid.find('span a._jsonform-array-deletelast')
       .addClass('disabled');
     }
 
-    $('> span > a._jsonform-array-deletelast', $nodeid).click(function (evt) {
+    $('span a._jsonform-array-deletelast', $nodeid).click(function (evt) {
       var idx = node.children.length - 1;
       evt.preventDefault();
       evt.stopPropagation();
       if (boundaries.minItems > 0) {
         if (node.children.length < boundaries.minItems + 2) {
-          $nodeid.find('> span > a._jsonform-array-deletelast')
+          $nodeid.find('span a._jsonform-array-deletelast')
           .addClass('disabled');
         }
         if (node.children.length <= boundaries.minItems) {
@@ -877,12 +877,12 @@ jsonform.elementTypes = {
         }
       }
       else if (node.children.length === 1) {
-        $nodeid.find('> span > a._jsonform-array-deletelast')
+        $nodeid.find('span a._jsonform-array-deletelast')
         .addClass('disabled');
       }
       node.deleteArrayItem(idx);
       if ((boundaries.maxItems >= 0) && (idx <= boundaries.maxItems - 1)) {
-        $nodeid.find('> span > a._jsonform-array-addmore')
+        $nodeid.find('span a._jsonform-array-addmore')
         .removeClass('disabled');
       }
     });
@@ -899,15 +899,18 @@ jsonform.elementTypes = {
 },
 'tabarray': {
   'template': '<div id="<%= id %>"><div class="tabbable tabs-left">' +
-  '<ul class="nav nav-tabs">' +
+  '<ul class="nav nav-tabs cenarius-nav-tabs">' +
   '<%= tabs %>' +
   '</ul>' +
   '<div class="tab-content">' +
   '<%= children %>' +
   '</div>' +
+  '<div class=\"cenarius-add-delete-div\">' +
+  '<a href="#" class="btn btn-info btn-md _jsonform-array-addmore cenarius-add-delete-btn"><i class="glyphicon glyphicon-plus-sign" title="Add new"></i></a> ' +
+  '<a href="#" class="btn btn-danger btn-md _jsonform-array-deleteitem cenarius-add-delete-btn"><i class="glyphicon glyphicon-minus-sign" title="Delete item"></i></a>' +
   '</div>' +
-  '<a href="#" class="btn _jsonform-array-addmore"><i class="glyphicon glyphicon-plus-sign" title="Add new"></i></a> ' +
-  '<a href="#" class="btn _jsonform-array-deleteitem"><i class="glyphicon glyphicon-minus-sign" title="Delete item"></i></a></div>',
+  '</div>',
+
   'fieldtemplate': true,
   'array': true,
   'childTemplate': function (inner) {
@@ -986,13 +989,13 @@ jsonform.elementTypes = {
         $('> .tabbable > .nav-tabs [data-toggle="tab"]', $nodeid).eq(selIdx).click();
       };
 
-      $('> a._jsonform-array-deleteitem', $nodeid).click(function (evt) {
+      $('a._jsonform-array-deleteitem', $nodeid).click(function (evt) {
         var idx = $('> .tabbable > .nav-tabs .active', $nodeid).data('idx');
         evt.preventDefault();
         evt.stopPropagation();
         if (boundaries.minItems > 0) {
           if (node.children.length < boundaries.minItems + 1) {
-            $nodeid.find('> a._jsonform-array-deleteitem')
+            $nodeid.find('a._jsonform-array-deleteitem')
             .addClass('disabled');
           }
           if (node.children.length <= boundaries.minItems) return false;
@@ -1001,19 +1004,19 @@ jsonform.elementTypes = {
         updateTabs();
         if ((node.children.length < boundaries.minItems + 1) ||
           (node.children.length === 0)) {
-          $nodeid.find('> a._jsonform-array-deleteitem').addClass('disabled');
+          $nodeid.find('a._jsonform-array-deleteitem').addClass('disabled');
       }
       if ((boundaries.maxItems >= 0) &&
         (node.children.length <= boundaries.maxItems)) {
-        $nodeid.find('> a._jsonform-array-addmore').removeClass('disabled');
+        $nodeid.find('a._jsonform-array-addmore').removeClass('disabled');
     }
   });
 
-      $('> a._jsonform-array-addmore', $nodeid).click(function (evt) {
+      $('a._jsonform-array-addmore', $nodeid).click(function (evt) {
         var idx = node.children.length;
         if (boundaries.maxItems>=0) {
           if (node.children.length>boundaries.maxItems-2) {
-            $('> a._jsonform-array-addmore', $nodeid).addClass("disabled");
+            $('a._jsonform-array-addmore', $nodeid).addClass("disabled");
           }
           if (node.children.length > boundaries.maxItems - 1) {
             return false;
@@ -1026,7 +1029,7 @@ jsonform.elementTypes = {
         updateTabs(idx);
         if ((boundaries.minItems <= 0) ||
           ((boundaries.minItems > 0) && (idx > boundaries.minItems - 1))) {
-          $nodeid.find('> a._jsonform-array-deleteitem').removeClass('disabled');
+          $nodeid.find('a._jsonform-array-deleteitem').removeClass('disabled');
       }
     });
 
@@ -1052,19 +1055,19 @@ jsonform.elementTypes = {
       // Simulate User's click to setup the form with its minItems
       if (boundaries.minItems >= 0) {
         for (var i = 0; i < (boundaries.minItems - 1); i++) {
-          $nodeid.find('> a._jsonform-array-addmore').click();
+          $nodeid.find('a._jsonform-array-addmore').click();
         }
-        $nodeid.find('> a._jsonform-array-deleteitem').addClass('disabled');
+        $nodeid.find('a._jsonform-array-deleteitem').addClass('disabled');
         updateTabs();
       }
 
       if ((boundaries.maxItems >= 0) &&
         (node.children.length >= boundaries.maxItems)) {
-        $nodeid.find('> a._jsonform-array-addmore').addClass('disabled');
+        $nodeid.find('a._jsonform-array-addmore').addClass('disabled');
     }
     if ((boundaries.minItems >= 0) &&
       (node.children.length <= boundaries.minItems)) {
-      $nodeid.find('> a._jsonform-array-deleteitem').addClass('disabled');
+      $nodeid.find('a._jsonform-array-deleteitem').addClass('disabled');
   }
 }
 },

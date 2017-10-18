@@ -1,0 +1,353 @@
+"forma": {
+    "basic_info": {
+        "title": "基本資料",
+        "properties": {
+            "patient": {
+                "title": "受檢者",
+                "properties": {    
+                    "id":       { "title": "病歷號" },
+                    "name":     { "title": "姓名" },
+                    "no_of_checks_today": {
+                        "title": "今日檢查次數 ",
+                        "type": "integer"
+                    },
+                }
+            },
+
+            "current_checkup": {
+                "title": "本次檢查",
+                "properties": { 
+                    "report_date": {
+                        "title": "檢查日期",
+                        "type": "date"
+                    },
+                    "report_id":                { "title": "檢查號 "},
+                    "report_no_of_checks ": {
+                        "title": "檢查次數 ",
+                        "type": "integer"
+                    },
+                    "operator_id":              { "title": "操作者編號" },
+                    "interpreter_id":           { "title": "判讀者編號" },
+                    "machine_id ":              { "title": "檢查機器編號 " },
+                    "us_examination_mode": {
+                        "enum": [
+                            "Screening US",
+                            "Diagnostic US",
+                            "Both"
+                        ]
+                    },
+                }
+            }
+        }
+    },
+
+    "indications": {
+        "title": "檢查適應症",
+        "auto_checkbox": "multi",
+        "properties":
+        {
+            "asymptomatic_screening": { "title": "00. Asymptomatic Screening" },
+            "exam_for_symptomatic_patient": {
+                "title": "10. Exam for symptomatic patient",
+                "enum_multi": [
+                    "11. Pain",
+                    "12. Palpable mass",
+                    "13. Discharge"
+                ]
+            },
+            "screening_mammographic_category": {
+                "title": "20. Screening Mammographic Category (0-5)",
+                "enum": [ 0,1,2,3,4,5 ]
+            },
+            "benign_lesions": {
+                "title": "Benign Lesion",
+                "type": "subobject",
+                "auto_checkbox": "multi",
+                "properties": {
+                    "skip_auto_checkbox": true,
+                    "locaction": {
+                        "type": "either_group",
+                        "properties": {
+                            "quarter": {
+                                "enum": [
+                                    "Right",
+                                    "Left",
+                                    "UOQ",
+                                    "UIQ",
+                                    "LOQ",
+                                    "LIQ", 
+                                ]
+                            },
+                            "precise": {
+                                "properties": {
+                                    "angle":    { "type": "number" },
+                                    "distance": { "type": "number" }
+                                }
+                            },
+                        }
+                    },
+                    "mass":                     { "title": "21. Mass" },
+                    "calcification":            { "title": "22. Calcification" },
+                    "asymmetry":                { "title": "23. Asymmetry" },
+                    "architecture_distortion":  { "title": "24. Architecture distortion" },
+                    "others": { 
+                        "title": "25. Others",
+                        "type": "string"
+                    },
+                    "density_of_breast": {
+                        "title": "26. Density of breast (A,B,C,D)",
+                        "enum": [ "A", "B", "C", "D" ]
+                    },
+                    "recommendation": { 
+                        "title": "27. Recomendation:",
+                        "type": "string"
+                    }
+                }
+            },
+            "f/u_for_previous_noted_benign_lesions": {
+                "title": "30. F/U for previous noted benign lesions",
+                "auto_checkbox": "multi",
+                "properties":
+                {
+
+                    "fibroadenoma":         { "title": "31. Fibroadenoma" },
+                    "fibrocystic_change":   { "title": "32. Fibrocystic change" },
+                    "cyst":                 { "title": "33. Cyst" },
+                    "other": {
+                        "title": "34. Other",
+                        "type": "string"
+                    }
+                    
+                }
+            },
+            "surgically_altered_breast": {
+                "title": "40. Surgically altered breast",
+                "enum_multi": [
+                    "41. S/P biopsy/wide excision/BCS",
+                    "42. S/P breast augmentation/Reconstruction",
+                    "50. Other reasons for breast sono examination"
+                ]
+            },
+        }
+    }, 
+
+    "interpretation": {
+        "title": "Intepretation",
+        "type": "object",
+        "properties": {
+            "us_category": {
+                "title": "US Category 分類 ",
+                "type": "string",
+                "enum": [
+                    "0. Category 0",
+                    "1. Category 1",
+                    "2. Category 2",
+                    "3. Category 3",
+                    "4A. Category 4A",
+                    "4B. Category 4B",
+                    "4C. Category 4C",
+                    "5. Category 5",
+                    "6. Category 6"
+                ]
+            },
+            "combined_mammogram_and_us_final_category": {
+                "title": "Combined mammogram and US final category",
+                "type": "string",
+                "enum": [
+                    "0.Category 0",
+                    "1.Category 1",
+                    "2.Category 2",
+                    "3.Category 3",
+                    "4A.Category 4A",
+                    "4B.Category 4B",
+                    "4C.Category 4C",
+                    "5.Category 5",
+                    "6.Category 6"
+                ]
+            },
+            "biopsy_and_other_evaluation_suggestion": {
+                "title": "Biopsy and other evaluation suggestion",
+                "type": "string",
+                "enum": [
+                    "0. 不用做biopsy",
+                    "1. Aspiration cytology",
+                    "2. Core biopsy",
+                    "3. Open biopsy",
+                    "4. Mammography",
+                    "5. MRI",
+                    "6. 其它"
+                ]
+            },
+            "pathology_results ": {
+                "title": "Pathology Results",
+                "type": "string",
+                "enum": [
+                    "0.未做biopsy",
+                    "1.Benign",
+                    "2.Malignant-Carcinoma in situ",
+                    "3.Maligant-Invasive cancer",
+                    "4.Malignant-other",
+                    "5.Cytology: suspicious",
+                    "6.Cytology: atypia",
+                    "7.Cytology: positive",
+                    "8.Cytology: negative",
+                    "9.已做biopsy,結果不知"
+                ]
+            },
+        }
+    },
+
+    "tumour_details": {
+        "title": "超音波腫瘤特性描述",
+        "helpvalue": "BI-RADS 4以上均需記錄。若BI-RADS 3之病灶數目大於或等於四個，則病灶特性描述至少需記錄4個，若少於四個，則全部記錄。",
+        "type": "object",
+        "properties": {
+            "id": {
+                "title": "編號",
+                "type": "string"
+            },
+            "side": {
+                "title": "左右側",
+                "type": "string",
+                "enum": [
+                    "左 (L)",
+                    "右 (R)"
+                ]
+            },
+            "position": {
+                "title": "方位",
+                "type": "string"
+            },
+            "distance": {
+                "title": "距離乳頭距離",
+                "type": "number"
+            },
+            "max_diameter": {
+                "title": "最大徑",
+                "type": "number"
+            },
+            "shape": {
+                "title": "Shape ",
+                "type": "string",
+                "enum": [
+                    "1. Oval",
+                    "2. Round",
+                    "3. Irregular"
+                ]
+            },
+            "orientation": {
+                "title": "Orientation",
+                "type": "string",
+                "enum": [
+                    "1. Parallel",
+                    "2. Not parallel"
+                ]
+            },
+            "margin": {
+                "title": "Margin",
+                "type": "string",
+                "enum": [
+                    "1.Circumscribe",
+                    "2.Indistinc",
+                    "3.Angula",
+                    "4.Microlobulated",
+                    "5.Spiculate"
+                ]
+            },
+            "echo_pattern": {
+                "title": "Echo Pattern",
+                "type": "string",
+                "enum": [
+                    "1. Anechoi",
+                    "2. Hyperechoi",
+                    "3. Comple",
+                    "4. Hypoechoic",
+                    "5. Isoechoi"
+                ]
+            },
+            "posterior_features": {
+                "title": "Posterior Features",
+                "type": "string",
+                "enum": [
+                    "1.No posterior acoustic features",
+                    "2.Enhancement",
+                    "3.Shadowing",
+                    "4.Combined pattern"
+                ]
+            },
+            "associated_features": {
+                "title": "Associated Features",
+                "type": "string",
+                "enum": [
+                    "1. Architectural distortion",
+                    "2. Duct Changes ",
+                    "3. Skin changes/Skin Thickening",
+                    "4. Skin changes/Skin Retraction",
+                    "5. Edema"
+                ]
+            },
+            "vascularity": {
+                "title": "Vascularity",
+                "type": "string",
+                "enum": [
+                    "0. Not assessed",
+                    "1. Vascularity/Absent",
+                    "2. Vascularity/Internal Vascularity",
+                    "3. Vascularity/Vessels in Rim"
+                ]
+            },
+            "surrounding_change": {
+                "title": "Surrounding Change (複選)",
+                "type": "array",
+                "enum": [
+                    "1. Duct changes",
+                    "2. Cooper’s ligament changes",
+                    "3. Edema",
+                    "4. Architectural distortion",
+                    "5. Skin thickening",
+                    "6. Skin retraction/irregularity"
+                ]
+            },
+            "special_case": {
+                "title": "Special Case (複選)",
+                "type": "array",
+                "enum": [
+                    "1. Clustered microcysts",
+                    "2. Complicated cysts",
+                    "3. Mass in or on skin",
+                    "4. Foreign body",
+                    "5. Simple cyst",
+                    "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)",
+                    "7. VascularAbnormalities/Mondor Disease",
+                    "8. Postsurgical Fluid Collection",
+                    "9. Fat Necrosis",
+                    "10. Lymph nodes – intramammary",
+                    "11. Lymph nodes – axillary"
+                ]
+            },
+            "calcifications": {
+                "title": "Calcifications",
+                "type": "string",
+                "enum": [
+                    "1. Intraductal",
+                    "2. Microcalcifications out of mass",
+                    "3. Microcalcifications in mass"
+                ]
+            },
+            "elasticity assessment": {
+                "title": "Elasticity Assessment",
+                "type": "string",
+                "enum": [
+                    "0. Not assessed",
+                    "1. Soft",
+                    "2. Intermediate",
+                    "3. Hard"
+                ]
+            },
+            "檢查總結：": {
+                "title": "檢查總結：",
+                "type": "string"
+            }
+        }
+    }
+}

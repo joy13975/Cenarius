@@ -1,0 +1,26 @@
+"config": {
+    "defaults": {
+        "type": "string",
+        "infer_object": true,
+        "title": "id_camle_case",
+        "title_options": [
+            "id_camle_case",
+            "id_lower_case",
+            "id_upper_case",
+            "id"
+        ],
+
+        "auto_checkbox": "none",
+        "auto_checkbox_options": [
+            "none",
+            "single",
+            "multi"
+        ],
+        "auto_checkbox_default_type": "boolean",
+
+        "enum_single_ui": "dropdown",
+        "enum_multi_ui": "checkboxes",
+        "subobject_ui": "tabs-editable",
+        "either_group_ui": "tabs"
+    }
+}

@@ -33,18 +33,28 @@
 	margin-bottom: 10px;
 }
 
-.cenarius-checkbox {
-	margin-left: 30px;
-
-	position: absolute;
-	bottom: 0;
-	margin-bottom: 35px;
-}
-
 .cenarius-tabarray {
 	width: 100%;
 	min-height: 200px;
 }
-input[type=checkbox] {
-  transform: scale(2);
+
+.cenarius-nav-tabs {
+	margin: 15px;
+}
+
+.cenarius-add-delete-div {
+	position: absolute;
+	right: 20px;
+	top: 38px;
+}
+
+.cenarius-add-delete-btn {
+	margin: 3px;
+}
+
+.cenarius-toggle-label {
+	display: inline-flex;
+	margin: 2px;
+	position: absolute;
+	bottom: 0;
 }
