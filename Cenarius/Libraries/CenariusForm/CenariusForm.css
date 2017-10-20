@@ -83,3 +83,7 @@ input[type="checkbox"]:checked + label span:first-child {
 .cenarius-ckbx-lbl {
     width: 100%;
 }
+
+.col-sm-12 {
+	max-width: 100%;
+}
