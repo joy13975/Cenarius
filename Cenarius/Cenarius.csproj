@@ -101,6 +101,10 @@
     <Compile Include="App_Start\RouteConfig.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Libraries\css\bootstrap.css" />
+    <Content Include="Libraries\img\glyphicons-halflings.png" />
+    <Content Include="Libraries\js\cenarius-jsonform.js" />
+    <Content Include="Libraries\js\cenarius.js" />
     <Content Include="Views\Web.config" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
@@ -117,7 +121,8 @@
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="FormSchema\BreastCancerUltrasound.json" />
+    <Content Include="FormSchema\BreastCancerUltrasoundForma.json" />
+    <Content Include="FormSchema\FormaConfig.json" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

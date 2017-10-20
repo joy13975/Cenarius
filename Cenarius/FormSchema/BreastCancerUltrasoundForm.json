@@ -1,36 +1,34 @@
-"form": [
+{
+  "form": [
     "basic_info",
     {
-        "type": "fieldset",
-        "title": "Indications",
-        "items": [
-            {
-                "key": "indications.asymptomatic_screening",
-                "htmlClass": "cenarius-cell-tall"
-            },
-            {
-                "key": "indications.exam_for_symptomatic_patient",
-                "htmlClass": "cenarius-cell-tall"
-            },
-            {
-                "key": "indications.screening_mammographic_category",
-                "htmlClass": "cenarius-cell-tall"
-            }
-        ]
-    },
-
-    {
-        "type": "tabarray",
-        "key": "indications.detected_lesions",
-        "htmlClass": "cenarius-tabarray",
-        "items": {
-            "type": "section",
-            "items": [
-                "indications.detected_lesions[].id"
-            ]
+      "type": "fieldset",
+      "title": "Indications",
+      "items": [
+        {
+          "key": "indications.asymptomatic_screening",
+          "htmlClass": "cenarius-cell-tall"
+        },
+        {
+          "key": "indications.exam_for_symptomatic_patient",
+          "htmlClass": "cenarius-cell-tall"
+        },
+        {
+          "key": "indications.screening_mammographic_category",
+          "htmlClass": "cenarius-cell-tall"
         }
+      ]
     },
-
-    // "indications.f/u_for_previous_noted_benign_lesions",
-    // "indications.surgically_altered_breast"
-]
+    {
+      "type": "tabarray",
+      "key": "indications.detected_lesions",
+      "htmlClass": "cenarius-tabarray",
+      "items": {
+        "type": "section",
+        "items": [
+          "indications.detected_lesions[].id"
+        ]
+      }
+    }
+  ]
+}

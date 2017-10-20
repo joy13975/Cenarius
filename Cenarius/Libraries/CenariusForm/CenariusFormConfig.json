@@ -1,0 +1,29 @@
+{
+    "cenarius_form_config": {
+        "default_type": "string",
+        "infer_object": true,
+        "default_title": "key_camel_case",
+        "title_options": [
+            "key_camel_case",
+            "key_lower_case",
+            "key_upper_case",
+            "key"
+        ],
+
+        "default_auto_checkbox": "none",
+        "auto_checkbox_options": [
+            "none",
+            "single",
+            "multi"
+        ],
+        "default_auto_checkbox_field_type": "boolean",
+
+        "enum_single_ui": "dropdown",
+        "enum_multi_ui": "checkboxes",
+        "subobject_ui": "tabs-editable",
+        "either_group_ui": "tabs",
+
+        "default_field_width": 4,
+        "default_dropdown_width": 8
+    }
+}

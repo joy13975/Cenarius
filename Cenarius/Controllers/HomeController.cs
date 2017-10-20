@@ -6,6 +6,7 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Mvc.Ajax;
 using System.Web.Script.Serialization;
+using Newtonsoft.Json.Linq;
 
 namespace Cenarius.Controllers
 {
@@ -24,6 +25,7 @@ namespace Cenarius.Controllers
             ViewData["Subheading"] = "【附表二】乳房超音波檢查報告單";
 
             string bcuPathHeader = "~/FormSchema/BreastCancerUltrasound";
+
             string schemaPath = HttpContext.Server.MapPath(bcuPathHeader + "Schema.json");
             string formPath = HttpContext.Server.MapPath(bcuPathHeader + "Form.json");
             string paramsPath = HttpContext.Server.MapPath(bcuPathHeader + "Params.json");
@@ -35,6 +37,13 @@ namespace Cenarius.Controllers
             ViewData["Schema"] = schemaStr;
             ViewData["Form"] = formStr;
             ViewData["Params"] = paramsStr;
+
+
+            string formaPath = HttpContext.Server.MapPath(bcuPathHeader + "Forma.json");
+            string formaStr = System.IO.File.ReadAllText(formaPath);
+            JObject forma = JObject.Parse(formaStr);
+            
+            ViewData["Forma"] = forma.ToString(Newtonsoft.Json.Formatting.Indented);
 
             return View();
         }

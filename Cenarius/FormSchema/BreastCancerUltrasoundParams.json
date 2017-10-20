@@ -1,3 +1,5 @@
-"params": {
-	"fieldHtmlClass": "input-large cenarius-input"
+{
+  "params": {
+    "fieldHtmlClass": "input-large cenarius-input"
+  }
 }

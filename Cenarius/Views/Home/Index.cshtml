@@ -4,54 +4,43 @@
 <head>
     <meta charset="utf-8" />
     <title>@ViewData["Title"]</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css">
-    <link rel="stylesheet" href="../../Styles/Cenarius.css" />
 
-    <!--CDN js-->
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-    <!--Underscore 1.6.0 is the latest compatible version-->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
+    <!-- css deps -->
+    <link rel="stylesheet" href="../../Libraries/Bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="../../Libraries/Bootstrap/bootstrap-theme.min.css" />
+    <link rel="stylesheet" href="../../Libraries/CenariusForm/CenariusForm.css" />
 
-    <!--Local js libs-->
-    <script type="text/javascript" src="../../Libraries/js/cenarius-jsonform.js"></script>
+    <!-- js deps -->
+    <script type="text/javascript" src="../../Libraries/JQuery/jquery.min.js"></script>
+    <script type="text/javascript" src="../../Libraries/Underscore/underscore-min.js"></script>
+    <script type="text/javascript" src="../../Libraries/Bootstrap/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="../../Libraries/CenariusForm/CenariusForm.js"></script>
 
 </head>
 
 <body>
+
     <div class="container">
-        <div class="row">
-            <div class="col-sm-8 cenarius-main-block col-sm-offset-2">
+        <div class="col-sm-8 cenarius-main-block col-sm-offset-2">
 
+            <div class="row">
                 <center>
-                    <div>
-                        <h1>@ViewData["Heading"]</h1>
-                        (ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])
-                        <h2>@ViewData["Subheading"]</h2>
-                    </div>
+                    <h1>@ViewData["Heading"]</h1>
+                    (ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])
+                    <h2>@ViewData["Subheading"]</h2>
                 </center>
-
-                <form id="jsonform_dummy"></form>
-                <div id="res" class="alert"></div>
-
-                @ViewData["SchemaTest"]
-                <script type="text/javascript">
-                    $('form').jsonForm(
-                        {
-                        @Html.Raw(@ViewData["Schema"]),
-
-                        @Html.Raw(@ViewData["Form"]),
-
-                        @Html.Raw(@ViewData["Params"])
-                        }
-                    )
-                </script>
-
+                <cenarius-hr/>
             </div>
+
+            <cenarius-form></cenarius-form>
+            <div id="res" class="alert"></div>
+            <script type="text/javascript">
+                    $('cenarius-form').cenariusForm(@Html.Raw(ViewData["Forma"]))
+            </script>
+
         </div>
     </div>
+
 </body>
 </html>
