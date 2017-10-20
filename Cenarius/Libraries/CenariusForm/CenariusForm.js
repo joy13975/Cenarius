@@ -176,15 +176,17 @@ Inspired by Joshfire's JsonForms
                     if (typeof optNode == 'object') {
                         let optionName = optNode.hasOwnProperty('_title') ? optNode._title : '';
 
-                        function sandwitch() {
-                            _.each(Object.keys(optNode),
-                                function(nextKey) {
-                                    visitNode(optNode, nextKey);
-                                }
-                            )
-                        };
+                        // function sandwitch() {
+                        //     _.each(Object.keys(optNode),
+                        //         function(nextKey) {
+                        //             visitNode(optNode, nextKey);
+                        //         }
+                        //     )
+                        // };
 
-                        this.genObj(optNode, 'object', optionName, sandwitch);
+                        // this.genObj(optNode, 'object', optionName, sandwitch);
+
+                        this.formaHtml += '<p>Unimplemented</p>';
                     } else {
                         let optionName = optNode;
                         let optionFieldID = this.getNextID(key + '_option_' + i);
