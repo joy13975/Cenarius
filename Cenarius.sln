@@ -4,8 +4,6 @@ VisualStudioVersion = 15.0.27004.2002
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cenarius", "Cenarius\Cenarius.csproj", "{36BBCA59-1C8E-478F-8EB4-375C03AE4FE2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cenarius.Tests", "Cenarius.Tests\Cenarius.Tests.csproj", "{054FCEE4-A143-41B3-B96C-AA3466ED14E7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,10 +14,6 @@ Global
 		{36BBCA59-1C8E-478F-8EB4-375C03AE4FE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36BBCA59-1C8E-478F-8EB4-375C03AE4FE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{36BBCA59-1C8E-478F-8EB4-375C03AE4FE2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{054FCEE4-A143-41B3-B96C-AA3466ED14E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{054FCEE4-A143-41B3-B96C-AA3466ED14E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{054FCEE4-A143-41B3-B96C-AA3466ED14E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{054FCEE4-A143-41B3-B96C-AA3466ED14E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

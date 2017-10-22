@@ -91,6 +91,7 @@
           "_default_type": "boolean",
           "_properties": {
             "location": {
+              "_default_type": "boolean",
               "_enum": [
                 "Right",
                 "Left",
@@ -99,7 +100,7 @@
                 "LOQ",
                 "LIQ",
                 {
-                  "_title": "Precise",
+                  "_title": "Use Precise Location",
                   "require_input": "object",
                   "_properties": {
                     "angle": {
@@ -169,7 +170,10 @@
           "_htmlClass": "col-sm-12",
           "_enum_multi": [
             "41. S/P biopsy/wide excision/BCS",
-            "42. S/P breast augmentation/Reconstruction",
+            {
+              "_title": "42. S/P breast augmentation/Reconstruction",
+              "_htmlClass": "col-sm-8"
+            },
             "50. Other reasons for breast sono examination"
           ]
         }
