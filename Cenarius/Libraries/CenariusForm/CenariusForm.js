@@ -8,43 +8,45 @@ Inspired by Joshfire's JsonForms
 */
 'use strict';
 
+var config = {
+    defaultType: "string",
+    inferObjectFromProps: true,
+    defaultTitle: "key_titleize",
+    titleOptions: [
+        "key_titleize",
+        "key_lower_case",
+        "key_upper_case",
+        "key"
+    ],
+
+    defaultAutoCheckbox: "none",
+    autoCheckboxOptions: [
+        "none",
+        "single",
+        "multi"
+    ],
+    defaultAutoCheckboxField_type: "boolean",
+    defaultNumberStep: 0.01,
+    autoLabelColon: false,
+    autoLabelSpace: false,
+
+    enumSingleUI: "dropdown",
+    enumMultiUI: "checkboxes",
+    subobjectUI: "tabs-editable",
+    eitherGroupUI: "tabs",
+
+    nCols: {
+        object: '12',
+        subobject: '12',
+        enum: '6',
+        complexEnum: '12',
+        input: '6'
+    },
+
+    minSubobjectInstance: 1
+};
+
 (function(global, $) {
-
-    var config = {
-        defaultType: "string",
-        inferObjectFromProps: true,
-        defaultTitle: "key_titleize",
-        titleOptions: [
-            "key_titleize",
-            "key_lower_case",
-            "key_upper_case",
-            "key"
-        ],
-
-        defaultAutoCheckbox: "none",
-        autoCheckboxOptions: [
-            "none",
-            "single",
-            "multi"
-        ],
-        defaultAutoCheckboxField_type: "boolean",
-        defaultNumberStep: 0.01,
-        autoLabelColon: false,
-        autoLabelSpace: false,
-
-        enumSingleUI: "dropdown",
-        enumMultiUI: "checkboxes",
-        subobjectUI: "tabs-editable",
-        eitherGroupUI: "tabs",
-
-        defaultNCols: {
-            object: '12',
-            subobject: '12',
-            enum: '6',
-            complexEnum: '12',
-            input: '6'
-        }
-    }
 
     const _space = '&nbsp;';
     const fieldColon = config.autoLabelColon ? ':' : '';
@@ -100,7 +102,7 @@ Inspired by Joshfire's JsonForms
             const extraHtmlClass = node.hasOwnProperty('_html_class') ?
                 node._html_class : '';
             const nCols = node.hasOwnProperty('_cols') ?
-                node._cols : config.defaultNCols.object;
+                node._cols : config.nCols.object;
 
             this.formaHtml += '<div class="col-sm-' + nCols + '">' +
                 genNameTag(name, 'default') + '<div class="cenarius-group cenarius-default-border col-sm-12' +
@@ -120,7 +122,7 @@ Inspired by Joshfire's JsonForms
             const extraHtmlClass = node.hasOwnProperty('_html_class') ?
                 node._html_class : '';
             const nCols = node.hasOwnProperty('_cols') ?
-                node._cols : config.defaultNCols.subobject;
+                node._cols : config.nCols.subobject;
 
             this.formaHtml += '<div class="col-sm-' + nCols + '">' +
                 genNameTag(name, 'danger') +
@@ -128,7 +130,9 @@ Inspired by Joshfire's JsonForms
                 extraHtmlClass + '">';
 
             // Button for creating a new tab
-            this.formaHtml += '<button type="button" class="btn btn-default btn-sm cenarius-new-tab-btn" name="new_tab_btn">' +
+            this.formaHtml +=
+                '<button type="button" class="btn btn-default btn-sm cenarius-new-tab-btn" ' +
+                'name="new_tab_btn" onclick="addSubobjectInstance($(this).siblings(\'ul[name=subobject_tabs]\'))">' +
                 '<span class="glyphicon glyphicon-plus"></span>' +
                 '</button>';
 
@@ -139,10 +143,12 @@ Inspired by Joshfire's JsonForms
 
             // Tab templates
             this.formaHtml += '<div class="tab-content">';
-            this.formaHtml += '<div id="' + fieldID + '_template" class="tab-pane fade in">';
+            this.formaHtml += '<div id="' + fieldID + '_template" class="tab-pane fade">';
 
             // Button for remove current tab
-            this.formaHtml += '<button type="button" class="btn btn-default btn-sm cenarius-del-tab-btn" name="del_tab_btn">' +
+            this.formaHtml +=
+                '<button type="button" class="btn btn-default btn-sm cenarius-del-tab-btn" ' +
+                'name="del_tab_btn" onclick="delSubobjectInstance($(this).parent().parent())">' +
                 '<span class="glyphicon glyphicon-remove"></span>' +
                 '</button>';
 
@@ -183,8 +189,8 @@ Inspired by Joshfire's JsonForms
                 node._html_class : '';
             const nCols = node.hasOwnProperty('_cols') ? node._cols :
                 this.currentDefaultNCols != '' ? this.currentDefaultNCols :
-                simpleEnum ? config.defaultNCols.enum :
-                config.defaultNCols.complexEnum;
+                simpleEnum ? config.nCols.enum :
+                config.nCols.complexEnum;
 
             const fieldID = this.getNextID(key);
             const isForceCheckbox = this.forceCheckbox ||
@@ -350,7 +356,7 @@ Inspired by Joshfire's JsonForms
                 node._html_class : '';
             let nCols = node.hasOwnProperty('_cols') ? node._cols :
                 this.currentDefaultNCols != '' ? this.currentDefaultNCols :
-                config.defaultNCols.input;
+                config.nCols.input;
 
             const defaultTextareaRows = node.hasOwnProperty('_textarea_rows') ?
                 node._textarea_rows : '5';
@@ -599,24 +605,32 @@ function setCheckbox(chbkxID, val) {
     $('#' + chbkxID).prop('checked', val);
 }
 
-function addSubobjectInstance(tab) {
-    const tabID = tab.prop('id');
+function addSubobjectInstance(tabHeaders) {
+    const tabID = tabHeaders.prop('id');
     const templateID = tabID.substr(0, tabID.length - 5) + '_template';
-    const template = $('#' + templateID);
+    let tabContent = tabHeaders.siblings('div.tab-content');
+    const template = tabContent.children('#' + templateID);
 
     // Clone template
     let clone = template.clone();
-    const cloneIndex = template.parent().children().length;
+    let cloneIndex = 0;
+    template.parent().children().each(function(){
+        const idStr = $(this).prop('id');
+        const id = parseInt(idStr.substr(idStr.lastIndexOf('_') + 1), 10);
+        cloneIndex = id > cloneIndex ? id : cloneIndex;
+    });
+    cloneIndex += 1;
+
     const cloneID = templateID + '_' + cloneIndex;
     clone.prop('id', cloneID);
-    template.after(clone);
+    tabContent.append(clone);
 
     // De-select the rest
-    tab.children().removeClass('active');
-    template.parent().children().removeClass('active');
+    tabHeaders.children().removeClass('active in');
+    tabContent.children().removeClass('active in');
 
     // Spawn new reference
-    tab.append(
+    tabHeaders.append(
         '<li class="active">' +
         '<a data-toggle="tab" href="#' + cloneID + '"  style="background: #ecc">' +
         '<b>#' +
@@ -625,7 +639,27 @@ function addSubobjectInstance(tab) {
         '</a>' +
         '</li>');
 
-    $('#' + cloneID).addClass('active');
+    $('#' + cloneID).addClass('active in');
+}
+
+function delSubobjectInstance(tabContent) {
+    if (confirm('Confirm delete')) {
+        let tabHeaders = tabContent.siblings('ul.nav-tabs');
+        tabHeaders.children('li.active').remove();
+        tabContent.children('div.active.in').remove();
+
+        spawnMinimumSubobjectInstances(tabHeaders, tabContent);
+
+        // Set new active tab
+        tabHeaders.children().last().addClass('active in');
+        tabContent.children().last().addClass('active in');
+    }
+}
+
+function spawnMinimumSubobjectInstances(tabHeaders, tabContent=tabHeaders.siblings('div.tab-content')) {
+    while (tabContent.children().length - 1 < config.minSubobjectInstance) {
+        addSubobjectInstance(tabHeaders);
+    }
 }
 
 $(function() { /* DOM ready */
@@ -641,18 +675,11 @@ $(function() { /* DOM ready */
         setCheckboxBeforeTag($(this), $(this).prop('selectedIndex') != 0);
     });
 
-    $('button[name=new_tab_btn]').click(function() {
-        addSubobjectInstance($(this).parent().find('ul[name=subobject_tabs]'));
-    });
-
-    $('del_tab_btn').click(function() {
-        alert('Unimplemented: delete tab');
-    });
-
     // Spawn one instance of each suboject using their template
     (function spawnDefaultSuboject() {
         $('ul[name=subobject_tabs]').each(function(index) {
             addSubobjectInstance($(this));
+            spawnMinimumSubobjectInstances($(this));
         });
     })();
 });

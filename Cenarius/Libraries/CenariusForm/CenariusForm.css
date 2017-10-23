@@ -154,4 +154,5 @@ input[type="checkbox"]:checked+label span:first-child {
 
 .cenarius-del-tab-btn {
 	float: right;
+	background: #eeb;
 }
