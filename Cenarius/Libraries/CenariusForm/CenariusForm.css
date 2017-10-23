@@ -1,102 +1,132 @@
 cenarius-form {
-    width: 100%;
-    margin: 2px;
+	width: 100%;
+	margin: 2px;
 }
 
 cenarius-hr {
-    display: block;
-    height: 1px;
-    border: 0;
-    border-top: 3px solid #0aa;
-    padding: 0;
+	display: block;
+	height: 1px;
+	border: 0;
+	border-top: 3px solid #0aa;
+	padding: 0;
 }
 
 h2 {
-    margin-left: -12px;
-    margin-bottom: 3px;
+	margin-left: -12px;
+	margin-bottom: 3px;
 }
 
 h3 {
-    margin-left: -14px;
-    margin-bottom: 4px;
+	margin-left: -14px;
+	margin-bottom: 4px;
 }
 
 h4 {
-    margin-left: -13px;
-    margin-bottom: 2px;
+	margin-left: -13px;
+	margin-bottom: 2px;
 }
 
 textarea {
-    resize: vertical;
+	resize: vertical;
 }
 
 label {
-    line-height: 1;
-    white-space: normal;
+	line-height: 1;
+	/*white-space: normal;*/
 }
 
 select {
-    direction: rtl;
+	direction: rtl;
 }
 
 option {
-    direction: ltr;
-    text-align-last: right;
-    text-align: right;
+	direction: ltr;
+	text-align-last: right;
+	text-align: right;
 }
 
 textarea {
-    min-height: 40px;
+	min-height: 40px;
 }
 
 .cenarius-main-block {
-    background-color: #e5f7f0;
-    display: inline-block;
+	background-color: #e5f7f0;
+	display: inline-block;
 }
 
 .cenarius-col-center {
-    float: none;
-    margin: 0 auto;
-}
-
-.cenarius-group {
-    border-style: solid;
-    padding: 4px;
-    margin-bottom: 8px;
-}
-
-.cenarius-input-wrapper {
-    padding: 2px;
-}
-
-.cenarius-input-tag {
-	max-width: 120px;
-}
-
-input[type="checkbox"] {
-    display: none;
-}
-
-input[type="checkbox"]+label span:first-child {
-    opacity: 0.1;
-}
-
-input[type="checkbox"]:checked+label span:first-child {
-    opacity: 1;
-}
-
-.cenarius-ckbx-lbl {
-    width: 100%;
-    white-space: normal;
-    display: table-cell;
-}
-
-.cenarius-ckbx-btn {
-    vertical-align: middle;
-    display: table-cell;
+	float: none;
+	margin: 0 auto;
 }
 
 .cenarius-group-tag {
 	margin: 0;
 	padding: 0;
+	top: 0px;
+	left: 0px;
+}
+
+.cenarius-group {
+	border-style: solid;
+	border-width: 10px;
+	padding: 14px;
+	margin: 0px;
+	margin-bottom: 12px;
+}
+
+.cenarius-input-wrapper {
+	padding: 4px;
+}
+
+.cenarius-input-tag {
+}
+
+input[type="checkbox"] {
+	display: none;
+}
+
+input[type="checkbox"]+label span:first-child {
+	opacity: 0.1;
+}
+
+input[type="checkbox"]:checked+label span:first-child {
+	opacity: 1;
+}
+
+.cenarius-ckbx-lbl {
+	width: 100%;
+	display: table-cell;
+	padding: 4px 4px;
+}
+
+.cenarius-ckbx-btn {
+	vertical-align: middle;
+	display: table-cell;
+}
+
+.cenarius-info-border {
+	border-color: #5bc0de;
+}
+
+.cenarius-danger-border {
+	border-color: #d9534f;
+}
+
+.cenarius-warning-border {
+	border-color: #f0ad4e;
+}
+
+.label-info {
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+.label-danger {
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+.label-warning {
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
 }

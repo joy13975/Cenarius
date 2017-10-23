@@ -37,11 +37,13 @@ Inspired by Joshfire's JsonForms
         subobjectUI: "tabs-editable",
         eitherGroupUI: "tabs",
 
-        defaultObjectHtmlClass: 'col-sm-12',
-        defaultSubobjectHtmlClass: 'col-sm-12',
-        defaultEnumHtmlClass: 'col-sm-6',
-        defaultComplexEnumHtmlClass: 'col-sm-12',
-        defaultInputHtmlClass: 'col-sm-6'
+        defaultNCols: {
+            object: '12',
+            subobject: '12',
+            enum: '6',
+            complexEnum: '12',
+            input: '6'
+        }
     }
 
     const _space = '&nbsp;';
@@ -53,6 +55,8 @@ Inspired by Joshfire's JsonForms
             this.formaHtml = '';
             this.fieldID = 0;
             this.resetDefaultType();
+            this.resetDefaultNCols();
+            this.unsetForceCheckbox();
         }
 
         resetDefaultType() {
@@ -65,6 +69,26 @@ Inspired by Joshfire's JsonForms
             this.currentDefaultType = type;
         }
 
+        resetDefaultNCols() {
+            console.log('resetDefaultNCols()');
+            this.setDefaultNCols(12);
+        }
+
+        setDefaultNCols(nCols) {
+            console.log('setDefaultNCols(' + nCols + ')');
+            this.currentDefaultNCols = nCols;
+        }
+
+        unsetForceCheckbox() {
+            console.log('unsetForceCheckbox()');
+            this.forceCheckbox = false;
+        }
+
+        setForceCheckbox() {
+            console.log('setForceCheckbox()');
+            this.forceCheckbox = true;
+        }
+
         getNextID(key) {
             return (key + '_f' + (this.fieldID++).toString());
         }
@@ -73,30 +97,41 @@ Inspired by Joshfire's JsonForms
             console.log('genObj()');
 
             // Html class
-            let extraHtmlClass = node.hasOwnProperty('_htmlClass') ?
-                node._htmlClass : config.defaultObjectHtmlClass;
+            const extraHtmlClass = node.hasOwnProperty('_html_class') ?
+                node._html_class : '';
+            const nCols = node.hasOwnProperty('_cols') ?
+                node._cols : config.defaultNCols.object;
 
-            this.formaHtml += genNameTag(name);
-            this.formaHtml += '<div class="cenarius-group ' + extraHtmlClass + '">';
+            this.formaHtml += '<div class="col-sm-' + nCols + '">';
+            this.formaHtml += genNameTag(name, 'info');
+            this.formaHtml += '<div class="cenarius-group cenarius-info-border col-sm-12' +
+                extraHtmlClass + '">';
 
             sandwitch();
 
-            this.formaHtml += '</div>';
+            this.formaHtml +=
+                '</div>' +
+                '</div>';
         };
 
         genSubobj(node, name, sandwitch) {
             console.log('genSubobj()');
 
             // Html class
-            let extraHtmlClass = node.hasOwnProperty('_htmlClass') ?
-                node._htmlClass : config.defaultObjectHtmlClass;
+            const extraHtmlClass = node.hasOwnProperty('_html_class') ?
+                node._html_class : '';
+            const nCols = node.hasOwnProperty('_cols') ?
+                node._cols : config.defaultNCols.subobject;
 
-            this.formaHtml += genNameTag(name, 'warning');
-            this.formaHtml += '<div class="cenarius-group ' + extraHtmlClass + '">';
-
+            this.formaHtml += '<div class="col-sm-' + nCols + '">';
+            this.formaHtml += genNameTag(name, 'danger');
+            this.formaHtml += '<div class="cenarius-group cenarius-danger-border col-sm-12' +
+                extraHtmlClass + '">';
             sandwitch();
 
-            this.formaHtml += '</div>';
+            this.formaHtml +=
+                '</div>' +
+                '</div>';
         };
 
         genEnum(node, key, name, sandwitch) {
@@ -104,41 +139,64 @@ Inspired by Joshfire's JsonForms
 
             let coreSelf = this;
 
-            let multiChoice = node.hasOwnProperty("_enum_multi");
+            const isMultiChoice = node.hasOwnProperty("_enum_multi");
 
             let enumData = [];
             let simpleEnum = true;
 
-            if (multiChoice) {
+            if (isMultiChoice) {
                 enumData = node._enum_multi;
                 simpleEnum = false;
             } else {
                 enumData = node._enum;
                 _.each(enumData, function(item) {
                     simpleEnum &= typeof item != 'object';
+                    if (!simpleEnum)
+                        console.log('enum is complex because of: ' + typeof item);
                 });
             }
 
-            let fieldID = this.getNextID(key);
+            // Html class
+            const extraHtmlClass = node.hasOwnProperty('_html_class') ?
+                node._html_class : '';
+            const nCols = node.hasOwnProperty('_cols') ? node._cols :
+                this.currentDefaultNCols != '' ? this.currentDefaultNCols :
+                simpleEnum ? config.defaultNCols.enum :
+                config.defaultNCols.complexEnum;
+
+            const fieldID = this.getNextID(key);
+            const isForceCheckbox = this.forceCheckbox ||
+                (node.hasOwnProperty('_force_checkbox') && node._force_checkbox);
 
             if (simpleEnum) {
-                let extraHtmlClass = node.hasOwnProperty('_htmlClass') ?
-                    node._htmlClass : config.defaultEnumHtmlClass;
-
                 this.formaHtml +=
-                    '<div class="cenarius-input-wrapper ' + extraHtmlClass + '">' +
+                    '<div class="cenarius-input-wrapper col-sm-' + nCols + ' ' + extraHtmlClass + '">' +
                     '<div class="input-group">';
+
+                if (isForceCheckbox) {
+                    // This should only happen in complex lists
+                    this.formaHtml +=
+                        '<input type="checkbox" name="' + fieldID + '_chkbx" id="' + fieldID + '_chkbx" autocomplete="off">' +
+                        '<label for="' + fieldID + '_chkbx" class="btn btn-default cenarius-ckbx-btn">' +
+                        '<span class="glyphicon glyphicon-ok"></span>' +
+                        '<span>&nbsp;</span>' +
+                        '</label>';
+
+                    this.formaHtml += '<span style="width:100%; display: table-cell">';
+                    this.formaHtml += '<span style="display: table">';
+                }
 
                 this.formaHtml +=
                     '<span class="input-group-addon">' +
-                    '<label for="' + fieldID + '">' +
+                    '<b>' +
                     name + fieldColon + fieldSpace +
-                    '</label>' +
+                    '</b>' +
                     '</span>' +
                     '<select class="selectpicker form-control" id="' + fieldID + '"' +
                     'data-live-search="true" ' +
-                    '>'
+                    '>';
 
+                this.formaHtml += '<option selected value> -- </option>';
                 _.each(enumData,
                     function(item) {
                         coreSelf.formaHtml +=
@@ -148,23 +206,41 @@ Inspired by Joshfire's JsonForms
                     }
                 );
 
+                if (isForceCheckbox) {
+                    this.formaHtml +=
+                        '</span>' +
+                        '</span>';
+                }
+
+
                 this.formaHtml +=
                     '</select>';
                 this.formaHtml +=
                     '</div>' +
                     '</div>';
             } else {
-                let extraHtmlClass = node.hasOwnProperty('_htmlClass') ?
-                    node._htmlClass : config.defaultComplexEnumHtmlClass;
+                const mcStr = isMultiChoice ? ' (multiple choice)' : ' (single choice)';
 
-                let mcStr = multiChoice ? ' (multiple choice)' : ' (single choice)';
-                this.formaHtml += genNameTag(name + mcStr, 'default');
+                this.formaHtml += '<div class="col-sm-' + nCols + '">';
+                this.formaHtml += genNameTag(name + mcStr, 'warning');
+                this.formaHtml += '<div class="cenarius-group cenarius-warning-border col-sm-12' +
+                    extraHtmlClass + '">';
 
-                this.formaHtml +=
-                    '<div class="cenarius-group ' + extraHtmlClass + '">';
+                this.setForceCheckbox();
+
+                // Group these checkboxes
+                if (isMultiChoice)
+                    this.formaHtml += '<div name="multi_choice_group">';
 
                 sandwitch();
+
+                if (isMultiChoice)
+                    this.formaHtml += '</div>';
+
+                this.unsetForceCheckbox();
+
                 this.formaHtml +=
+                    '</div>' +
                     '</div>';
             }
         };
@@ -173,30 +249,45 @@ Inspired by Joshfire's JsonForms
             console.log('genLeaf()');
 
             let inputTag = 'input';
-            let inputType = type == 'string' ? 'text' : type;
-
-            // Default value
-            let defaultValueStr = node.hasOwnProperty('_defaultValue') ?
-                node._defaultValue : '';
-
-            // Determine field type
-            if (type == 'big_string') {
-                inputType = 'text';
-                inputTag = 'textarea';
-            } else if (type == 'boolean') {
-                inputType = 'checkbox';
-            }
-
-            // Deal with number input
+            let inputType;
             let numStep = '';
-            if (type == 'number') {
-                numStep = 'step="' +
-                    node.hasOwnProperty('_number_step') ?
-                    node._number_step : config.defaultNumberStep +
-                    '" ';
-            } else if (type == 'integer') {
-                numStep = 'step="1" ';
-                inputType = 'number';
+
+            switch (type) {
+                case 'number':
+                    {
+                        inputType = 'number';
+                        numStep = 'step="' +
+                        node.hasOwnProperty('_number_step') ?
+                        node._number_step : config.defaultNumberStep +
+                            '" ';
+                        break;
+                    }
+                case 'integer':
+                    {
+                        inputType = 'number';
+                        numStep = 'step="1" ';
+                        break;
+                    }
+                case 'big_string':
+                    {
+                        inputTag = 'textarea';
+                    }
+                case 'string':
+                    {
+                        inputType = 'text';
+                        break;
+                    }
+                case 'boolean':
+                    {
+                        inputType = 'checkbox';
+                        break;
+                    }
+                default:
+                    {
+                        inputType = type;
+                        console.log('Warning: abnormal field type "' + type + '"');
+                        break;
+                    }
             }
 
             let numMinMax = '';
@@ -205,51 +296,74 @@ Inspired by Joshfire's JsonForms
             if (node.hasOwnProperty('_max'))
                 numMinMax += 'min="' + node._max + '" ';
 
-            defaultValueStr = inputType == 'number' && defaultValueStr == '' ?
-                'value="0" ' : '';
-
-            // Deal with dates
-            defaultValueStr = inputType == 'date' && defaultValueStr == '' ?
-                ('value="' + (new Date()).toISOString().slice(0, 10) + '" ') : '';
+            // Default value
+            const defaultFieldValue = node.hasOwnProperty('_defaultValue') ?
+                node._defaultValue : '';
+            let defaultValueStr = '';
+            switch (inputType) {
+                case 'number':
+                    {
+                        defaultValueStr = 'value="' +
+                        (defaultFieldValue == '' ? '0' : defaultFieldValue) +
+                        '" ';
+                        break;
+                    }
+                case 'date':
+                    {
+                        defaultValueStr = 'value="' +
+                        (defaultFieldValue == '' ?
+                            (new Date()).toISOString().slice(0, 10) : defaultFieldValue) +
+                        '" ';
+                        break;
+                    }
+                default:
+                    {
+                        defaultValueStr = 'value="" ';
+                        break;
+                    }
+            }
 
             // Html class
-            let extraHtmlClass = node.hasOwnProperty('_htmlClass') ?
-                node._htmlClass : config.defaultInputHtmlClass;
+            let extraHtmlClass = node.hasOwnProperty('_html_class') ?
+                node._html_class : '';
+            let nCols = node.hasOwnProperty('_cols') ? node._cols :
+                this.currentDefaultNCols != '' ? this.currentDefaultNCols :
+                config.defaultNCols.input;
 
-            let defaultTextareaRows = node.hasOwnProperty('_textarea_rows') ?
+            const defaultTextareaRows = node.hasOwnProperty('_textarea_rows') ?
                 node._textarea_rows : '5';
 
             // Optional html strings
-            let isTextArea = inputTag == 'textarea';
+            const isTextArea = inputTag == 'textarea';
 
-            let textAlignment = isTextArea ?
+            const textAlignment = isTextArea ?
                 '' : 'text-align: right; ';
-            let textAreaRows = isTextArea ?
+            const textAreaRows = isTextArea ?
                 'rows="' + defaultTextareaRows + '"' : '';
-            let inputTagClosing = isTextArea ?
+            const inputTagClosing = isTextArea ?
                 ('</' + inputTag + '>') : '';
-            let endingSpan = node.hasOwnProperty('_ending') ?
+            const endingSpan = node.hasOwnProperty('_ending') ?
                 '<span class="input-group-addon">' + node._ending + '</span>' : '';
 
             // Styles
-            let tagStyle = 'style="' +
-                (inputType == 'checkbox' ?
-                    ('border-right: 4px; ' +
-                        'border-top-right-radius: 4; ' +
-                        'border-bottom-right-radius: 4; ') : '') +
-                ' "';
+            const tagStyle = inputType == 'checkbox' ?
+                ('border-right: 4px; ' +
+                    'border-top-right-radius: 4; ' +
+                    'border-bottom-right-radius: 4; ') : '';
 
 
-            let fieldStyle = 'style="' +
-                textAlignment +
-                '" ';
+            const fieldStyle = textAlignment;
 
             // Prevent duplicate IDs
-            let fieldID = this.getNextID(key);
+            const fieldID = this.getNextID(key);
 
             this.formaHtml +=
-                '<div class="cenarius-input-wrapper ' + extraHtmlClass + '">' +
-                '<div class="input-group">';
+                '<div class="cenarius-input-wrapper col-sm-' + nCols + ' ' + extraHtmlClass + '">' +
+                '<div class="input-group" style="width: 100% !important">';
+
+            const fieldName = name + fieldColon + fieldSpace;
+            const isForceCheckbox = this.forceCheckbox ||
+                (node.hasOwnProperty('_force_checkbox') && node._force_checkbox);
 
             switch (inputType) {
                 case 'checkbox':
@@ -260,7 +374,7 @@ Inspired by Joshfire's JsonForms
                         '<span class="glyphicon glyphicon-ok"></span>' +
                         '<span>&nbsp;</span>' +
                         '</label>' +
-                        '<label for="' + fieldID + '" class="btn btn-default active cenarius-ckbx-lbl">' +
+                        '<label for="' + fieldID + '" class="btn btn-default cenarius-ckbx-lbl">' +
                         name +
                         '</label>';
                         break;
@@ -269,16 +383,30 @@ Inspired by Joshfire's JsonForms
                 case 'number':
                 case 'date':
                     {
+                        if (isForceCheckbox) {
+                            // This should only happen in complex lists
+                            this.formaHtml +=
+                                '<input type="checkbox" name="' + fieldID + '_chkbx" id="' + fieldID + '_chkbx" autocomplete="off">' +
+                                '<label for="' + fieldID + '_chkbx" class="btn btn-default cenarius-ckbx-btn">' +
+                                '<span class="glyphicon glyphicon-ok"></span>' +
+                                '<span>&nbsp;</span>' +
+                                '</label>';
+
+                            this.formaHtml += '<span style="width:100%; display: table-cell">';
+                            this.formaHtml += '<span style="display: table">';
+                        }
+
                         this.formaHtml +=
-                        '<span class="input-group-addon cenarius-input-tag" ' + tagStyle + '>' +
-                        '<label for="' + fieldID + '">' +
-                        name + fieldColon + fieldSpace +
-                        '</label>' +
-                        '</span>' +
-                        '<' + inputTag + ' class="form-control"' +
-                        fieldStyle +
+                        '<span class="input-group-addon cenarius-input-tag" ' +
+                        'style="' + tagStyle + '">' +
+                        '<b>' + fieldName + '</b>' +
+                        "</span>" +
+                        '<' + inputTag + ' class="form-control" ' +
+                        'style="' + fieldStyle + '" ' +
                         'id="' + fieldID + '" ' +
-                        'type="' + inputType + '" ' +
+                        'type="' + inputType + '" ';
+
+                        this.formaHtml +=
                         numStep +
                         numMinMax +
                         defaultValueStr +
@@ -286,6 +414,13 @@ Inspired by Joshfire's JsonForms
                         '>' +
                         inputTagClosing +
                         endingSpan;
+
+                        if (isForceCheckbox) {
+                            this.formaHtml +=
+                                '</span>' +
+                                '</span>';
+                        }
+
                         break;
                     }
                 default:
@@ -317,24 +452,29 @@ Inspired by Joshfire's JsonForms
                 next.hasOwnProperty('_enum') ? next._enum :
                 next.hasOwnProperty('_enum_multi') ? next._enum_multi : {};
 
+            const isMultiChoice = next.hasOwnProperty('_enum_multi');
             const type = (next.hasOwnProperty('_type') ? next._type :
-                (next.hasOwnProperty('_enum') || next.hasOwnProperty('_enum_multi') ? 'enum' :
+                (next.hasOwnProperty('_enum') || isMultiChoice ? 'enum' :
                     (hasProps && config.inferObjectFromProps ? 'object' :
                         myCore.currentDefaultType)));
 
             console.log('key: ' + key + ', name: ' + name + ', content: ' + next + ', type: ' + type);
 
-            const defaultType = next.hasOwnProperty('_default_type') ?
-                next._default_type : 'string';
+            const defaultType = next.hasOwnProperty('_default_type') ? next._default_type :
+                (type == 'enum' ? 'boolean' : 'string');
+
+            const defaultNCols = next.hasOwnProperty('_default_cols') ? next._default_cols : '';
 
             function sandwitch() {
                 _.each(Object.keys(children),
                     function(nextKey) {
                         myCore.setDefaultType(defaultType);
+                        myCore.setDefaultNCols(defaultNCols);
 
                         visitNode(children, nextKey);
 
                         myCore.resetDefaultType();
+                        myCore.resetDefaultNCols();
                     }
                 );
             };
@@ -400,8 +540,8 @@ Inspired by Joshfire's JsonForms
         }
     }
 
-    function genNameTag(name, flavour = 'info', size = 20) {
-        return '<div class="col-sm-12 cenarius-group-tag">' +
+    function genNameTag(name, flavour = 'info', nCols = 12, size = 26) {
+        return '<div class="col-sm-' + nCols + ' cenarius-group-tag">' +
             '<span style="font-size:' + size + 'px">' +
             '<span class="label label-' + flavour + '">' +
             name +
@@ -429,3 +569,26 @@ Inspired by Joshfire's JsonForms
     ((typeof jQuery !== 'undefined') ? jQuery : {
         fn: {}
     }));
+
+
+function setCheckboxBeforeTag(elt, val) {
+    setCheckbox(elt.prop('id') + '_chkbx', val);
+}
+
+function setCheckbox(chbkxID, val) {
+    $('#' + chbkxID).prop('checked', val);
+}
+
+$(function() { /* DOM ready */
+    $('input').keyup(function() {
+        setCheckboxBeforeTag($(this), $(this).val() != '');
+    });
+    
+    $('input').change(function() {
+        setCheckboxBeforeTag($(this), $(this).val() != '');
+    });
+
+    $('select').change(function() {
+        setCheckboxBeforeTag($(this), $(this).prop('selectedIndex') != 0);
+    });
+});

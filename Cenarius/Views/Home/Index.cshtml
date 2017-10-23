@@ -22,15 +22,35 @@
 <body>
 
     <div class="container">
-        <div class="col-sm-8 cenarius-main-block col-sm-offset-2">
-
+        <div class="col-sm-10 cenarius-main-block col-sm-offset-2">
             <div class="row">
                 <center>
-                    <h1>@ViewData["Heading"]</h1>
-                    (ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])
+                    <div class="row">
+                        <h1>@ViewData["Heading"]</h1>
+                        (ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])
+                    </div>
+
+                    <div class="col-sm-12">
+                        <div style="height: 50px"></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6 col-sm-offset-3">
+                            <div class="col-sm-4">
+                                <div style="width: 30px; height: 30px; background: #5bc0de"></div><p>Group</p>
+                            </div>
+                            <div class="col-sm-4">
+                                <div style="width: 30px; height: 30px; background: #d9534f"></div><p>Sub-Object</p>
+                            </div>
+                            <div class="col-sm-4">
+                                <div style="width: 30px; height: 30px; background: #f0ad4e"></div><p>Complex List</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <h2>@ViewData["Subheading"]</h2>
                 </center>
-                <cenarius-hr/>
+                <cenarius-hr />
             </div>
 
             <cenarius-form></cenarius-form>
