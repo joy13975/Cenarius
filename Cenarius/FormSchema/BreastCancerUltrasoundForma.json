@@ -5,7 +5,7 @@
             "_properties": {
                 "patient": {
                     "_title": "受檢者",
-                    "_default_cols": "4",
+                    "_default_cols": 4,
                     "_properties": {
                         "id": {
                             "_title": "病歷號"
@@ -23,7 +23,7 @@
                 },
                 "current_checkup": {
                     "_title": "本次檢查",
-                    "_default_cols": "4",
+                    "_default_cols": 4,
                     "_properties": {
                         "report_date": {
                             "_title": "日期",
@@ -49,7 +49,7 @@
                         },
                         "us_examination_mode": {
                             "_title": "US Examination Mode",
-                            "_cols": "8",
+                            "_cols": 8,
                             "_enum": [
                                 "Screening US",
                                 "Diagnostic US",
@@ -66,11 +66,11 @@
             "_properties": {
                 "asymptomatic_screening": {
                     "_title": "00. Asymptomatic Screening",
-                    "_cols": "12"
+                    "_cols": 12
                 },
                 "exam_for_symptomatic_patient": {
                     "_title": "10. Exam for symptomatic patient",
-                    "_default_cols": "4",
+                    "_default_cols": 4,
                     "_enum_multi": [
                         "11. Pain",
                         "12. Palpable mass",
@@ -79,7 +79,7 @@
                 },
                 "screening_mammographic_category": {
                     "_title": "20. Screening Mammographic Category (0-5)",
-                    "_cols": "12",
+                    "_cols": 12,
                     "_enum": [
                         0,
                         1,
@@ -93,14 +93,14 @@
                     "_title": "Benign Lesion(s)",
                     "_type": "subobject",
                     "_default_type": "boolean",
-                    "_default_cols": "6",
+                    "_default_cols": 6,
                     "_properties": {
                         "location": {
                             "_default_type": "boolean",
                             "_properties": {
                                 "rough": {
-                                    "_cols": "6",
-                                    "_default_cols": "12",
+                                    "_cols": 6,
+                                    "_default_cols": 12,
                                     "_properties": {
                                         "side": {
                                             "_enum": [
@@ -120,8 +120,8 @@
                                     }
                                 },
                                 "precise": {
-                                    "_cols": "6",
-                                    "_default_cols": "12",
+                                    "_cols": 6,
+                                    "_default_cols": 12,
                                     "_properties": {
                                         "angle": {
                                             "_type": "number",
@@ -151,7 +151,7 @@
                             "_title": "25. Others",
                             "_type": "string",
                             "_force_checkbox": true,
-                            "_cols": "12"
+                            "_cols": 12
                         },
                         "density_of_breast": {
                             "_title": "26. Density of breast (A,B,C,D)",
@@ -167,7 +167,7 @@
                             "_title": "27. Recomendation",
                             "_type": "string",
                             "_force_checkbox": true,
-                            "_cols": "6"
+                            "_cols": 6
                         }
                     }
                 },
@@ -193,7 +193,7 @@
                 },
                 "surgically_altered_breast": {
                     "_title": "40. Surgically altered breast",
-                    "_default_cols": "12",
+                    "_default_cols": 12,
                     "_enum_multi": [
                         "41. S/P biopsy/wide excision/BCS",
                         "42. S/P breast augmentation/Reconstruction",
@@ -206,7 +206,7 @@
             "_properties": {
                 "us_category": {
                     "_title": "US Category 分類",
-                    "_cols": "12",
+                    "_cols": 12,
                     "_enum": [
                         "0. Category 0",
                         "1. Category 1",
@@ -221,7 +221,7 @@
                 },
                 "combined_mammogram_and_us_final_category": {
                     "_title": "Combined Mammogram And US Final Category",
-                    "_cols": "12",
+                    "_cols": 12,
                     "_enum": [
                         "0.Category 0",
                         "1.Category 1",
@@ -235,7 +235,7 @@
                     ]
                 },
                 "biopsy_and_other_evaluation_suggestion": {
-                    "_default_cols": "3",
+                    "_default_cols": 3,
                     "_enum": [
                         "0. 不用做biopsy",
                         "1. Aspiration cytology",
@@ -245,12 +245,12 @@
                         "5. MRI", {
                             "_title": "6. 其它",
                             "_type": "number",
-                            "_cols": "6"
+                            "_cols": 6
                         }
                     ]
                 },
                 "pathology_results": {
-                    "_cols": "12",
+                    "_cols": 12,
                     "_enum": [
                         "0. 未做biopsy",
                         "1. Benign",
@@ -315,7 +315,7 @@
                     ]
                 },
                 "echo_pattern": {
-                    "_cols": "12",
+                    "_cols": 12,
                     "_enum": [
                         "1. Anechoic",
                         "2. Hyperechoic",
@@ -325,7 +325,7 @@
                     ]
                 },
                 "posterior_features": {
-                    "_cols": "12",
+                    "_cols": 12,
                     "_enum": [
                         "1. No posterior acoustic features",
                         "2. Enhancement",
@@ -334,17 +334,20 @@
                     ]
                 },
                 "associated_features": {
-                    "_default_cols": "4",
+                    "_default_cols": 4,
                     "_enum_multi": [
                         "1. Architectural distortion",
                         "2. Duct Changes ",
                         "3. Skin changes/Skin Thickening",
-                        "4. Skin changes/Skin Retraction",
+                        {
+                            "_title": "4. Skin changes/Skin Retraction",
+                            "_cols": 8
+                        },
                         "5. Edema"
                     ]
                 },
                 "vascularity": {
-                    "_cols": "12",
+                    "_cols": 12,
                     "_enum": [
                         "0. Not assessed",
                         "1. Vascularity/Absent",
@@ -353,7 +356,7 @@
                     ]
                 },
                 "surrounding_change": {
-                    "_default_cols": "4",
+                    "_default_cols": 4,
                     "_enum_multi": [
                         "1. Duct changes",
                         "2. Cooper’s ligament changes",
@@ -364,7 +367,7 @@
                     ]
                 },
                 "special_case": {
-                    "_default_cols": "4",
+                    "_default_cols": 4,
                     "_enum_multi": [
                         "1. Clustered microcysts",
                         "2. Complicated cysts",
@@ -372,14 +375,18 @@
                         "4. Foreign body",
                         "5. Simple cyst", {
                             "_title": "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)",
-                            "_cols": "12"
+                            "_cols": 12
                         }, {
                             "_title": "7. VascularAbnormalities/Mondor Disease",
-                            "_cols": "8"
+                            "_cols": 8
+                        }, {
+                            "_title": "8. Postsurgical Fluid Collection",
+                            "_cols": 8
                         },
-                        "8. Postsurgical Fluid Collection",
-                        "9. Fat Necrosis",
-                        "10. Lymph nodes – intramammary",
+                        "9. Fat Necrosis", {
+                            "_title": "10. Lymph nodes – intramammary",
+                            "_cols": 8
+                        },
                         "11. Lymph nodes – axillary"
                     ]
                 },
@@ -401,7 +408,7 @@
                 "tumour_summary": {
                     "_title": "檢查總結",
                     "_type": "big_string",
-                    "_cols": "12"
+                    "_cols": 12
                 }
             }
         }

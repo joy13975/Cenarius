@@ -129,13 +129,6 @@ var config = {
                 '<div class="cenarius-group cenarius-danger-border col-sm-12' +
                 extraHtmlClass + '">';
 
-            // Button for creating a new tab
-            this.formaHtml +=
-                '<button type="button" class="btn btn-default btn-sm cenarius-new-tab-btn" ' +
-                'name="new_tab_btn" onclick="addSubobjectInstance($(this).siblings(\'ul[name=subobject_tabs]\'))">' +
-                '<span class="glyphicon glyphicon-plus"></span>' +
-                '</button>';
-
             // Nav tab header
             const fieldID = this.getNextID(key + '_so1');
             this.formaHtml += '<ul class="nav nav-tabs" name="subobject_tabs" id="' + fieldID + '_tabs">' +
@@ -143,21 +136,26 @@ var config = {
 
             // Tab templates
             this.formaHtml += '<div class="tab-content">';
-            this.formaHtml += '<div id="' + fieldID + '_template" class="tab-pane fade">';
+            this.formaHtml += '<div id="' + fieldID + '_template" class="tab-pane">';
 
             // Button for remove current tab
             this.formaHtml +=
+                '<div class="col-sm-12">' +
                 '<button type="button" class="btn btn-default btn-sm cenarius-del-tab-btn" ' +
-                'name="del_tab_btn" onclick="delSubobjectInstance($(this).parent().parent())">' +
+                'name="del_tab_btn" onclick="delSubobjectInstance($(this).parent().parent().parent())">' +
                 '<span class="glyphicon glyphicon-remove"></span>' +
-                '</button>';
+                '</button>' +
+                '<button type="button" class="btn btn-default btn-sm cenarius-new-tab-btn" ' +
+                'name="new_tab_btn" onclick="addSubobjectInstance($(this).parent().parent().parent().siblings(\'ul[name=subobject_tabs]\'))">' +
+                '<span class="glyphicon glyphicon-plus"></span>' +
+                '</button>' +
+                '</div>';
 
             sandwitch();
 
-            this.formaHtml += '</div>';
-            this.formaHtml += '</div>';
-
             this.formaHtml +=
+                '</div>' +
+                '</div>' +
                 '</div>' +
                 '</div>';
         };
@@ -204,9 +202,9 @@ var config = {
                 if (isForceCheckbox) {
                     // This should only happen in complex lists
                     this.formaHtml +=
-                        '<input type="checkbox" name="' + fieldID + '_chkbx" id="' + fieldID + '_chkbx" autocomplete="off">' +
-                        '<label for="' + fieldID + '_chkbx" class="btn btn-default cenarius-ckbx-btn">' +
-                        '<span class="glyphicon glyphicon-ok"></span>' +
+                        '<input type="checkbox" name="' + fieldID + '_ckbx" id="' + fieldID + '_ckbx" autocomplete="off">' +
+                        '<label for="' + fieldID + '_ckbx" class="btn btn-default cenarius-ckbx-btn">' +
+                        '<span class="glyphicon glyphicon-ok cenarius-chbkx-icon "></span>' +
                         '<span>&nbsp;</span>' +
                         '</label>';
 
@@ -215,13 +213,14 @@ var config = {
                 }
 
                 this.formaHtml +=
-                    '<span class="input-group-addon">' +
+                    '<span class="input-group-addon cenarius-input-tag">' +
                     '<b>' +
                     name + fieldColon + fieldSpace +
                     '</b>' +
                     '</span>' +
                     '<select class="selectpicker form-control" id="' + fieldID + '"' +
                     'data-live-search="true" ' +
+                    'onchange="setCheckbox(\'' + fieldID + '\' + \'_ckbx\', $(this).prop(\'selectedIndex\') != 0);" ' +
                     '>';
 
                 this.formaHtml += '<option selected value> -- </option>';
@@ -371,15 +370,9 @@ var config = {
             const inputTagClosing = isTextArea ?
                 ('</' + inputTag + '>') : '';
             const endingSpan = node.hasOwnProperty('_ending') ?
-                '<span class="input-group-addon">' + node._ending + '</span>' : '';
+                '<span class="input-group-addon cenarius-input-tag">' + node._ending + '</span>' : '';
 
             // Styles
-            const tagStyle = inputType == 'checkbox' ?
-                ('border-right: 4px; ' +
-                    'border-top-right-radius: 4; ' +
-                    'border-bottom-right-radius: 4; ') : '';
-
-
             const fieldStyle = textAlignment;
 
             // Prevent duplicate IDs
@@ -399,10 +392,10 @@ var config = {
                         this.formaHtml +=
                         '<input type="checkbox" name="' + fieldID + '" id="' + fieldID + '" autocomplete="off">' +
                         '<label for="' + fieldID + '" class="btn btn-default cenarius-ckbx-btn">' +
-                        '<span class="glyphicon glyphicon-ok"></span>' +
+                        '<span class="glyphicon glyphicon-ok cenarius-chbkx-icon "></span>' +
                         '<span>&nbsp;</span>' +
                         '</label>' +
-                        '<label for="' + fieldID + '" class="btn btn-default cenarius-ckbx-lbl">' +
+                        '<label for="' + fieldID + '" class="btn btn-default cenarius-ckbx-lbl" >' +
                         name +
                         '</label>';
                         break;
@@ -414,25 +407,26 @@ var config = {
                         if (isForceCheckbox) {
                             // This should only happen in complex lists
                             this.formaHtml +=
-                                '<input type="checkbox" name="' + fieldID + '_chkbx" id="' + fieldID + '_chkbx" autocomplete="off">' +
-                                '<label for="' + fieldID + '_chkbx" class="btn btn-default cenarius-ckbx-btn">' +
-                                '<span class="glyphicon glyphicon-ok"></span>' +
+                                '<input type="checkbox" name="' + fieldID + '_ckbx" id="' + fieldID + '_ckbx" autocomplete="off">' +
+                                '<label for="' + fieldID + '_ckbx" class="btn btn-default cenarius-ckbx-btn">' +
+                                '<span class="glyphicon glyphicon-ok cenarius-chbkx-icon "></span>' +
                                 '<span>&nbsp;</span>' +
                                 '</label>';
 
                             this.formaHtml += '<span style="width:100%; display: table-cell">';
-                            this.formaHtml += '<span style="width:100%; display: table">';
+                            this.formaHtml += '<div style="width:100%; min-height: 34px; display: table">';
                         }
 
                         this.formaHtml +=
-                        '<span class="input-group-addon" ' +
-                        'style="' + tagStyle + '">' +
+                        '<span class="input-group-addon cenarius-input-tag">' +
                         '<b>' + fieldName + '</b>' +
                         "</span>" +
                         '<' + inputTag + ' class="form-control" ' +
                         'style="' + fieldStyle + '" ' +
                         'id="' + fieldID + '" ' +
-                        'type="' + inputType + '" ';
+                        'type="' + inputType + '" ' +
+                        'onkeyup="setCheckbox(\'' + fieldID + '\' + \'_ckbx\', $(this).val().length > 0);" ' +
+                        'onchange="setCheckbox(\'' + fieldID + '\' + \'_ckbx\', $(this).val() .length > 0);" ';
 
                         this.formaHtml +=
                         numStep +
@@ -445,7 +439,7 @@ var config = {
 
                         if (isForceCheckbox) {
                             this.formaHtml +=
-                                '</span>' +
+                                '</div>' +
                                 '</span>';
                         }
 
@@ -578,10 +572,6 @@ var config = {
             '</div>';
     }
 
-    function isSet(value) {
-        return !(_.isUndefined(value) || _.isNull(value));
-    };
-
     function titleize(str) {
         return str.replace(/\w\S*/g, function(txt) {
             return txt[0].toUpperCase() + txt.substring(1).toLowerCase();
@@ -596,14 +586,22 @@ var config = {
         fn: {}
     }));
 
-
-function setCheckboxBeforeTag(elt, val) {
-    setCheckbox(elt.prop('id') + '_chkbx', val);
+function setCheckbox(ckbxID, val) {
+    alert('id: ' + ckbxID);
+    $('#' + ckbxID).prop('checked', val);
 }
 
-function setCheckbox(chbkxID, val) {
-    $('#' + chbkxID).prop('checked', val);
+function descendAll(node, func) {
+    node.children().each(function() {
+        descendAll($(this), func);
+    });
+
+    func(node);
 }
+
+function isSet(value) {
+    return !(_.isUndefined(value) || _.isNull(value));
+};
 
 function addSubobjectInstance(tabHeaders) {
     const tabID = tabHeaders.prop('id');
@@ -614,14 +612,27 @@ function addSubobjectInstance(tabHeaders) {
     // Clone template
     let clone = template.clone();
     let cloneIndex = 0;
-    template.parent().children().each(function(){
+    template.parent().children().each(function() {
         const idStr = $(this).prop('id');
         const id = parseInt(idStr.substr(idStr.lastIndexOf('_') + 1), 10);
         cloneIndex = id > cloneIndex ? id : cloneIndex;
     });
     cloneIndex += 1;
 
+    // Fix cloned element IDs
     const cloneID = templateID + '_' + cloneIndex;
+    descendAll(clone, function(node) {
+        const nodeID = node.prop('id');
+        if (isSet(nodeID))
+            node.prop('id', nodeID + '_' + cloneID);
+        const nodeName = node.prop('name');
+        if (isSet(nodeName))
+            node.prop('name', nodeName + '_' + cloneID);
+        const nodeFor = node.prop('for');
+        if (isSet(nodeFor))
+            node.prop('for', nodeFor + '_' + cloneID);
+    });
+
     clone.prop('id', cloneID);
     tabContent.append(clone);
 
@@ -643,7 +654,7 @@ function addSubobjectInstance(tabHeaders) {
 }
 
 function delSubobjectInstance(tabContent) {
-    if (confirm('Confirm delete')) {
+    if (confirm('Confirm delete?')) {
         let tabHeaders = tabContent.siblings('ul.nav-tabs');
         tabHeaders.children('li.active').remove();
         tabContent.children('div.active.in').remove();
@@ -656,30 +667,23 @@ function delSubobjectInstance(tabContent) {
     }
 }
 
-function spawnMinimumSubobjectInstances(tabHeaders, tabContent=tabHeaders.siblings('div.tab-content')) {
+function spawnMinimumSubobjectInstances(tabHeaders, tabContent = tabHeaders.siblings('div.tab-content')) {
     while (tabContent.children().length - 1 < config.minSubobjectInstance) {
         addSubobjectInstance(tabHeaders);
     }
 }
 
 $(function() { /* DOM ready */
-    $('input').keyup(function() {
-        setCheckboxBeforeTag($(this), $(this).val() != '');
-    });
-
-    $('input').change(function() {
-        setCheckboxBeforeTag($(this), $(this).val() != '');
-    });
-
-    $('select').change(function() {
-        setCheckboxBeforeTag($(this), $(this).prop('selectedIndex') != 0);
-    });
-
     // Spawn one instance of each suboject using their template
     (function spawnDefaultSuboject() {
         $('ul[name=subobject_tabs]').each(function(index) {
-            addSubobjectInstance($(this));
             spawnMinimumSubobjectInstances($(this));
         });
     })();
+
+
+    // Fix button stuck in focus
+    $(".btn").click(function(event) {
+        $(this).blur();
+    });
 });

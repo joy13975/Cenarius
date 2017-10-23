@@ -8,7 +8,7 @@ Excel -> (Intermediate JSON Forma) -> Web Form + SQL DB Schema
 [.] UI<br/>
 &nbsp;&nbsp;&nbsp;[x] Generate basic UI elements<br/>
 &nbsp;&nbsp;&nbsp;[x] Generate editable tabarray interface for subobjects<br/>
-&nbsp;&nbsp;&nbsp;[.] Enforce basic UI rules (single choice, 'either' groups)<br/>
+&nbsp;&nbsp;&nbsp;[.] Enforce basic UI rules (fully tabbable, single choice, 'either' groups)<br/>
 &nbsp;&nbsp;&nbsp;[ ] Provide button elements (Submit, Reset fields, Collapse sections)<br/>
 [ ] Core<br/>
 &nbsp;&nbsp;&nbsp;[ ] Form summarizer<br/>
