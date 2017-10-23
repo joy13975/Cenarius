@@ -102,9 +102,8 @@ Inspired by Joshfire's JsonForms
             const nCols = node.hasOwnProperty('_cols') ?
                 node._cols : config.defaultNCols.object;
 
-            this.formaHtml += '<div class="col-sm-' + nCols + '">';
-            this.formaHtml += genNameTag(name, 'info');
-            this.formaHtml += '<div class="cenarius-group cenarius-info-border col-sm-12' +
+            this.formaHtml += '<div class="col-sm-' + nCols + '">' +
+                genNameTag(name, 'default') + '<div class="cenarius-group cenarius-default-border col-sm-12' +
                 extraHtmlClass + '">';
 
             sandwitch();
@@ -114,7 +113,7 @@ Inspired by Joshfire's JsonForms
                 '</div>';
         };
 
-        genSubobj(node, name, sandwitch) {
+        genSubobj(node, key, name, sandwitch) {
             console.log('genSubobj()');
 
             // Html class
@@ -123,11 +122,34 @@ Inspired by Joshfire's JsonForms
             const nCols = node.hasOwnProperty('_cols') ?
                 node._cols : config.defaultNCols.subobject;
 
-            this.formaHtml += '<div class="col-sm-' + nCols + '">';
-            this.formaHtml += genNameTag(name, 'danger');
-            this.formaHtml += '<div class="cenarius-group cenarius-danger-border col-sm-12' +
+            this.formaHtml += '<div class="col-sm-' + nCols + '">' +
+                genNameTag(name, 'danger') +
+                '<div class="cenarius-group cenarius-danger-border col-sm-12' +
                 extraHtmlClass + '">';
+
+            // Button for creating a new tab
+            this.formaHtml += '<button type="button" class="btn btn-default btn-sm cenarius-new-tab-btn" name="new_tab_btn">' +
+                '<span class="glyphicon glyphicon-plus"></span>' +
+                '</button>';
+
+            // Nav tab header
+            const fieldID = this.getNextID(key + '_so1');
+            this.formaHtml += '<ul class="nav nav-tabs" name="subobject_tabs" id="' + fieldID + '_tabs">' +
+                '</ul>';
+
+            // Tab templates
+            this.formaHtml += '<div class="tab-content">';
+            this.formaHtml += '<div id="' + fieldID + '_template" class="tab-pane fade in">';
+
+            // Button for remove current tab
+            this.formaHtml += '<button type="button" class="btn btn-default btn-sm cenarius-del-tab-btn" name="del_tab_btn">' +
+                '<span class="glyphicon glyphicon-remove"></span>' +
+                '</button>';
+
             sandwitch();
+
+            this.formaHtml += '</div>';
+            this.formaHtml += '</div>';
 
             this.formaHtml +=
                 '</div>' +
@@ -183,7 +205,7 @@ Inspired by Joshfire's JsonForms
                         '</label>';
 
                     this.formaHtml += '<span style="width:100%; display: table-cell">';
-                    this.formaHtml += '<span style="display: table">';
+                    this.formaHtml += '<span style="width:100%; display: table">';
                 }
 
                 this.formaHtml +=
@@ -257,9 +279,9 @@ Inspired by Joshfire's JsonForms
                     {
                         inputType = 'number';
                         numStep = 'step="' +
-                        node.hasOwnProperty('_number_step') ?
-                        node._number_step : config.defaultNumberStep +
-                            '" ';
+                        (node.hasOwnProperty('_number_step') ? node._number_step :
+                            config.defaultNumberStep) +
+                        '" ';
                         break;
                     }
                 case 'integer':
@@ -393,11 +415,11 @@ Inspired by Joshfire's JsonForms
                                 '</label>';
 
                             this.formaHtml += '<span style="width:100%; display: table-cell">';
-                            this.formaHtml += '<span style="display: table">';
+                            this.formaHtml += '<span style="width:100%; display: table">';
                         }
 
                         this.formaHtml +=
-                        '<span class="input-group-addon cenarius-input-tag" ' +
+                        '<span class="input-group-addon" ' +
                         'style="' + tagStyle + '">' +
                         '<b>' + fieldName + '</b>' +
                         "</span>" +
@@ -487,7 +509,7 @@ Inspired by Joshfire's JsonForms
                     }
                 case 'subobject':
                     {
-                        myCore.genSubobj(next, name, sandwitch);
+                        myCore.genSubobj(next, key, name, sandwitch);
                         break;
                     }
                 case 'enum':
@@ -540,7 +562,7 @@ Inspired by Joshfire's JsonForms
         }
     }
 
-    function genNameTag(name, flavour = 'info', nCols = 12, size = 26) {
+    function genNameTag(name, flavour = 'default', nCols = 12, size = 26) {
         return '<div class="col-sm-' + nCols + ' cenarius-group-tag">' +
             '<span style="font-size:' + size + 'px">' +
             '<span class="label label-' + flavour + '">' +
@@ -549,8 +571,6 @@ Inspired by Joshfire's JsonForms
             '</span>' +
             '</div>';
     }
-
-    /*Utility functions*/
 
     function isSet(value) {
         return !(_.isUndefined(value) || _.isNull(value));
@@ -579,11 +599,40 @@ function setCheckbox(chbkxID, val) {
     $('#' + chbkxID).prop('checked', val);
 }
 
+function addSubobjectInstance(tab) {
+    const tabID = tab.prop('id');
+    const templateID = tabID.substr(0, tabID.length - 5) + '_template';
+    const template = $('#' + templateID);
+
+    // Clone template
+    let clone = template.clone();
+    const cloneIndex = template.parent().children().length;
+    const cloneID = templateID + '_' + cloneIndex;
+    clone.prop('id', cloneID);
+    template.after(clone);
+
+    // De-select the rest
+    tab.children().removeClass('active');
+    template.parent().children().removeClass('active');
+
+    // Spawn new reference
+    tab.append(
+        '<li class="active">' +
+        '<a data-toggle="tab" href="#' + cloneID + '"  style="background: #ecc">' +
+        '<b>#' +
+        cloneIndex +
+        '</b>' +
+        '</a>' +
+        '</li>');
+
+    $('#' + cloneID).addClass('active');
+}
+
 $(function() { /* DOM ready */
     $('input').keyup(function() {
         setCheckboxBeforeTag($(this), $(this).val() != '');
     });
-    
+
     $('input').change(function() {
         setCheckboxBeforeTag($(this), $(this).val() != '');
     });
@@ -591,4 +640,19 @@ $(function() { /* DOM ready */
     $('select').change(function() {
         setCheckboxBeforeTag($(this), $(this).prop('selectedIndex') != 0);
     });
+
+    $('button[name=new_tab_btn]').click(function() {
+        addSubobjectInstance($(this).parent().find('ul[name=subobject_tabs]'));
+    });
+
+    $('del_tab_btn').click(function() {
+        alert('Unimplemented: delete tab');
+    });
+
+    // Spawn one instance of each suboject using their template
+    (function spawnDefaultSuboject() {
+        $('ul[name=subobject_tabs]').each(function(index) {
+            addSubobjectInstance($(this));
+        });
+    })();
 });

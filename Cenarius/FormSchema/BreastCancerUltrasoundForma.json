@@ -90,7 +90,7 @@
                     ]
                 },
                 "benign_lesions": {
-                    "_title": "Benign Lesion",
+                    "_title": "Benign Lesion(s)",
                     "_type": "subobject",
                     "_default_type": "boolean",
                     "_default_cols": "6",
