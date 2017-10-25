@@ -63,7 +63,7 @@ textarea {
 	margin: 0;
 	padding: 0;
 	top: 8px;
-	left: 0px;
+	left: -4px;
 	z-index: 100;
 }
 
@@ -166,4 +166,9 @@ input[type="checkbox"]:checked+label span:first-child {
 
 .form-control {
 	height: 36px;
+}
+
+.col-sm-12 {
+	padding-left: 5px;
+	padding-right: 5px;
 }

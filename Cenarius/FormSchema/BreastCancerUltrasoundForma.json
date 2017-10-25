@@ -244,7 +244,7 @@
                         "4. Mammography",
                         "5. MRI", {
                             "_title": "6. 其它",
-                            "_type": "number",
+                            "_type": "string",
                             "_cols": 6
                         }
                     ]
