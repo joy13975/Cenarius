@@ -21,8 +21,7 @@ namespace Cenarius.Controllers
             ViewData["Runtime"] = isMono ? "Mono" : ".NET";
 
             ViewData["Title"] = "新光醫院 [乳房超音波診斷] 資料輸入頁面";
-            ViewData["Heading"] = "乳房超音波 :: 診斷報告";
-            ViewData["Subheading"] = "【附表二】乳房超音波檢查報告單";
+            ViewData["Heading"] = "【附表二】乳房超音波檢查報告單";
 
             string bcuPathHeader = "~/FormSchema/BreastCancerUltrasound";
 

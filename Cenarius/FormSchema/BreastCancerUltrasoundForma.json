@@ -93,14 +93,12 @@
                     "_title": "Benign Lesion(s)",
                     "_type": "subobject",
                     "_default_type": "boolean",
-                    "_default_cols": 6,
                     "_properties": {
                         "location": {
                             "_default_type": "boolean",
+                            "_grouping": "either", 
                             "_properties": {
                                 "rough": {
-                                    "_cols": 6,
-                                    "_default_cols": 12,
                                     "_properties": {
                                         "side": {
                                             "_enum": [
@@ -120,8 +118,6 @@
                                     }
                                 },
                                 "precise": {
-                                    "_cols": 6,
-                                    "_default_cols": 12,
                                     "_properties": {
                                         "angle": {
                                             "_type": "number",

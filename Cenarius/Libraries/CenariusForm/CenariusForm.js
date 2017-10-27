@@ -19,7 +19,6 @@ var config = {
         "key"
     ],
 
-    globalCheckBoxType: "none",
     autoCheckboxOptions: [
         "none",
         "single",
@@ -29,10 +28,12 @@ var config = {
     autoLabelColon: false,
     autoLabelSpace: false,
 
-    enumSingleUI: "dropdown",
-    enumMultiUI: "checkboxes",
-    subobjectUI: "tabs-editable",
-    eitherGroupUI: "tabs",
+    ui: {
+        enumSingle: "dropdown",
+        enumMulti: "checkboxes",
+        subobject: "tabs-editable",
+        eitherGroup: "tabs",
+    },
 
     nCols: {
         object: '12',
@@ -81,19 +82,19 @@ const nullStm = () => {};
 
         unsetForceCheckbox() {
             console.log('unsetForceCheckbox()');
-            this.forceCheckbox = false;
+            this.forceCheckbox = 'none';
         }
 
-        setForceCheckbox() {
+        setForceCheckbox(isMultiChoice) {
             console.log('setForceCheckbox()');
-            this.forceCheckbox = true;
+            this.forceCheckbox = isMultiChoice ? 'multi' : 'single';
         }
 
         getNextID(key) {
             return (key + '_f' + (this.fieldID++).toString());
         }
 
-        genObj(node, name, sandwitch) {
+        genObj(node, key, name, sandwich) {
             console.log('genObj()');
 
             // Html class
@@ -101,23 +102,50 @@ const nullStm = () => {};
                 node._html_class : '';
             const nCols = node.hasOwnProperty('_cols') ?
                 node._cols : config.nCols.object;
+            const fieldID = this.getNextID(key + '_grouping');
+            const needTabs = node.hasOwnProperty('_grouping') && node._grouping === 'either';
 
-            const html =
-                $_$('div', {
-                        class: 'col-sm-' + nCols
-                    },
-                    genNameTag(name, 'default') +
-                    $_$('div', {
-                            class: 'cenarius-group cenarius-default-border col-sm-12' + extraHtmlClass
+            const genTabs = (bodyStr) => {
+                // Generate sandwich content and separate them
+                const bodyDom = $.parseHTML(bodyStr);
+                let pages = [];
+                $(bodyDom).children().each(function() {
+                    const $this = $(this);
+                    pages.push({
+                        name: $this.children('div.panel-heading').html(),
+                        content: $($this.children('div.panel-body')).html(),
+                        attr: {
+                            class: pages.length == 0 ? 'active' : ''
+                        }
+                    });
+                });
+
+                const tabHeaderStr = mapJoin(pages, (page) => {
+                    return Htmler.genTabRef(identifierize(page.name) + '_groupingtab', page.name, page.attr);
+                });
+
+                const tabContentStr = mapJoin(pages, (page) => {
+                    return Htmler.genTabPane(identifierize(page.name) + '_groupingtab', page.content, page.attr);
+                })
+
+                const tabsHtml =
+                    $_$('ul', {
+                            class: 'nav nav-tabs nav-justified" name="grouping_tabheaders" id="' + fieldID + '_tabs'
                         },
-                        sandwitch()
-                    )
-                );
+                        tabHeaderStr
+                    ) +
+                    $_$('div', {
+                            class: 'tab-content',
+                        },
+                        tabContentStr
+                    );
+                return tabsHtml;
+            }
 
-            return html;
+            return Htmler.genPanel(name, needTabs ? genTabs(sandwich()) : sandwich(), extraHtmlClass, nCols);
         };
 
-        genSubobj(node, key, name, sandwitch) {
+        genSubobj(node, key, name, sandwich) {
             console.log('genSubobj()');
 
             // Html class
@@ -125,60 +153,56 @@ const nullStm = () => {};
                 node._html_class : '';
             const nCols = node.hasOwnProperty('_cols') ?
                 node._cols : config.nCols.subobject;
-            const fieldID = this.getNextID(key + '_so1');
+            const fieldID = this.getNextID(key + '_subobject');
 
-            const html = $_$('div', {
-                    class: 'col-sm-' + nCols
-                },
-                genNameTag(name, 'danger') +
+            const panelBody =
+                $_$('ul', {
+                    class: 'nav nav-tabs',
+                    name: "subobject_tabheaders",
+                    id: fieldID + '_tabs'
+                }) +
                 $_$('div', {
-                        class: 'cenarius-group cenarius-danger-border col-sm-12 ' + extraHtmlClass,
-                        style: 'padding-left: 15px; padding-right: 15px;'
+                        class: 'tab-content',
+                        name: "subobject_tabcontent"
                     },
-                    $_$('ul', {
-                        class: 'nav nav-tabs" name="subobject_tabs" id="' + fieldID + '_tabs'
-                    }) +
-                    $_$('div', {
-                            class: 'tab-content'
-                        },
-                        $_$('div', {
-                                id: fieldID + '_template',
-                                class: 'tab-pane'
-                            },
-                            $_$('div', {
-                                    class: 'col-sm-12'
-                                },
-                                $_$('button', {
-                                        type: 'button',
-                                        class: 'btn btn-default btn-sm cenarius-del-tab-btn',
-                                        name: 'del_tab_btn',
-                                        onclick: 'delSubobjectInstance($(this).parent().parent().parent())'
-                                    },
-                                    $_$('span', {
-                                        class: 'glyphicon glyphicon-remove'
-                                    })
-                                ) +
-                                $_$('button', {
-                                        type: 'button',
-                                        class: 'btn btn-default btn-sm cenarius-new-tab-btn',
-                                        name: 'new_tab_btn',
-                                        onclick: 'addSubobjectInstance($(this).parent().parent().parent().siblings(\'ul[name=subobject_tabs]\'))'
-                                    },
-                                    $_$('span', {
-                                        class: 'glyphicon glyphicon-plus'
-                                    })
-                                )
-                            ) +
-                            sandwitch()
-                        )
-                    )
-                )
-            );
+                    Htmler.genTabPane(fieldID + '_template', sandwich())
+                );
 
-            return html;
+            const panelHeadingFunc = (heading) => {
+                const subobjectHeading =
+                    heading +
+                    $_$('div', {
+                            style: 'float: right'
+                        },
+                        $_$('button', {
+                                type: 'button',
+                                class: 'btn btn-default btn-md cenarius-del-tab-btn',
+                                name: 'del_tab_btn',
+                                onclick: 'delSubobjectInstance($(this).parent().parent().siblings(\'.panel-body\').children(\'ul[name=subobject_tabheaders]\')); '
+                            },
+                            $_$('span', {
+                                class: 'glyphicon glyphicon-remove'
+                            })
+                        ) +
+                        $_$('button', {
+                                type: 'button',
+                                class: 'btn btn-default btn-md cenarius-new-tab-btn',
+                                name: 'new_tab_btn',
+                                onclick: 'addSubobjectInstance($(this).parent().parent().siblings(\'.panel-body\').children(\'ul[name=subobject_tabheaders]\')); '
+                            },
+                            $_$('span', {
+                                class: 'glyphicon glyphicon-plus'
+                            })
+                        )
+                    );
+
+                return Htmler.genPanelHeading(subobjectHeading);
+            };
+
+            return Htmler.genPanel(name, panelBody, extraHtmlClass, nCols, '', panelHeadingFunc);
         };
 
-        genEnum(node, key, name, sandwitch) {
+        genEnum(node, key, name, sandwich) {
             console.log('genEnum()');
 
             let coreSelf = this;
@@ -194,7 +218,7 @@ const nullStm = () => {};
             } else {
                 enumData = node._enum;
                 _.each(enumData, (item) => {
-                    simpleEnum &= typeof item != 'object';
+                    simpleEnum &= typeof item !== 'object';
                     if (!simpleEnum)
                         console.log('enum is complex because of: ' + typeof item);
                 });
@@ -204,13 +228,13 @@ const nullStm = () => {};
             const extraHtmlClass = node.hasOwnProperty('_html_class') ?
                 node._html_class : '';
             const nCols = node.hasOwnProperty('_cols') ? node._cols :
-                this.currentDefaultNCols != '' ? this.currentDefaultNCols :
+                this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
                 simpleEnum ? config.nCols.enum :
                 config.nCols.complexEnum;
 
             const fieldID = this.getNextID(key);
-            const isForceCheckbox = this.forceCheckbox ||
-                (node.hasOwnProperty('_force_checkbox') && node._force_checkbox);
+            const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
+            const needCheckbox = this.forceCheckbox !== 'none' || forceCheckbox;
             const checkboxID = fieldID + '_ckbx';
 
             let html = '';
@@ -262,25 +286,28 @@ const nullStm = () => {};
                     return resHtml;
                 };
 
-                html += $_$('div', {
-                    class: 'cenarius-input-wrapper col-sm-' + nCols + ' ' + extraHtmlClass
-                }, $_$('div', {
-                    class: 'input-group'
-                }, isForceCheckbox ? checkboxWrappingHtml(enumHtml) : enumHtml));
+                html =
+                    $_$('div', {
+                            class: 'cenarius-input-wrapper col-lg-' + nCols + ' ' + extraHtmlClass
+                        },
+                        $_$('div', {
+                            class: 'input-group'
+                        }, needCheckbox ? checkboxWrappingHtml(enumHtml) : enumHtml)
+                    );
             } else {
                 const mcStr = isMultiChoice ? ' (multiple choice)' : ' (single choice)';
 
-                this.setForceCheckbox();
-                html += $_$('div', {
-                        class: 'col-sm-' + nCols
-                    }, genNameTag(name + mcStr, 'warning') +
+                this.setForceCheckbox(isMultiChoice);
+                const panelBody =
+                    isMultiChoice ?
                     $_$('div', {
-                        class: 'cenarius-group cenarius-warning-border col-sm-12 ' + extraHtmlClass
-                    }, (isMultiChoice ?
-                        $_$('div', {
                             name: 'multi_choice_group'
-                        }, sandwitch()) :
-                        sandwitch())));
+                        },
+                        sandwich()
+                    ) :
+                    sandwich();
+
+                html = Htmler.genPanel(name + mcStr, panelBody, extraHtmlClass, nCols);
                 this.unsetForceCheckbox();
             }
 
@@ -353,12 +380,15 @@ const nullStm = () => {};
             const fieldStyle = textAlignment;
             const fieldID = this.getNextID(key);
             const fieldName = name + fieldColon + fieldSpace;
-            const isForceCheckbox = this.forceCheckbox ||
-                (node.hasOwnProperty('_force_checkbox') && node._force_checkbox);
+            const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
+            const needCheckbox = this.forceCheckbox !== 'none' || forceCheckbox;
             const endingSpan = node.hasOwnProperty('_ending') ?
                 $_$('span', {
                     class: 'input-group-addon cenarius-input-tag'
                 }, node._ending) : '';
+
+            const checkboxID = fieldID + '_ckbx';
+
 
             // Generate the field html which might include an input addon and an ending
             const inputHtml = (() => {
@@ -370,7 +400,8 @@ const nullStm = () => {};
                                         type: 'checkbox',
                                         name: fieldID,
                                         id: fieldID,
-                                        autocomplete: 'off'
+                                        autocomplete: 'off',
+                                        onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle($(this));' : ''
                                     }, $_$('label', {
                                             for: fieldID,
                                             class: 'btn btn-default cenarius-ckbx-btn'
@@ -388,9 +419,7 @@ const nullStm = () => {};
                     case 'number':
                     case 'date':
                         {
-                            const checkboxID = fieldID + '_ckbx';
-                            const toggleCheckboxJS =
-                                'setCheckbox(\'' + checkboxID + '\', $(this).val().length > 0);';
+                            const checkboxToggleJS = 'setCheckbox(\'' + checkboxID + '\', $(this).val().length > 0);';
                             const fieldHtml =
                                 $_$('span', {
                                         class: 'input-group-addon cenarius-input-tag'
@@ -402,8 +431,8 @@ const nullStm = () => {};
                                         style: fieldStyle,
                                         id: fieldID,
                                         type: inputType,
-                                        onkeyup: toggleCheckboxJS,
-                                        onchange: toggleCheckboxJS,
+                                        onkeyup: checkboxToggleJS,
+                                        onchange: checkboxToggleJS,
                                         step: numStep,
                                     };
                                     numMin === '' ? nullStm() : (inputAttr.min = numMin);
@@ -414,17 +443,19 @@ const nullStm = () => {};
                                 })(), '', isTextArea) +
                                 endingSpan;
 
-                            if (isForceCheckbox) {
+                            if (needCheckbox) {
                                 // This should only happen in complex lists
+                                const checkboxID = fieldID + '_ckbx';
                                 const html =
                                     $_$('input', {
                                             type: 'checkbox',
-                                            name: fieldID + '_ckbx',
-                                            id: fieldID + '_ckbx',
-                                            autocomplete: 'off'
+                                            name: checkboxID,
+                                            id: checkboxID,
+                                            autocomplete: 'off',
+                                            onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle($(this));' : ''
                                         },
                                         $_$('label', {
-                                                for: fieldID,
+                                                for: checkboxID,
                                                 class: 'btn btn-default cenarius-ckbx-btn'
                                             },
                                             $_$('span', {
@@ -451,14 +482,14 @@ const nullStm = () => {};
             })();
 
             const nCols = node.hasOwnProperty('_cols') ? node._cols :
-                this.currentDefaultNCols != '' ? this.currentDefaultNCols :
+                this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
                 config.nCols.input;
             const extraHtmlClass = node.hasOwnProperty('_html_class') ?
                 node._html_class : '';
 
             const html =
                 $_$('div', {
-                        class: 'cenarius-input-wrapper col-sm-' + nCols + ' ' + extraHtmlClass
+                        class: 'cenarius-input-wrapper col-lg-' + nCols + ' ' + extraHtmlClass
                     },
                     $_$('div', {
                         class: 'input-group" style="width: 100% !important'
@@ -497,7 +528,7 @@ const nullStm = () => {};
 
             const defaultNCols = next.hasOwnProperty('_default_cols') ? next._default_cols : '';
 
-            function sandwitch() {
+            function sandwich() {
                 return mapJoin(Object.keys(children),
                     (nextKey) => {
                         myCore.setDefaultType(defaultType);
@@ -515,11 +546,11 @@ const nullStm = () => {};
 
             switch (type) {
                 case 'object':
-                    return myCore.genObj(next, name, sandwitch);
+                    return myCore.genObj(next, key, name, sandwich);
                 case 'subobject':
-                    return myCore.genSubobj(next, key, name, sandwitch);
+                    return myCore.genSubobj(next, key, name, sandwich);
                 case 'enum':
-                    return myCore.genEnum(next, key, name, sandwitch);
+                    return myCore.genEnum(next, key, name, sandwich);
                 default:
                     return myCore.genLeaf(next, type, key, name);
             }
@@ -528,12 +559,14 @@ const nullStm = () => {};
         if (!this.hasClass('row'))
             this.addClass('row');
 
-        const formaHtml = mapJoin(Object.keys(forma),
-            function(groupKey) {
-                return visitFormaNode(forma, groupKey, true);
-            }
-        );
+        this.prop('id', 'bootstrap-overrides');
 
+        const formaHtml =
+            mapJoin(Object.keys(forma),
+                function(groupKey) {
+                    return visitFormaNode(forma, groupKey, true);
+                }
+            );
 
         this.append(formaHtml);
     }
@@ -541,6 +574,62 @@ const nullStm = () => {};
     ((typeof jQuery !== 'undefined') ? jQuery : {
         fn: {}
     }));
+
+class Htmler {
+    static genTabRef(hrefLink, tabTitle, liAttr = {}, titleAttr = {}) {
+        const html =
+            $_$('li', mergeStrProps({
+                    class: 'cenarius-tab-ref'
+                }, liAttr),
+                $_$('a', mergeStrProps({
+                        'data-toggle': 'tab',
+                        href: '#' + hrefLink
+                    }, titleAttr),
+                    $_$('b', {}, tabTitle)
+                )
+            );
+        return html;
+    };
+
+    static genTabPane(id, content, attr = {}) {
+        const html =
+            $_$('div', mergeStrProps({
+                    id: id,
+                    class: 'tab-pane'
+                }, attr),
+                content
+            );
+        return html;
+    }
+
+    static genPanelHeading(content, styleStr = 'font-weight:bold; font-size: 20px; ') {
+        return $_$('div', {
+            class: 'panel-heading',
+            style: styleStr
+        }, content);
+    };
+
+    static genPanelBody(content, styleStr = '') {
+        return $_$('div', {
+            class: 'panel-body',
+            style: styleStr
+        }, content);
+    };
+
+    static genPanel(heading, body, extraHtmlClass, nCols = 12, styleStr = '', headingFunc = this.genPanelHeading, bodyFunc = this.genPanelBody) {
+        return $_$('div', {
+                class: 'col-lg-' + nCols
+            },
+            $_$('div', {
+                    class: 'panel panel-default cenarius-group ' + extraHtmlClass,
+                    style: styleStr
+                },
+                headingFunc(heading) +
+                bodyFunc(body)
+            )
+        );
+    };
+}
 
 function mapJoin(obj, func) {
     return _.map(obj, func).join('');
@@ -562,7 +651,20 @@ function $_$(tag, attr = {}, content = '', close = true) {
 }
 
 function setCheckbox(id, val) {
-    $('#' + id).prop('checked', val);
+    const $elt = $('#' + id);
+    if (val && !$elt.prop('checked'))
+        $elt.trigger('click');
+}
+
+function singleChoiceToggle(ckbx) {
+    if (ckbx.prop('checked')) {
+        ckbx.parent().parent().siblings().each(function() {
+            $(this).find('input[type=checkbox]').each(function() {
+                if ($(this).prop('checked'))
+                    $(this).trigger('click');
+            });
+        });
+    }
 }
 
 function getNameFromKey(key) {
@@ -590,25 +692,18 @@ function getNameFromKey(key) {
     }
 }
 
-function genNameTag(name, flavour = 'default', nCols = 12, size = 26) {
-    const html =
-        $_$('div', {
-                class: 'col-sm-' + nCols + ' cenarius-group-tag'
-            },
-            $_$('span', {
-                    style: 'font-size:' + size + 'px'
-                },
-                $_$('span', {
-                    class: 'label label-' + flavour
-                }, name)
-            )
-        );
-    return html;
-}
-
 function titleize(str) {
     return str.replace(/\w\S*/g, (txt) => {
         return txt[0].toUpperCase() + txt.substring(1).toLowerCase();
+    });
+}
+
+function identifierize(str) {
+    return str.replace(/[^a-z0-9]/g, function(s) {
+        var c = s.charCodeAt(0);
+        if (c == 32) return '-';
+        if (c >= 65 && c <= 90) return '_' + s.toLowerCase();
+        return '__' + ('000' + c.toString(16)).slice(-4);
     });
 }
 
@@ -624,14 +719,10 @@ function descendAll(node, func) {
     func(node);
 }
 
-function isSet(value) {
-    return !(_.isUndefined(value) || _.isNull(value));
-};
-
 function addSubobjectInstance(tabHeaders) {
     const tabID = tabHeaders.prop('id');
     const templateID = tabID.substr(0, tabID.length - 5) + '_template';
-    let tabContent = tabHeaders.siblings('div.tab-content');
+    let tabContent = tabHeaders.siblings('div[name=subobject_tabcontent]');
     const template = tabContent.children('#' + templateID);
 
     // Clone template
@@ -667,15 +758,17 @@ function addSubobjectInstance(tabHeaders) {
         fixCloneField(node, 'id');
         fixCloneField(node, 'name');
         fixCloneField(node, 'for');
+        fixCloneField(node, 'href');
 
-
-        const fixToggleCheckboxJS = (trigger) => {
-            const onTriggerJS = node.attr('on' + trigger);
-            if (typeof onTriggerJS !== typeof undefined && onTriggerJS !== false) {
+        function fixToggleCheckboxJS(trigger) {
+            const oldJS = node.attr('on' + trigger);
+            if (typeof oldJS !== typeof undefined && oldJS !== false) {
                 const oldCkbxID = node.prop('id').replace('_template_' + cloneIndex, '') + '_ckbx';
                 const newCkbxID = node.prop('id').replace('_template_' + cloneIndex, '') +
                     '_ckbx_template_' + cloneIndex;
-                node.attr('on' + trigger, onTriggerJS.replace(oldCkbxID, newCkbxID));
+                const newJS = oldJS.replace(oldCkbxID, newCkbxID);
+                // alert('Old JS: \n' + oldJS + '\nNew JS:\n' + newJS);
+                node.attr('on' + trigger, newJS);
             }
         }
         fixToggleCheckboxJS('keyup');
@@ -689,30 +782,28 @@ function addSubobjectInstance(tabHeaders) {
     tabHeaders.children().removeClass('active in');
     tabContent.children().removeClass('active in');
 
-    tabHeaders.append(
-        $_$('li', {
-            class: 'active'
-        }, $_$('a', {
-            'data-toggle': 'tab',
-            href: '#' + cloneID,
-            style: 'background: #ecc'
-        }, $_$('b', {}, '#' + cloneIndex)))
-    );
-
+    tabHeaders.append(Htmler.genTabRef(cloneID, '#' + cloneIndex, {
+        class: 'active'
+    }));
     $('#' + cloneID).addClass('active in');
 }
 
-function delSubobjectInstance(tabContent) {
+function delSubobjectInstance(tabHeaders) {
     if (confirm('Confirm delete?')) {
-        let tabHeaders = tabContent.siblings('ul.nav-tabs');
-        tabHeaders.children('li.active').remove();
-        tabContent.children('div.active.in').remove();
+        let tabContent = tabHeaders.siblings('div[name=subobject_tabcontent]');
+        const lastActiveLi = tabHeaders.children('li.active');
+        const lastActiveTabcontent = tabContent.children('div.active');
+        const lastActiveIndex = lastActiveLi.index();
+
+        lastActiveLi.remove();
+        lastActiveTabcontent.remove();
 
         spawnMinimumSubobjectInstances(tabHeaders, tabContent);
 
         // Set new active tab
-        tabHeaders.children().last().addClass('active in');
-        tabContent.children().last().addClass('active in');
+        const newActiveIndex = lastActiveIndex >= tabHeaders.children().length ? (lastActiveIndex - 1) : lastActiveIndex;
+        tabHeaders.children().eq(newActiveIndex).addClass('active in');
+        tabContent.children().eq(newActiveIndex + 1).addClass('active in');
     }
 }
 
@@ -722,9 +813,30 @@ function spawnMinimumSubobjectInstances(tabHeaders, tabContent = tabHeaders.sibl
     }
 }
 
+function mergeStrProps(a, b, separater = ' ') {
+    let res = {};
+    Object.getOwnPropertyNames(a).forEach(function(fieldName) {
+        res[fieldName] = a[fieldName];
+    })
+
+    Object.getOwnPropertyNames(b).forEach(function(fieldName) {
+        if (res.hasOwnProperty(fieldName)) {
+            res[fieldName] += separater + b[fieldName];
+        } else {
+            res[fieldName] = b[fieldName];
+        }
+    })
+
+    return res;
+}
+
+function isSet(value) {
+    return !(_.isUndefined(value) || _.isNull(value));
+};
+
 $(() => { /* DOM ready */
     // Spawn one instance of each suboject using their template
-    $('ul[name=subobject_tabs]').each(function(index) {
+    $('ul[name=subobject_tabheaders]').each(function(index) {
         spawnMinimumSubobjectInstances($(this));
     });
 

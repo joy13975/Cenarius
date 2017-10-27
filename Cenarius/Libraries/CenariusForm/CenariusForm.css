@@ -1,3 +1,7 @@
+body{
+	font-family: Arial, "Times New Roman", "FangSong", "仿宋", STFangSong, "华文仿宋", serif;
+}
+
 cenarius-form {
 	width: 100%;
 	margin: 2px;
@@ -7,76 +11,66 @@ cenarius-hr {
 	display: block;
 	height: 1px;
 	border: 0;
-	border-top: 3px solid #0aa;
+	border-top: 3px solid #afafaf;
 	padding: 0;
 }
 
-h2 {
+#bootstrap-overrides span {
+	font-size: 22px;
+}
+
+#bootstrap-overrides span.glyphicon {
+	font-size: 14px;
+}
+
+#bootstrap-overrides h2 {
 	margin-left: -12px;
 	margin-bottom: 3px;
 }
 
-h3 {
+
+#bootstrap-overrides h3 {
 	margin-left: -14px;
 	margin-bottom: 4px;
 }
 
-h4 {
+
+#bootstrap-overrides h4 {
 	margin-left: -13px;
 	margin-bottom: 2px;
 }
 
-textarea {
+
+#bootstrap-overrides textarea {
 	resize: vertical;
 }
 
-label {
+
+#bootstrap-overrides label {
 	line-height: 1;
-	/*white-space: normal;*/
 }
 
-select {
+
+#bootstrap-overrides select {
 	direction: rtl;
 }
 
-option {
+#bootstrap-overrides option {
 	direction: ltr;
 	text-align-last: right;
 	text-align: right;
 }
 
-textarea {
+#bootstrap-overrides textarea {
 	min-height: 80px;
 }
 
-.cenarius-main-block {
-	background-color: #e5f7f0;
-	display: inline-block;
-}
-
-.cenarius-col-center {
-	float: none;
-	margin: 0 auto;
-}
-
-.cenarius-group-tag {
-	margin: 0;
-	padding: 0;
-	top: 8px;
-	left: -4px;
-	z-index: 100;
-}
-
 .cenarius-group {
-	border-style: solid;
-	border-width: 10px;
-	padding: 14px;
-	margin: 0px;
-	margin-bottom: 12px;
+	padding: 1px;
 }
 
 .cenarius-input-wrapper {
-	padding: 4px;
+	padding: 5px;
 }
 
 input[type="checkbox"] {
@@ -115,60 +109,64 @@ input[type="checkbox"]:checked+label span:first-child {
 	height: 16px !important;
 }
 
-.cenarius-default-border {
-	border-color: #777;
-}
-
-.cenarius-danger-border {
-	border-color: #d9534f;
-}
-
-.cenarius-warning-border {
-	border-color: #f0ad4e;
-}
-
-.label-default {
-	border-bottom-right-radius: 0;
-	border-bottom-left-radius: 0;
-}
-
-.label-danger {
-	border-bottom-right-radius: 0;
-	border-bottom-left-radius: 0;
-}
-
-.label-warning {
-	border-bottom-right-radius: 0;
-	border-bottom-left-radius: 0;
-}
-
 .tab-content {
 	border-left: 1px solid #ddd;
 	border-right: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
 	padding: 10px;
 	display: inline-block;
-	background: #ecc
 }
 
 .nav-tabs {
 	margin-bottom: 0;
 }
 
+.glyphicon {
+	display:inline-table;
+}
+
 .cenarius-new-tab-btn {
-	float: right;
-	background: #beb;
+	margin-left: 10px;
 }
 
 .cenarius-del-tab-btn {
-	float: right;
-	background: #ff6060;
+	margin-left: 10px;
 }
 
 .form-control {
 	height: 36px;
 }
 
-.col-sm-12 {
+div[class*="col-"] {
 	padding-left: 5px;
 	padding-right: 5px;
+}
+
+.cenarius-content {
+	background: #ddefdd;
+	overflow-y:scroll;
+	height: calc(100vh - 80px);
+}
+
+.cenarius-ctrl-panel {
+	min-height: 80px;
+	max-height: 80px;
+	transition: all 0.4s ease 0s;
+	background: #e6e2d3;
+	z-index: 1000;
+}
+
+#cenarius_reset_btn{ 
+	float: left;
+	margin: 20px;
+}
+
+#cenarius_summarize_btn{ 
+	float: right;
+	margin: 20px;
+}
+
+#cenarius_submit_btn{ 
+	float: right;
+	margin: 20px;
 }
