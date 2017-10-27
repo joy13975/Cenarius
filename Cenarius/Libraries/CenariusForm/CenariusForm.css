@@ -1,5 +1,5 @@
 body{
-	font-family: Arial, "Times New Roman", "FangSong", "仿宋", STFangSong, "华文仿宋", serif;
+	font-family: '文泉驛正黑','WenQuanYi Zen Hei','微軟正黑體','Microsoft JhengHei',Arial,sans-serif;
 }
 
 cenarius-form {
@@ -16,7 +16,7 @@ cenarius-hr {
 }
 
 #bootstrap-overrides span {
-	font-size: 22px;
+	font-size: 18px;
 }
 
 #bootstrap-overrides span.glyphicon {
@@ -81,11 +81,11 @@ input[type="checkbox"] {
 	width: 0;
 }
 
-input[type="checkbox"]+label span:first-child {
+input[type="checkbox"] ~ .checkbox-displayer span:first-child {
 	opacity: 0.1;
 }
 
-input[type="checkbox"]:checked+label span:first-child {
+input[type="checkbox"]:checked ~ .checkbox-displayer span:first-child {
 	opacity: 1;
 }
 

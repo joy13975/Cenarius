@@ -267,21 +267,21 @@ const nullStm = () => {};
                                 id: checkboxID,
                                 autocomplete: 'off'
                             },
-                            $_$('label', {
-                                    for: checkboxID,
-                                    class: 'btn btn-default cenarius-ckbx-btn'
-                                },
-                                $_$('span', {
-                                    class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
-                                }) +
-                                $_$('span', _space)
-                            ) +
                             $_$('span', {
                                     style: 'width:100%; display: table-cell'
                                 },
                                 $_$('span', {
                                     style: 'width:100%; display: table'
-                                }, innerEnumHtml))
+                                }, innerEnumHtml)
+                            ) +
+                            $_$('label', {
+                                    for: checkboxID,
+                                    class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
+                                },
+                                $_$('span', {
+                                    class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
+                                })
+                            )
                         );
                     return resHtml;
                 };
@@ -361,15 +361,13 @@ const nullStm = () => {};
             const numMax = node.hasOwnProperty('_max') ? node._max : '';
 
             // Default value
-            const defaultFieldValue = node.hasOwnProperty('_defaultValue') ?
-                node._defaultValue : '';
-            let defaultValue = '';
-            if (inputType === 'number') {
-                defaultValue = defaultFieldValue === '' ?
-                    '0' : defaultFieldValue;
-            } else if (inputType === 'date') {
-                defaultValue = defaultFieldValue === '' ?
-                    (new Date()).toISOString().slice(0, 10) : defaultFieldValue;
+            let defaultValue = node.hasOwnProperty('_default_value') ? node._default_value : '';
+            if (defaultValue === '') {
+                if (inputType === 'number') {
+                    defaultValue = '0';
+                } else if (inputType === 'date') {
+                    defaultValue = (new Date()).toISOString().slice(0, 10);
+                }
             }
 
             const isTextArea = inputTag === 'textarea';
@@ -391,95 +389,103 @@ const nullStm = () => {};
 
 
             // Generate the field html which might include an input addon and an ending
-            const inputHtml = (() => {
-                switch (inputType) {
-                    case 'checkbox':
-                        {
-                            const html =
-                                $_$('input', {
-                                        type: 'checkbox',
-                                        name: fieldID,
-                                        id: fieldID,
-                                        autocomplete: 'off',
-                                        onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle($(this));' : ''
-                                    }, $_$('label', {
-                                            for: fieldID,
-                                            class: 'btn btn-default cenarius-ckbx-btn'
-                                        }, $_$('span', {
-                                            class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
-                                        }) +
-                                        $_$('span', {}, _space)) +
-                                    $_$('label', {
-                                        for: fieldID,
-                                        class: 'btn btn-default cenarius-ckbx-lbl'
-                                    }, name));
-                            return html;
-                        }
-                    case 'text':
-                    case 'number':
-                    case 'date':
-                        {
-                            const checkboxToggleJS = 'setCheckbox(\'' + checkboxID + '\', $(this).val().length > 0);';
-                            const fieldHtml =
-                                $_$('span', {
-                                        class: 'input-group-addon cenarius-input-tag'
-                                    },
-                                    $_$('b', {}, fieldName)) +
-                                $_$(inputTag, (() => {
-                                    let inputAttr = {
-                                        class: 'form-control',
-                                        style: fieldStyle,
-                                        id: fieldID,
-                                        type: inputType,
-                                        onkeyup: checkboxToggleJS,
-                                        onchange: checkboxToggleJS,
-                                        step: numStep,
-                                    };
-                                    numMin === '' ? nullStm() : (inputAttr.min = numMin);
-                                    numMax === '' ? nullStm() : (inputAttr.max = numMax);
-                                    defaultValue === '' ? nullStm() : (inputAttr.value = defaultValue);
-                                    textAreaRows === '' ? nullStm() : (inputAttr.rows = textAreaRows);
-                                    return inputAttr;
-                                })(), '', isTextArea) +
-                                endingSpan;
-
-                            if (needCheckbox) {
-                                // This should only happen in complex lists
-                                const checkboxID = fieldID + '_ckbx';
+            const inputHtml =
+                (() => {
+                    switch (inputType) {
+                        case 'checkbox':
+                            {
                                 const html =
                                     $_$('input', {
                                             type: 'checkbox',
-                                            name: checkboxID,
-                                            id: checkboxID,
+                                            name: fieldID,
+                                            id: fieldID,
                                             autocomplete: 'off',
                                             onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle($(this));' : ''
                                         },
                                         $_$('label', {
-                                                for: checkboxID,
-                                                class: 'btn btn-default cenarius-ckbx-btn'
+                                            for: fieldID,
+                                            class: 'btn btn-default cenarius-ckbx-lbl'
+                                        }, name) +
+                                        $_$('label', {
+                                                for: fieldID,
+                                                class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
                                             },
                                             $_$('span', {
                                                 class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
                                             }) +
                                             $_$('span', {}, _space)
                                         )
-                                    ) +
-                                    $_$('span', {
-                                        style: 'width:100%; display: table-cell'
-                                    }, $_$('div', {
-                                        style: 'width:100%; min-height: 34px; display: table'
-                                    }, fieldHtml));
+                                    );
                                 return html;
-                            } else {
-                                return fieldHtml;
                             }
-                        }
-                    default:
-                        {
-                            return $_$('p', $_$('b', '[CenariusFormError] Unknown field type: ' + inputType));
-                        }
-                }
-            })();
+                        case 'text':
+                        case 'number':
+                        case 'date':
+                            {
+                                const checkboxToggleJS = 'setCheckbox(\'' + checkboxID + '\', $(this).val().length > 0);';
+                                const fieldHtml =
+                                    $_$('span', {
+                                            class: 'input-group-addon cenarius-input-tag'
+                                        },
+                                        $_$('b', {}, fieldName)) +
+                                    $_$(inputTag, (() => {
+                                        let inputAttr = {
+                                            class: 'form-control',
+                                            style: fieldStyle,
+                                            id: fieldID,
+                                            type: inputType,
+                                            onkeyup: checkboxToggleJS,
+                                            onchange: checkboxToggleJS,
+                                            step: numStep,
+                                            defaultValue: defaultValue,
+                                            value: defaultValue
+                                        };
+                                        numMin === '' ? nullStm() : (inputAttr.min = numMin);
+                                        numMax === '' ? nullStm() : (inputAttr.max = numMax);
+                                        defaultValue === '' ? nullStm() : (inputAttr.value = defaultValue);
+                                        textAreaRows === '' ? nullStm() : (inputAttr.rows = textAreaRows);
+                                        return inputAttr;
+                                    })(), '', isTextArea) +
+                                    endingSpan;
+
+                                if (needCheckbox) {
+                                    // This should only happen in complex lists
+                                    const checkboxID = fieldID + '_ckbx';
+                                    const html =
+                                        $_$('span', {
+                                                style: 'width:100%; display: table-cell'
+                                            },
+                                            $_$('div', {
+                                                style: 'width:100%; min-height: 34px; display: table'
+                                            }, fieldHtml)
+                                        ) +
+                                        $_$('input', {
+                                                type: 'checkbox',
+                                                name: checkboxID,
+                                                id: checkboxID,
+                                                autocomplete: 'off',
+                                                onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle($(this));' : ''
+                                            },
+                                            $_$('label', {
+                                                    for: checkboxID,
+                                                    class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
+                                                },
+                                                $_$('span', {
+                                                    class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
+                                                })
+                                            )
+                                        );
+                                    return html;
+                                } else {
+                                    return fieldHtml;
+                                }
+                            }
+                        default:
+                            {
+                                return $_$('p', $_$('b', '[CenariusFormError] Unknown field type: ' + inputType));
+                            }
+                    }
+                })();
 
             const nCols = node.hasOwnProperty('_cols') ? node._cols :
                 this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
@@ -498,18 +504,17 @@ const nullStm = () => {};
 
             return html;
         };
-    };
 
-    $.fn.cenariusForm = function(options) {
-        let forma = options.forma;
-        let myCore = new Core();
-
-        function visitFormaNode(node, key) {
+        visitFormaNode(node, key) {
+            let coreSelf = this;
             const next = node[key];
+
+            // Extract flags
             let name;
             if (next.hasOwnProperty('_title')) name = next._title;
             else if (typeof next === 'string') name = next;
             else name = getNameFromKey(key);
+
             const hasProps = next.hasOwnProperty('_properties');
             const children = hasProps ? next._properties :
                 next.hasOwnProperty('_enum') ? next._enum :
@@ -519,7 +524,7 @@ const nullStm = () => {};
             const type = (next.hasOwnProperty('_type') ? next._type :
                 (next.hasOwnProperty('_enum') || isMultiChoice ? 'enum' :
                     (hasProps && config.inferObjectFromProps ? 'object' :
-                        myCore.currentDefaultType)));
+                        coreSelf.currentDefaultType)));
 
             console.log('key: ' + key + ', name: ' + name + ', content: ' + next + ', type: ' + type);
 
@@ -531,13 +536,13 @@ const nullStm = () => {};
             function sandwich() {
                 return mapJoin(Object.keys(children),
                     (nextKey) => {
-                        myCore.setDefaultType(defaultType);
-                        myCore.setDefaultNCols(defaultNCols);
+                        coreSelf.setDefaultType(defaultType);
+                        coreSelf.setDefaultNCols(defaultNCols);
 
-                        const resHtml = visitFormaNode(children, nextKey);
+                        const resHtml = coreSelf.visitFormaNode(children, nextKey);
 
-                        myCore.resetDefaultType();
-                        myCore.resetDefaultNCols();
+                        coreSelf.resetDefaultType();
+                        coreSelf.resetDefaultNCols();
 
                         return resHtml;
                     }
@@ -546,29 +551,95 @@ const nullStm = () => {};
 
             switch (type) {
                 case 'object':
-                    return myCore.genObj(next, key, name, sandwich);
+                    return coreSelf.genObj(next, key, name, sandwich);
                 case 'subobject':
-                    return myCore.genSubobj(next, key, name, sandwich);
+                    return coreSelf.genSubobj(next, key, name, sandwich);
                 case 'enum':
-                    return myCore.genEnum(next, key, name, sandwich);
+                    return coreSelf.genEnum(next, key, name, sandwich);
                 default:
-                    return myCore.genLeaf(next, type, key, name);
+                    return coreSelf.genLeaf(next, type, key, name);
             }
         }
+    };
 
-        if (!this.hasClass('row'))
-            this.addClass('row');
-
-        this.prop('id', 'bootstrap-overrides');
+    $.fn.cenarius = function(headingText, options) {
+        let forma = options.forma;
+        let myCore = new Core();
 
         const formaHtml =
             mapJoin(Object.keys(forma),
                 function(groupKey) {
-                    return visitFormaNode(forma, groupKey, true);
+                    return myCore.visitFormaNode(forma, groupKey, true);
                 }
             );
 
-        this.append(formaHtml);
+        const contentHtml =
+            $_$('div', {
+                    class: 'container cenarius-content'
+                },
+                $_$('div', {
+                        class: 'row'
+                    },
+                    $_$('h1', {}, headingText)
+                ) +
+                $_$('div', {
+                        class: 'row'
+                    },
+                    $_$('div', {
+                        class: 'col-lg-12'
+                    }, formaHtml)
+                )
+            );
+
+        const ctrlHtml =
+            $_$('div', {
+                    class: 'container cenarius-ctrl-panel'
+                },
+                $_$('div', {
+                        class: 'row'
+                    },
+                    $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-danger btn-lg',
+                            id: 'cenarius_reset_btn',
+                            onclick: 'resetAllFields()'
+                        },
+                        $_$('span', {
+                            class: 'glyphicon glyphicon-trash'
+                        }) +
+                        _space + _space + _space + 'Reset Fields'
+                    ) +
+                    $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-success btn-lg',
+                            id: 'cenarius_submit_btn'
+                        },
+                        $_$('span', {
+                            class: 'glyphicon glyphicon-send'
+                        }) +
+                        _space + _space + _space + 'Submit'
+                    ) +
+                    $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-info btn-lg',
+                            id: 'cenarius_summarize_btn'
+                        },
+                        $_$('span', {
+                            class: 'glyphicon glyphicon-book'
+                        }) +
+                        _space + _space + _space + 'Summarize'
+                    )
+                )
+            );
+
+        const finalHtml =
+            $_$('div', {
+                    id: 'bootstrap-overrides'
+                },
+                contentHtml + ctrlHtml
+            );
+
+        this.replaceWith(finalHtml);
     }
 })(window,
     ((typeof jQuery !== 'undefined') ? jQuery : {
@@ -650,9 +721,25 @@ function $_$(tag, attr = {}, content = '', close = true) {
         (close ? ('</' + tag + '>') : '');
 }
 
+function resetAllFields() {
+    $('input').each(function() {
+        let $this = $(this);
+
+        if ($this.prop('type') === 'checkbox') {
+            setCheckbox($this.prop('id'), false);
+        } else {
+            const defaultValue = $this.prop('defaultValue');
+            $this.prop('value', defaultValue);
+        }
+    })
+}
+
+
+
 function setCheckbox(id, val) {
     const $elt = $('#' + id);
-    if (val && !$elt.prop('checked'))
+    const checked = $elt.prop('checked');
+    if ((val && !checked) || (checked && ! val))
         $elt.trigger('click');
 }
 

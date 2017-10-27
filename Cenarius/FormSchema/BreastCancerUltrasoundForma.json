@@ -45,7 +45,8 @@
                             "_title": "判讀者編號"
                         },
                         "machine_id": {
-                            "_title": "檢查機器編號 "
+                            "_title": "檢查機器編號 ",
+                            "_default_value": "N/A"
                         },
                         "us_examination_mode": {
                             "_title": "US Examination Mode",
