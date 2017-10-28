@@ -110,6 +110,18 @@
     <Content Include="Web.config" />
     <Content Include="Global.asax" />
     <Content Include="packages.config" />
+    <Content Include="Libraries\fonts\glyphicons-halflings-regular.eot" />
+    <Content Include="Libraries\fonts\glyphicons-halflings-regular.svg" />
+    <Content Include="Libraries\fonts\glyphicons-halflings-regular.ttf" />
+    <Content Include="Libraries\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="Libraries\Bootstrap\bootstrap.min.css" />
+    <Content Include="Libraries\Bootstrap\bootstrap.min.js" />
+    <Content Include="Libraries\CenariusForm\CenariusForm.css" />
+    <Content Include="Libraries\CenariusForm\CenariusForm.js" />
+    <Content Include="Libraries\CenariusForm\CenariusFormUtils.js" />
+    <Content Include="Libraries\CenariusForm\cenarius-jsonform.js" />
+    <Content Include="Libraries\JQuery\jquery.min.js" />
+    <Content Include="Libraries\Underscore\underscore-min.js" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
@@ -119,7 +131,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="FormSchema\BreastCancerUltrasoundForma.json" />
-    <Content Include="FormSchema\FormaConfig.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Libraries\fonts\glyphicons-halflings-regular.woff2" />
+    <None Include="Libraries\CenariusForm\CenariusFormConfig.json" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

@@ -105,6 +105,14 @@ const nullStm = () => {};
             const fieldID = this.getNextID(key + '_grouping');
             const needTabs = node.hasOwnProperty('_grouping') && node._grouping === 'either';
 
+            const helpAlert = node.hasOwnProperty('_help_text') ?
+                $_$('div', {
+                        class: 'alert alert-info'
+                    },
+                    node._help_text
+                ) : '';
+
+
             const genTabs = (bodyStr) => {
                 // Generate sandwich content and separate them
                 const bodyDom = $.parseHTML(bodyStr);
@@ -142,7 +150,7 @@ const nullStm = () => {};
                 return tabsHtml;
             }
 
-            return Htmler.genPanel(name, needTabs ? genTabs(sandwich()) : sandwich(), extraHtmlClass, nCols);
+            return Htmler.genPanel(name + helpAlert, needTabs ? genTabs(sandwich()) : sandwich(), extraHtmlClass, nCols);
         };
 
         genSubobj(node, key, name, sandwich) {
@@ -196,10 +204,18 @@ const nullStm = () => {};
                         )
                     );
 
-                return Htmler.genPanelHeading(subobjectHeading);
+                return Htmler.genPanelHeading(subobjectHeading, 'overflow: hidden');
             };
 
-            return Htmler.genPanel(name, panelBody, extraHtmlClass, nCols, '', panelHeadingFunc);
+            const helpAlert = node.hasOwnProperty('_help_text') ?
+                $_$('div', {
+                        class: 'alert alert-info',
+                        style: ''
+                    },
+                    node._help_text
+                ) : '';
+
+            return Htmler.genPanel(name + helpAlert, panelBody, extraHtmlClass, nCols, '', panelHeadingFunc);
         };
 
         genEnum(node, key, name, sandwich) {
@@ -288,7 +304,7 @@ const nullStm = () => {};
 
                 html =
                     $_$('div', {
-                            class: 'cenarius-input-wrapper col-lg-' + nCols + ' ' + extraHtmlClass
+                            class: 'cenarius-input-wrapper col-md-' + nCols + ' ' + extraHtmlClass
                         },
                         $_$('div', {
                             class: 'input-group'
@@ -495,7 +511,7 @@ const nullStm = () => {};
 
             const html =
                 $_$('div', {
-                        class: 'cenarius-input-wrapper col-lg-' + nCols + ' ' + extraHtmlClass
+                        class: 'cenarius-input-wrapper col-md-' + nCols + ' ' + extraHtmlClass
                     },
                     $_$('div', {
                         class: 'input-group" style="width: 100% !important'
@@ -586,7 +602,7 @@ const nullStm = () => {};
                         class: 'row'
                     },
                     $_$('div', {
-                        class: 'col-lg-12'
+                        class: 'col-md-12'
                     }, formaHtml)
                 )
             );
@@ -596,7 +612,8 @@ const nullStm = () => {};
                     class: 'container cenarius-ctrl-panel'
                 },
                 $_$('div', {
-                        class: 'row'
+                        class: 'row',
+                        style: 'min-width: 516px;'
                     },
                     $_$('button', {
                             type: 'button',
@@ -673,7 +690,7 @@ class Htmler {
         return html;
     }
 
-    static genPanelHeading(content, styleStr = 'font-weight:bold; font-size: 20px; ') {
+    static genPanelHeading(content, styleStr = '') {
         return $_$('div', {
             class: 'panel-heading',
             style: styleStr
@@ -689,7 +706,7 @@ class Htmler {
 
     static genPanel(heading, body, extraHtmlClass, nCols = 12, styleStr = '', headingFunc = this.genPanelHeading, bodyFunc = this.genPanelBody) {
         return $_$('div', {
-                class: 'col-lg-' + nCols
+                class: 'col-md-' + nCols
             },
             $_$('div', {
                     class: 'panel panel-default cenarius-group ' + extraHtmlClass,
@@ -739,7 +756,7 @@ function resetAllFields() {
 function setCheckbox(id, val) {
     const $elt = $('#' + id);
     const checked = $elt.prop('checked');
-    if ((val && !checked) || (checked && ! val))
+    if ((val && !checked) || (checked && !val))
         $elt.trigger('click');
 }
 

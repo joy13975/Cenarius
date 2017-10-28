@@ -16,11 +16,11 @@ cenarius-hr {
 }
 
 #bootstrap-overrides span {
-	font-size: 18px;
+	font-size: 1.8vw;
 }
 
 #bootstrap-overrides span.glyphicon {
-	font-size: 14px;
+	font-size: 1.6vw;
 }
 
 #bootstrap-overrides h2 {
@@ -48,6 +48,10 @@ cenarius-hr {
 
 #bootstrap-overrides label {
 	line-height: 1;
+}
+
+#bootstrap-overrides label.btn {
+	font-size: 1.6vw;
 }
 
 
@@ -137,6 +141,11 @@ input[type="checkbox"]:checked ~ .checkbox-displayer span:first-child {
 	height: 36px;
 }
 
+.panel-heading {
+	font-weight:bold; 
+	font-size: 2.2vw; 
+}
+
 div[class*="col-"] {
 	padding-left: 5px;
 	padding-right: 5px;
@@ -158,15 +167,24 @@ div[class*="col-"] {
 
 #cenarius_reset_btn{ 
 	float: left;
-	margin: 20px;
+	margin-top: 2.5vh;
+	margin-left: 2.5vh;
 }
 
 #cenarius_summarize_btn{ 
 	float: right;
-	margin: 20px;
+	margin-top: 2.5vh;
+	margin-right: 2.5vh;
 }
 
 #cenarius_submit_btn{ 
 	float: right;
-	margin: 20px;
+	margin-top: 2.5vh;
+	margin-right: 2.5vh;
+}
+
+#bootstrap-overrides div[class*="alert"] {
+	margin-bottom: 5px; 
+	margin-top: 5px;
+	font-size: 2vw;
 }

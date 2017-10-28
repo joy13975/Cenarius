@@ -265,7 +265,7 @@
         },
         "tumour_details": {
             "_title": "超音波腫瘤特性描述",
-            "helpvalue": "BI-RADS 4以上均需記錄。若BI-RADS 3之病灶數目大於或等於四個，則病灶特性描述至少需記錄4個，若少於四個，則全部記錄。",
+            "_help_text": "BI-RADS 4以上均需記錄。若BI-RADS 3之病灶數目大於或等於四個，則病灶特性描述至少需記錄4個，若少於四個，則全部記錄。",
             "_type": "subobject",
             "_properties": {
                 "id": {
