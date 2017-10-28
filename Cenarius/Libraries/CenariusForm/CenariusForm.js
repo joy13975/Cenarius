@@ -1,11 +1,11 @@
 /* 
-A library that reads Cenarius-flavoured JSON and produces:
-    1. The web form as described
-    2. The SQL table schema 
-    
-Author: Joy Yeh
-Inspired by Joshfire's JsonForms
-*/
+    A library that reads Cenarius-flavoured JSON and produces:
+        1. The web form as described
+        2. The SQL table schema 
+        
+    Author: Joy Yeh
+    Inspired by Joshfire's JsonForms
+    */
 'use strict';
 
 var config = {
@@ -27,6 +27,7 @@ var config = {
     defaultNumberStep: 0.01,
     autoLabelColon: false,
     autoLabelSpace: false,
+    defaultEnumOptionText: '--',
 
     ui: {
         enumSingle: "dropdown",
@@ -49,6 +50,7 @@ const _space = '&nbsp;';
 const nullStm = () => {};
 
 ((global, $) => 　{
+
     const fieldColon = config.autoLabelColon ? ':' : '';
     const fieldSpace = config.autoLabelSpace ? _space : '';
 
@@ -185,8 +187,7 @@ const nullStm = () => {};
                         $_$('button', {
                                 type: 'button',
                                 class: 'btn btn-default btn-md cenarius-del-tab-btn',
-                                name: 'del_tab_btn',
-                                onclick: 'delSubobjectInstance($(this).parent().parent().siblings(\'.panel-body\').children(\'ul[name=subobject_tabheaders]\')); '
+                                id: 'del_tab_btn'
                             },
                             $_$('span', {
                                 class: 'glyphicon glyphicon-remove'
@@ -195,8 +196,7 @@ const nullStm = () => {};
                         $_$('button', {
                                 type: 'button',
                                 class: 'btn btn-default btn-md cenarius-new-tab-btn',
-                                name: 'new_tab_btn',
-                                onclick: 'addSubobjectInstance($(this).parent().parent().siblings(\'.panel-body\').children(\'ul[name=subobject_tabheaders]\')); '
+                                id: 'new_tab_btn'
                             },
                             $_$('span', {
                                 class: 'glyphicon glyphicon-plus'
@@ -265,13 +265,16 @@ const nullStm = () => {};
                             class: 'selectpicker form-control',
                             id: fieldID,
                             'data-live-search': true,
-                            onchange: 'setCheckbox(\'' + checkboxID + '\', selectedIndex != 0);'
+                            onchange: 'inputToggleCheckbox(this);'
                         },
                         $_$('option', {
-                            selected: undefined
-                        }, ' -- ') +
+                            selected: undefined,
+                            isDefaultOption: true
+                        }, config.defaultEnumOptionText) +
                         mapJoin(enumData, (item) => {
-                            return $_$('option', {}, item);
+                            return $_$('option', {
+                                isDefaultOption: false
+                            }, item);
                         })
                     );
 
@@ -416,7 +419,7 @@ const nullStm = () => {};
                                             name: fieldID,
                                             id: fieldID,
                                             autocomplete: 'off',
-                                            onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle($(this));' : ''
+                                            onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle(this);' : ''
                                         },
                                         $_$('label', {
                                             for: fieldID,
@@ -438,7 +441,7 @@ const nullStm = () => {};
                         case 'number':
                         case 'date':
                             {
-                                const checkboxToggleJS = 'setCheckbox(\'' + checkboxID + '\', $(this).val().length > 0);';
+                                const checkboxToggleJS = 'inputToggleCheckbox(this);';
                                 const fieldHtml =
                                     $_$('span', {
                                             class: 'input-group-addon cenarius-input-tag'
@@ -480,7 +483,7 @@ const nullStm = () => {};
                                                 name: checkboxID,
                                                 id: checkboxID,
                                                 autocomplete: 'off',
-                                                onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle($(this));' : ''
+                                                onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle(this);' : ''
                                             },
                                             $_$('label', {
                                                     for: checkboxID,
@@ -618,8 +621,7 @@ const nullStm = () => {};
                     $_$('button', {
                             type: 'button',
                             class: 'btn btn-danger btn-lg',
-                            id: 'cenarius_reset_btn',
-                            onclick: 'resetAllFields()'
+                            id: 'cenarius_reset_btn'
                         },
                         $_$('span', {
                             class: 'glyphicon glyphicon-trash'
@@ -639,7 +641,9 @@ const nullStm = () => {};
                     $_$('button', {
                             type: 'button',
                             class: 'btn btn-info btn-lg',
-                            id: 'cenarius_summarize_btn'
+                            id: 'cenarius_summarize_btn',
+                            'data-toggle': 'modal',
+                            'data-target': '#myModal'
                         },
                         $_$('span', {
                             class: 'glyphicon glyphicon-book'
@@ -656,12 +660,169 @@ const nullStm = () => {};
                 contentHtml + ctrlHtml
             );
 
+        const summaryHtml =
+            `
+<div class="modal fade" id="myModal" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Modal Header</h4>
+      </div>
+      <div class="modal-body">
+        <p>This is a large modal.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+            `
+
         this.replaceWith(finalHtml);
     }
 })(window,
     ((typeof jQuery !== 'undefined') ? jQuery : {
         fn: {}
     }));
+
+
+function resetAllFields() {
+    $('input').each(function() {
+        let $this = $(this);
+
+        if ($this.prop('type') === 'checkbox') {
+            setCheckbox($this, false);
+        } else {
+            const defaultValue = $this.prop('defaultValue');
+            $this.prop('value', defaultValue);
+        }
+    })
+
+    $('textarea').each(function() {
+        let $this = $(this);
+        $this.prop('value', $this.prop('defaultValue'));
+    })
+
+    $('select').val(config.defaultEnumOptionText).change();
+
+    $('ul[name=subobject_tabheaders]').each(function() {
+        while ($(this).children().length > 0)
+            delSubobjectInstance(this);
+
+        spawnMinimumSubobjectInstances(this);
+    })
+}
+
+function inputToggleCheckbox(input) {
+    let $input = $(input);
+    let ckbx = $($input.parent().parent().siblings('input[type=checkbox]'));
+
+    if ($input.is('input')) {
+        setCheckbox(ckbx, $input.val().length > 0);
+    } else if ($input.is('select')) {
+        setCheckbox(ckbx, $input.val() !== config.defaultEnumOptionText);
+    }
+}
+
+function setCheckbox(ckbx, val) {
+    const $ckbx = $(ckbx);
+    const checked = $ckbx.prop('checked');
+    if ((val && !checked) || (checked && !val))
+        $ckbx.trigger('click');
+}
+
+function singleChoiceToggle(ckbx) {
+    let $ckbx = $(ckbx);
+    if ($ckbx.prop('checked')) {
+        $ckbx.parent().parent().siblings().each(function() {
+            $(this).find('input[type=checkbox]').each(function() {
+                if ($(this).prop('checked'))
+                    $(this).trigger('click');
+            });
+        });
+    }
+}
+
+function addSubobjectInstance(tabHeaders) {
+    let $tabHeaders = $(tabHeaders);
+    const tabID = $tabHeaders.prop('id');
+    const templateID = tabID.substr(0, tabID.length - 5) + '_template';
+    let $tabContent = ($tabHeaders.siblings('div[name=subobject_tabcontent]'));
+    const template = $tabContent.children('#' + templateID);
+
+    // Clone template
+    let clone = template.clone();
+    let cloneIndex = 0;
+    template.parent().children().each(function() {
+        const idStr = $(this).prop('id');
+        const id = parseInt(idStr.substr(idStr.lastIndexOf('_') + 1), 10);
+        cloneIndex = id > cloneIndex ? id : cloneIndex;
+    });
+    cloneIndex += 1;
+
+    // Fix cloned element IDs
+    const cloneID = templateID + '_' + cloneIndex;
+
+    function fixCloneField(
+        node,
+        fieldName,
+        valGenFunc = (node, oldVal, toAppend) => {
+            return oldVal + toAppend;
+        }) {
+        const fieldVal = node.attr(fieldName);
+        if (typeof fieldVal !== typeof undefined && fieldVal !== false) {
+            const fieldVal = node.prop(fieldName);
+            if (isSet(fieldVal)) {
+                // console.log('Fix ' + fieldName + '::' + fieldVal + '\n-> ' + valGenFunc(node, fieldVal, '_template_' + cloneIndex));
+                node.prop(fieldName, valGenFunc(node, fieldVal, '_template_' + cloneIndex));
+            }
+        }
+    }
+
+    descendAll(clone, function(node) {
+        fixCloneField(node, 'id');
+        fixCloneField(node, 'name');
+        fixCloneField(node, 'for');
+        fixCloneField(node, 'href');
+    });
+
+    clone.prop('id', cloneID);
+    $tabContent.append(clone);
+
+    // De-select the rest
+    $tabHeaders.children().removeClass('active in');
+    $tabContent.children().removeClass('active in');
+
+    $tabHeaders.append(Htmler.genTabRef(cloneID, '#' + cloneIndex, {
+        class: 'active'
+    }));
+    $('#' + cloneID).addClass('active in');
+}
+
+function delSubobjectInstance(tabHeaders) {
+    let $tabHeaders = $(tabHeaders);
+    let $tabContent = $($tabHeaders.siblings('div[name=subobject_tabcontent]'));
+    const lastActiveLi = $tabHeaders.children('li.active');
+    const lastActiveTabcontent = $tabContent.children('div.active');
+    const lastActiveIndex = lastActiveLi.index();
+
+    lastActiveLi.remove();
+    lastActiveTabcontent.remove();
+
+    // Set new active tab
+    const newActiveIndex = lastActiveIndex >= $tabHeaders.children().length ?
+        (lastActiveIndex - 1) : lastActiveIndex;
+    $tabHeaders.children().eq(newActiveIndex).addClass('active in');
+    $tabContent.children().eq(newActiveIndex + 1).addClass('active in');
+}
+
+function spawnMinimumSubobjectInstances(tabHeaders, tabContent = $(tabHeaders).siblings('div.tab-content')) {
+    while (tabContent.children().length - 1 < config.minSubobjectInstance) {
+        addSubobjectInstance(tabHeaders);
+    }
+}
 
 class Htmler {
     static genTabRef(hrefLink, tabTitle, liAttr = {}, titleAttr = {}) {
@@ -738,39 +899,6 @@ function $_$(tag, attr = {}, content = '', close = true) {
         (close ? ('</' + tag + '>') : '');
 }
 
-function resetAllFields() {
-    $('input').each(function() {
-        let $this = $(this);
-
-        if ($this.prop('type') === 'checkbox') {
-            setCheckbox($this.prop('id'), false);
-        } else {
-            const defaultValue = $this.prop('defaultValue');
-            $this.prop('value', defaultValue);
-        }
-    })
-}
-
-
-
-function setCheckbox(id, val) {
-    const $elt = $('#' + id);
-    const checked = $elt.prop('checked');
-    if ((val && !checked) || (checked && !val))
-        $elt.trigger('click');
-}
-
-function singleChoiceToggle(ckbx) {
-    if (ckbx.prop('checked')) {
-        ckbx.parent().parent().siblings().each(function() {
-            $(this).find('input[type=checkbox]').each(function() {
-                if ($(this).prop('checked'))
-                    $(this).trigger('click');
-            });
-        });
-    }
-}
-
 function getNameFromKey(key) {
     switch (config.defaultTitle) {
         case "key_titleize":
@@ -823,100 +951,6 @@ function descendAll(node, func) {
     func(node);
 }
 
-function addSubobjectInstance(tabHeaders) {
-    const tabID = tabHeaders.prop('id');
-    const templateID = tabID.substr(0, tabID.length - 5) + '_template';
-    let tabContent = tabHeaders.siblings('div[name=subobject_tabcontent]');
-    const template = tabContent.children('#' + templateID);
-
-    // Clone template
-    let clone = template.clone();
-    let cloneIndex = 0;
-    template.parent().children().each(function() {
-        const idStr = $(this).prop('id');
-        const id = parseInt(idStr.substr(idStr.lastIndexOf('_') + 1), 10);
-        cloneIndex = id > cloneIndex ? id : cloneIndex;
-    });
-    cloneIndex += 1;
-
-    // Fix cloned element IDs
-    const cloneID = templateID + '_' + cloneIndex;
-
-    function fixCloneField(
-        node,
-        fieldName,
-        valGenFunc = (node, oldVal, toAppend) => {
-            return oldVal + toAppend;
-        }) {
-        const fieldVal = node.attr(fieldName);
-        if (typeof fieldVal !== typeof undefined && fieldVal !== false) {
-            const fieldVal = node.prop(fieldName);
-            if (isSet(fieldVal)) {
-                // console.log('Fix ' + fieldName + '::' + fieldVal + '\n-> ' + valGenFunc(node, fieldVal, '_template_' + cloneIndex));
-                node.prop(fieldName, valGenFunc(node, fieldVal, '_template_' + cloneIndex));
-            }
-        }
-    }
-
-    descendAll(clone, function(node) {
-        fixCloneField(node, 'id');
-        fixCloneField(node, 'name');
-        fixCloneField(node, 'for');
-        fixCloneField(node, 'href');
-
-        function fixToggleCheckboxJS(trigger) {
-            const oldJS = node.attr('on' + trigger);
-            if (typeof oldJS !== typeof undefined && oldJS !== false) {
-                const oldCkbxID = node.prop('id').replace('_template_' + cloneIndex, '') + '_ckbx';
-                const newCkbxID = node.prop('id').replace('_template_' + cloneIndex, '') +
-                    '_ckbx_template_' + cloneIndex;
-                const newJS = oldJS.replace(oldCkbxID, newCkbxID);
-                // alert('Old JS: \n' + oldJS + '\nNew JS:\n' + newJS);
-                node.attr('on' + trigger, newJS);
-            }
-        }
-        fixToggleCheckboxJS('keyup');
-        fixToggleCheckboxJS('change');
-    });
-
-    clone.prop('id', cloneID);
-    tabContent.append(clone);
-
-    // De-select the rest
-    tabHeaders.children().removeClass('active in');
-    tabContent.children().removeClass('active in');
-
-    tabHeaders.append(Htmler.genTabRef(cloneID, '#' + cloneIndex, {
-        class: 'active'
-    }));
-    $('#' + cloneID).addClass('active in');
-}
-
-function delSubobjectInstance(tabHeaders) {
-    if (confirm('Confirm delete?')) {
-        let tabContent = tabHeaders.siblings('div[name=subobject_tabcontent]');
-        const lastActiveLi = tabHeaders.children('li.active');
-        const lastActiveTabcontent = tabContent.children('div.active');
-        const lastActiveIndex = lastActiveLi.index();
-
-        lastActiveLi.remove();
-        lastActiveTabcontent.remove();
-
-        spawnMinimumSubobjectInstances(tabHeaders, tabContent);
-
-        // Set new active tab
-        const newActiveIndex = lastActiveIndex >= tabHeaders.children().length ? (lastActiveIndex - 1) : lastActiveIndex;
-        tabHeaders.children().eq(newActiveIndex).addClass('active in');
-        tabContent.children().eq(newActiveIndex + 1).addClass('active in');
-    }
-}
-
-function spawnMinimumSubobjectInstances(tabHeaders, tabContent = tabHeaders.siblings('div.tab-content')) {
-    while (tabContent.children().length - 1 < config.minSubobjectInstance) {
-        addSubobjectInstance(tabHeaders);
-    }
-}
-
 function mergeStrProps(a, b, separater = ' ') {
     let res = {};
     Object.getOwnPropertyNames(a).forEach(function(fieldName) {
@@ -948,4 +982,22 @@ $(() => { /* DOM ready */
     $(".btn").click(function(event) {
         $(this).blur();
     });
+
+    $("#cenarius_reset_btn").click(function() {
+        if (confirm('Are you sure you want to reset (clear) all fields?')) {
+            resetAllFields();
+        }
+    });
+
+    $("#del_tab_btn").click(function() {
+        if (confirm('Confirm delete?')) {
+            let tabHeaders = $(this).parent().parent().siblings('.panel-body').children('ul[name=subobject_tabheaders]');
+            delSubobjectInstance(tabHeaders);
+            spawnMinimumSubobjectInstances(tabHeaders);
+        }
+    })
+
+    $("#new_tab_btn").click(function() {
+        addSubobjectInstance($(this).parent().parent().siblings('.panel-body').children('ul[name=subobject_tabheaders]'));
+    })
 });
