@@ -592,93 +592,18 @@ const nullStm = () => {};
                 }
             );
 
-        const contentHtml =
-            $_$('div', {
-                    class: 'container cenarius-content'
-                },
-                $_$('div', {
-                        class: 'row'
-                    },
-                    $_$('h1', {}, headingText)
-                ) +
-                $_$('div', {
-                        class: 'row'
-                    },
-                    $_$('div', {
-                        class: 'col-md-12'
-                    }, formaHtml)
-                )
-            );
+        const contentHtml = Htmler.genContentHtml(headingText, formaHtml);
 
-        const ctrlHtml =
-            $_$('div', {
-                    class: 'container cenarius-ctrl-panel'
-                },
-                $_$('div', {
-                        class: 'row',
-                        style: 'min-width: 516px;'
-                    },
-                    $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-danger btn-lg',
-                            id: 'cenarius_reset_btn'
-                        },
-                        $_$('span', {
-                            class: 'glyphicon glyphicon-trash'
-                        }) +
-                        _space + _space + _space + 'Reset Fields'
-                    ) +
-                    $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-success btn-lg',
-                            id: 'cenarius_submit_btn'
-                        },
-                        $_$('span', {
-                            class: 'glyphicon glyphicon-send'
-                        }) +
-                        _space + _space + _space + 'Submit'
-                    ) +
-                    $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-info btn-lg',
-                            id: 'cenarius_summarize_btn',
-                            'data-toggle': 'modal',
-                            'data-target': '#myModal'
-                        },
-                        $_$('span', {
-                            class: 'glyphicon glyphicon-book'
-                        }) +
-                        _space + _space + _space + 'Summarize'
-                    )
-                )
-            );
+        const ctrlHtml = Htmler.genCtrlPanel();
+
+        const summaryModalHtml = Htmler.genSummaryModalHtml();
 
         const finalHtml =
             $_$('div', {
                     id: 'bootstrap-overrides'
                 },
-                contentHtml + ctrlHtml
+                contentHtml + ctrlHtml + summaryModalHtml
             );
-
-        const summaryHtml =
-            `
-<div class="modal fade" id="myModal" role="dialog">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">Modal Header</h4>
-      </div>
-      <div class="modal-body">
-        <p>This is a large modal.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
-            `
 
         this.replaceWith(finalHtml);
     }
@@ -825,6 +750,134 @@ function spawnMinimumSubobjectInstances(tabHeaders, tabContent = $(tabHeaders).s
 }
 
 class Htmler {
+    static genContentHtml(headingText, formaHtml) {
+        const html =
+            $_$('div', {
+                    class: 'container cenarius-content'
+                },
+                $_$('div', {
+                        class: 'row'
+                    },
+                    $_$('h1', {}, headingText)
+                ) +
+                $_$('div', {
+                        class: 'row'
+                    },
+                    $_$('div', {
+                        class: 'col-md-12'
+                    }, formaHtml)
+                )
+            );
+        return html;
+    };
+
+    static genCtrlPanel() {
+        const html =
+            $_$('div', {
+                    class: 'container cenarius-ctrl-panel'
+                },
+                $_$('div', {
+                        class: 'row',
+                        style: 'min-width: 516px;'
+                    },
+                    $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-danger btn-lg',
+                            id: 'reset_btn'
+                        },
+                        $_$('span', {
+                            class: 'glyphicon glyphicon-trash'
+                        }) +
+                        _space + _space + _space + 'Reset Fields'
+                    ) +
+                    $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-success btn-lg',
+                            id: 'submit_btn'
+                        },
+                        $_$('span', {
+                            class: 'glyphicon glyphicon-send'
+                        }) +
+                        _space + _space + _space + 'Submit'
+                    ) +
+                    $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-info btn-lg',
+                            id: 'summarize_btn',
+                            'data-toggle': 'modal',
+                            'data-target': '#summary_modal'
+                        },
+                        $_$('span', {
+                            class: 'glyphicon glyphicon-book'
+                        }) +
+                        _space + _space + _space + 'Summarize'
+                    )
+                )
+            );
+
+        return html;
+    };
+
+    static genSummaryModalHtml() {
+        const html =
+            $_$('div', {
+                    class: 'modal fade',
+                    id: 'summary_modal',
+                    role: 'dialog'
+                },
+                $_$('div', {
+                        class: 'modal-dialog modal-lg'
+                    },
+                    $_$('div', {
+                            class: 'modal-content'
+                        },
+                        $_$('div', {
+                                class: 'modal-header'
+                            },
+                            $_$('button', {
+                                    type: 'button',
+                                    class: 'close',
+                                    'data-dismiss': 'modal'
+                                },
+                                '&times;'
+                            ) +
+                            $_$('h4', {
+                                    class: 'modal-title'
+                                },
+                                'Form Summary'
+                            )
+                        ) +
+                        $_$('div', {
+                                class: 'modal-body'
+                            },
+                            $_$('p', {},
+                                'Summary Placeholder'
+                            )
+                        ) +
+                        $_$('div', {
+                                class: 'modal-footer'
+                            },
+                            $_$('button', {
+                                    type: 'button',
+                                    class: 'btn btn-default',
+                                    'data-dismiss': 'modal'
+                                },
+                                'Close'
+                            ) +
+                            $_$('button', {
+                                    type: 'button',
+                                    class: 'btn btn-success',
+                                    'data-dismiss': 'modal'
+                                },
+                                'Submit'
+                            )
+                        )
+                    )
+                )
+            );
+        return html;
+    };
+
     static genTabRef(hrefLink, tabTitle, liAttr = {}, titleAttr = {}) {
         const html =
             $_$('li', mergeStrProps({
@@ -983,12 +1036,6 @@ $(() => { /* DOM ready */
         $(this).blur();
     });
 
-    $("#cenarius_reset_btn").click(function() {
-        if (confirm('Are you sure you want to reset (clear) all fields?')) {
-            resetAllFields();
-        }
-    });
-
     $("#del_tab_btn").click(function() {
         if (confirm('Confirm delete?')) {
             let tabHeaders = $(this).parent().parent().siblings('.panel-body').children('ul[name=subobject_tabheaders]');
@@ -999,5 +1046,17 @@ $(() => { /* DOM ready */
 
     $("#new_tab_btn").click(function() {
         addSubobjectInstance($(this).parent().parent().siblings('.panel-body').children('ul[name=subobject_tabheaders]'));
+    })
+
+    $("#reset_btn").click(function() {
+        if (confirm('Are you sure you want to reset (clear) all fields?')) {
+            resetAllFields();
+        }
+    });
+
+    $("#summarize_btn").click(function() {
+        let $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
+        const summaryHtml = $_$('p', {}, 'Hi test');
+        $summary.html(summaryHtml);
     })
 });

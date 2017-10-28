@@ -23,24 +23,6 @@ cenarius-hr {
 	font-size: 1.4vw;
 }
 
-#bootstrap-overrides h2 {
-	margin-left: -12px;
-	margin-bottom: 3px;
-}
-
-
-#bootstrap-overrides h3 {
-	margin-left: -14px;
-	margin-bottom: 4px;
-}
-
-
-#bootstrap-overrides h4 {
-	margin-left: -13px;
-	margin-bottom: 2px;
-}
-
-
 #bootstrap-overrides textarea {
 	resize: vertical;
 }
@@ -165,19 +147,19 @@ div[class*="col-"] {
 	z-index: 1000;
 }
 
-#cenarius_reset_btn{ 
+#reset_btn{ 
 	float: left;
 	margin-top: 2.5vh;
 	margin-left: 2.5vh;
 }
 
-#cenarius_summarize_btn{ 
+#summarize_btn{ 
 	float: right;
 	margin-top: 2.5vh;
 	margin-right: 2.5vh;
 }
 
-#cenarius_submit_btn{ 
+#submit_btn{ 
 	float: right;
 	margin-top: 2.5vh;
 	margin-right: 2.5vh;
