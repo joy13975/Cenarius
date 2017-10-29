@@ -1,5 +1,6 @@
 body{
 	font-family: '文泉驛正黑','WenQuanYi Zen Hei','微軟正黑體','Microsoft JhengHei',Arial,sans-serif;
+	transition: all 0.4s ease 0s;
 }
 
 cenarius-form {
@@ -16,11 +17,15 @@ cenarius-hr {
 }
 
 #bootstrap-overrides span {
-	font-size: 1.6vw;
+	font-size: 17px;
 }
 
 #bootstrap-overrides span.glyphicon {
-	font-size: 1.4vw;
+	font-size: 14px;
+}
+
+#bootstrap-overrides label.btn {
+	font-size: 14px;
 }
 
 #bootstrap-overrides textarea {
@@ -30,10 +35,6 @@ cenarius-hr {
 
 #bootstrap-overrides label {
 	line-height: 1;
-}
-
-#bootstrap-overrides label.btn {
-	font-size: 1.6vw;
 }
 
 
@@ -47,19 +48,15 @@ cenarius-hr {
 	text-align: right;
 }
 
-#bootstrap-overrides textarea {
-	min-height: 80px;
-}
-
-.cenarius-group {
+#bootstrap-overrides .panel-default {
 	padding: 1px;
 }
 
-.cenarius-input-wrapper {
+#bootstrap-overrides div[name=cenarius-input-group] {
 	padding: 5px;
 }
 
-input[type="checkbox"] {
+input[type=checkbox] {
 	opacity: 0;
 	position: absolute;
 	top: 0;
@@ -67,15 +64,17 @@ input[type="checkbox"] {
 	width: 0;
 }
 
-input[type="checkbox"] ~ .checkbox-displayer span:first-child {
+input[type=checkbox] ~ .checkbox-displayer span:first-child {
 	opacity: 0.1;
 }
 
-input[type="checkbox"]:checked ~ .checkbox-displayer span:first-child {
+input[type=checkbox]:checked ~ .checkbox-displayer span:first-child {
 	opacity: 1;
 }
 
 .cenarius-ckbx-lbl {
+	border: 1px #aaddaa solid;
+	background: #f8fff8;
 	width: 100%;
 	height: 36px;
 	display: table-cell;
@@ -125,48 +124,50 @@ input[type="checkbox"]:checked ~ .checkbox-displayer span:first-child {
 
 .panel-heading {
 	font-weight:bold; 
-	font-size: 2.2vw; 
+	font-size: 20px; 
 }
 
-div[class*="col-"] {
-	padding-left: 5px;
-	padding-right: 5px;
+#bootstrap-overrides div[class*=col-] {
+	padding-left: 10px;
+	padding-right: 10px;
 }
 
-.cenarius-content {
+div[name=cenarius-content] {
 	background: #ddefdd;
 	overflow-y:scroll;
 	height: calc(100vh - 80px);
 }
 
-.cenarius-ctrl-panel {
-	min-height: 80px;
-	max-height: 80px;
-	transition: all 0.4s ease 0s;
+div[name=cenarius-ctrl-panel] {
+	height: 80px;
+	min-width: 528px;
 	background: #e6e2d3;
 	z-index: 1000;
 }
 
-#reset_btn{ 
+button[name=reset_btn]{ 
 	float: left;
-	margin-top: 2.5vh;
-	margin-left: 2.5vh;
+	position: relative;
+	top: 25%;
+	margin-left: 20px;
 }
 
-#summarize_btn{ 
+button[name=summarize_btn]{ 
 	float: right;
-	margin-top: 2.5vh;
-	margin-right: 2.5vh;
+	position: relative;
+	top: 25%;
+	margin-right: 20px;
 }
 
-#submit_btn{ 
+button[name=submit_btn]{ 
 	float: right;
-	margin-top: 2.5vh;
-	margin-right: 2.5vh;
+	position: relative;
+	top: 25%;
+	margin-right: 20px;
 }
 
-#bootstrap-overrides div[class*="alert"] {
-	margin-bottom: 5px; 
-	margin-top: 5px;
-	font-size: 2vw;
+#bootstrap-overrides div[class*=alert] {
+	margin-bottom: 10px; 
+	margin-top: 10px;
+	font-size: 16px;
 }

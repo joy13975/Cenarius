@@ -99,7 +99,7 @@
                             "_default_type": "boolean",
                             "_grouping": "either", 
                             "_properties": {
-                                "rough": {
+                                "general": {
                                     "_properties": {
                                         "side": {
                                             "_enum": [
@@ -118,7 +118,7 @@
                                         }
                                     }
                                 },
-                                "precise": {
+                                "specific": {
                                     "_properties": {
                                         "angle": {
                                             "_type": "number",
