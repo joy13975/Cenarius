@@ -1,11 +1,11 @@
 /* 
-    A library that reads Cenarius-flavoured JSON and produces:
-        1. The web form as described
-        2. The SQL table schema 
-        
-    Author: Joy Yeh
-    Inspired by Joshfire's JsonForms
-    */
+        A library that reads Cenarius-flavoured JSON and produces:
+            1. The web form as described
+            2. The SQL table schema 
+            
+        Author: Joy Yeh
+        Inspired by Joshfire's JsonForms
+        */
 'use strict';
 
 var config = {
@@ -185,7 +185,9 @@ class FormGenerator {
                     class: 'tab-content col-md-12',
                     name: "subobject-tabcontent"
                 },
-                Htmler.genTabPane(fieldID + '_template', sandwich())
+                Htmler.genTabPane(fieldID + '_template', sandwich(), {
+                    'skip-in-summary': undefined
+                })
             );
 
         const panelHeadingFunc = (heading) => {
@@ -301,12 +303,16 @@ class FormGenerator {
                     class: 'input-group'
                 }, needCheckbox ? Htmler.genCheckboxWrapper(checkboxID, this.forceCheckbox, enumHtml) : enumHtml));
         } else {
-            const mcStr = isMultiChoice ? ' (multiple choice)' : ' (single choice)';
+            const choiceTypeIcon =
+                $_$('span', {
+                    class: 'pull-right glyphicon glyphicon-tag' + (isMultiChoice ? 's' : ''),
+                    name: 'choice-type-icon'
+                });
 
             this.setForceCheckbox(isMultiChoice);
 
             html =
-                Htmler.genPanel(name + mcStr,
+                Htmler.genPanel(name + choiceTypeIcon,
                     sandwich(),
                     extraHtmlClass,
                     nCols, {
@@ -756,7 +762,7 @@ class Htmler {
                 class: 'col-md-' + nCols
             }, wrapperProps),
             $_$('div', mergeStrProps({
-                    class: 'panel panel-default ' + extraHtmlClass,
+                    class: 'panel panel-default clearfix ' + extraHtmlClass,
                 }, panelProps),
                 headingFunc(heading) +
                 bodyFunc(body)
@@ -768,116 +774,157 @@ class Htmler {
 class SummaryGenerator {
     constructor() {
         this.indentEach = '....';
-        this.indent = '';
+        this.indentLvl = 0;
+    };
+
+    indent(i = this.indentLvl) {
+        return i <= 0 ? '' : (this.indentEach + this.indent(i - 1));
+    };
+
+    getPlainText(ph) {
+        return $(ph).clone() //clone the element
+            .children() //select all the children
+            .remove() //remove all the children
+            .end() //again go back to selected element
+            .text();
     }
 
     genObjectGroup(parent) {
-        const name = $(parent).children('.panel').children('.panel-heading').text();
+        const sgSelf = this;
+        const panelHeading = $(parent).children('.panel').children('.panel-heading');
+        const name = this.getPlainText(panelHeading);
         const body = $(parent).children('.panel').children('.panel-body');
 
-        const sgSelf = this;
+        let str = '<br/>' + this.indent() + '{OG::' + name + '}:';
 
-        let str = this.indent + '<br/>Group ' + name + ':<br/>';
-
-        this.indent += this.indentEach;
-        str += sgSelf.indent;
+        this.indentLvl++;
         str += mapJoin($(body).children(), function(subdom) {
             return sgSelf.visitDomNode(subdom);
         });
-        this.indent = this.indent.substr(this.indent.length - this.indentEach.length);
+        this.indentLvl--;
 
         return str;
     };
 
-    genSubobjectGroup(dom) {
+    genSubobjectGroup(parent) {
         const sgSelf = this;
-        const subs = $(dom).children('.tab-pane');
+        const panelHeading = $(parent).children('.panel').children('.panel-heading');
+        const name = this.getPlainText(panelHeading);
+        const tabs = $(parent).children('.panel')
+            .children('.panel-body').children('div[name=subobject-tabcontent]')
+            .children('.tab-pane:not([skip-in-summary])');
 
-        const str =
-            mapJoin(subs, function(sub) {
-                return mapJoin($(sub).children(), function(subContent) {
-                    return $(subContent).prop('id') + sgSelf.visitDomNode(subContent) + '<br/>';
-                });
+        let str = '<br/>' + this.indent() + '{SOG::' + name + '}:';
+
+        this.indentLvl++;
+        str += mapJoin(tabs, function(tab) {
+            return mapJoin($(tab).children(), function(tabContent) {
+                return $(tabContent).prop('id') + sgSelf.visitDomNode(tabContent);
             });
+        });
+        this.indentLvl--;
 
-        // Need to remove the template tab-pane
         return str;
     };
 
-    genInputGroup(dom) {
+    genInputGroup(parent) {
         const sgSelf = this;
+        const body = $(parent).children('.input-group');
+
         let str = '';
-        str += mapJoin($(dom).children(), function(subdom) {
+        str += mapJoin($(body).children(), function(subdom) {
             return '[' + $(subdom).text() + ']';
         });
 
         return str;
     };
 
-    genSingleChoiceGroup(dom) {
+    genSingleChoiceGroup(parent) {
         const sgSelf = this;
-        return mapJoin($(dom).children(), function(subdom) {
+        const panelHeading = $(parent).children('.panel').children('.panel-heading');
+        const name = this.getPlainText(panelHeading);
+        const body = $(parent).children('.panel').children('.panel-body');
+
+        let str = '<br/>' + this.indent() + '{SCG::' + name + '}:';
+
+        str += mapJoin($(body).children(), function(subdom) {
             return sgSelf.visitDomNode(subdom);
         });
+
+        return str;
     };
 
-    genMultiChoiceGroup(dom) {
+    genMultiChoiceGroup(parent) {
         const sgSelf = this;
-        return mapJoin($(dom).children(), function(subdom) {
+        const panelHeading = $(parent).children('.panel').children('.panel-heading');
+        const name = this.getPlainText(panelHeading);
+        const body = $(parent).children('.panel').children('.panel-body');
+
+        let str = '<br/>' + this.indent() + '{MCG::' + name + '}:';
+
+        str += mapJoin($(body).children(), function(subdom) {
             return sgSelf.visitDomNode(subdom);
         });
+
+        return str;
     };
 
-    genEitherGroup(dom) {
+    genEitherGroup(parent) {
         const sgSelf = this;
-        return mapJoin($(dom).children(), function(subdom) {
+        const activeTab = $(parent).children('div[name=cenarius-either-group-tabcontent]')
+            .children('.tab-pane.active')
+        const activeTabRef = $(parent).children('ul[name=cenarius-either-group-tabheaders]')
+            .children('li.active');
+        const activeTabName = this.getPlainText(activeTabRef);
+
+
+        let str = '<br/>' + this.indent() + '{EG::' + activeTabName + '}:';
+
+        this.indentLvl++;
+        str += mapJoin($(activeTab).children(), function(subdom) {
             return sgSelf.visitDomNode(subdom);
         });
+        this.indentLvl--;
+        str += '<br/>';
+
+        return str;
     };
 
     visitDomNode(dom) {
         const $dom = $(dom);
         const domName = $dom.attr('name');
 
-        let str = '';
         switch (domName) {
             case 'cenarius-object-group':
                 {
-                    str += this.genObjectGroup(dom);
-                    break;
+                    return this.genObjectGroup(dom);
                 }
             case 'cenarius-subobject-group':
                 {
-                    str += this.genSubobjectGroup($dom.children('.panel').children('.panel-body').children('div[name=subobject-tabcontent]'));
-                    break;
+                    return this.genSubobjectGroup(dom);
                 }
             case 'cenarius-input-group':
                 {
-                    str += this.genInputGroup($dom.children('.input-group'));
-                    break;
+                    return this.genInputGroup(dom);
                 }
             case 'cenarius-single-choice-group':
                 {
-                    str += this.genSingleChoiceGroup($dom.children('.panel').children('.panel-body'));
-                    break;
+                    return this.genSingleChoiceGroup(dom);
                 }
             case 'cenarius-multi-choice-group':
                 {
-                    str += this.genMultiChoiceGroup($dom.children('.panel').children('.panel-body'));
-                    break;
+                    return this.genMultiChoiceGroup(dom);
                 }
             case 'cenarius-either-group':
                 {
-                    str += this.genEitherGroup($dom.children('cenarius-either-group-tabcontent'));
-                    break;
+                    return this.genEitherGroup(dom);
                 }
             default:
                 {
                     alert('[CenariusFormError]: Unknown DOM name found (' + domName + '): ' + $(dom).html())
+                    return 'ERROR';
                 }
         }
-
-        return '#' + str;
     };
 }
 
@@ -1012,6 +1059,9 @@ function addSubobjectInstance(tabHeaders) {
         fixCloneField(node, 'href');
     });
 
+    // Remove skip-in-summary attr
+    $(clone).removeAttr('skip-in-summary');
+
     clone.prop('id', cloneID);
     $tabContent.append(clone);
 
@@ -1057,83 +1107,8 @@ function summarizeForm(cenariusForm) {
 
     const mainCol = $(cenariusForm).children()[0];
     const summary = mapJoin($(mainCol).children(), function(group) {
-        return mySG.visitDomNode(group);
+        return mySG.visitDomNode(group) + '<br/>';
     });
-
-    /*
-    $('.panel-heading, .input-group, div[name=single-choice-group], div[name=multi-choice-group] ').each(function() {
-        const $this = $(this);
-        const name = $this.attr('name');
-        if ($this.hasClass('input-group')) {
-            const igaElt = $this.children('span.input-group-addon');
-            if (igaElt.length > 0) {
-                // All input fields other than checkbox
-                // And there should be only one input-group-addon
-                const $iga = $(igaElt[0]);
-                const fieldName = $iga.text();
-
-                const inputElt = $iga.siblings('input');
-                const selectElt = $iga.siblings('select');
-                const textareaElt = $iga.siblings('textarea');
-
-                let val = '';
-                if (inputElt.length > 0) {
-                    // Regular input (text, number, date)
-                    val = $(inputElt[0]).val();
-                } else if (selectElt.length > 0) {
-                    // Regular enum
-                    val = $(selectElt[0]).val();
-                } else if (textareaElt.length > 0) {
-                    // Regular text area
-                    val = $(textareaElt[0]).val();
-                } else {
-                    alert('[CenariusFormError] Failed to summarize: could not find input value element');
-                }
-                summary += fieldName + ': ' + val + ', ';
-            } else {
-                // Checkbox
-                const ckbxElt = $this.children('input[type=checkbox]');
-                const val = $(ckbxElt[0]).prop('checked') ? 'yes' : 'no';
-
-                if (ckbxElt.length > 0) {
-                    const regularNameElt = $this.children('label.cenarius-ckbx-lbl');
-                    const regularName = $(regularNameElt[0]).text();
-                    const forcedNameElt = $this.children('span').children('span').children('span.cenarius-input-tag');
-                    const forcedName = $(forcedNameElt[0]).text();
-
-                    let ckbxName = '';
-                    if (regularNameElt.length > 0) {
-                        ckbxName = regularName;
-                    } else if (forcedNameElt.length > 0) {
-                        ckbxName = forcedName;
-                    } else {
-                        alert('[CenariusFormError] Failed to summarize: could not find checkbox name element: ' +
-                            $this.html());
-                    }
-                    summary += ckbxName + ': ' + val + ', ';
-                } else {
-                    alert('[CenariusFormError] Failed to summarize: could not find checkbox value element: ' +
-                        $this.html());
-                }
-            }
-        } else if (name === 'single-choice-group') {
-            inSingleChoiceGroup = true;
-            inMultiChoiceGroup = false;
-
-            summary += '<br/>SingleChoiceGroup::<br/>';
-        } else if (name === 'multi-choice-group') {
-            inSingleChoiceGroup = false;
-            inMultiChoiceGroup = true;
-            summary += '<br/>MultiChoiceGroup::<br/>';
-        } else {
-            // Simple group heading
-            inSingleChoiceGroup = false;
-            inMultiChoiceGroup = false;
-
-            summary += '<br/><br/>' + $this.text() + ' >>';
-        }
-    });
-    */
 
     return $_$('p', {}, summary);
 };

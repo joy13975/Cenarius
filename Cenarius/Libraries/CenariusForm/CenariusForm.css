@@ -94,7 +94,7 @@ input[type=checkbox]:checked ~ .checkbox-displayer span:first-child {
 	height: 16px !important;
 }
 
-.tab-content {
+#bootstrap-overrides .tab-content {
 	border-left: 1px solid #ddd;
 	border-right: 1px solid #ddd;
 	border-bottom: 1px solid #ddd;
@@ -102,29 +102,34 @@ input[type=checkbox]:checked ~ .checkbox-displayer span:first-child {
 	display: inline-block;
 }
 
-.nav-tabs {
+#bootstrap-overrides .nav-tabs {
 	margin-bottom: 0;
 }
 
-.glyphicon {
+#bootstrap-overrides .glyphicon {
 	display:inline-table;
 }
 
-.cenarius-new-tab-btn {
+#bootstrap-overrides .cenarius-new-tab-btn {
 	margin-left: 10px;
 }
 
-.cenarius-del-tab-btn {
+#bootstrap-overrides .cenarius-del-tab-btn {
 	margin-left: 10px;
 }
 
-.form-control {
+#bootstrap-overrides .form-control {
 	height: 36px;
 }
 
-.panel-heading {
+#bootstrap-overrides .panel-heading {
 	font-weight:bold; 
 	font-size: 20px; 
+}
+
+#bootstrap-overrides span[name=choice-type-icon] {
+	font-size: 1em;
+	margin-top: 3px;
 }
 
 #bootstrap-overrides div[class*=col-] {
