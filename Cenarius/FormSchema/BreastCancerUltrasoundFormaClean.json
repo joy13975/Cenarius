@@ -8,12 +8,10 @@
                     "_default_cols": 4,
                     "_properties": {
                         "id": {
-                            "_title": "病歷號",
-                            "_default_value": "A1337"
+                            "_title": "病歷號"
                         },
                         "name": {
-                            "_title": "姓名",
-                            "_default_value": "王小明"
+                            "_title": "姓名"
                         },
                         "no_of_checks_today": {
                             "_title": "今日檢查次數",
@@ -32,8 +30,7 @@
                             "_type": "date"
                         },
                         "report_id": {
-                            "_title": "編號 ",
-                            "_default_value": "B12938"
+                            "_title": "編號 "
                         },
                         "report_no_of_checks": {
                             "_title": "次數 ",
@@ -42,12 +39,10 @@
                             "_min": 0
                         },
                         "operator_id": {
-                            "_title": "操作者編號",
-                            "_default_value": "C000301"
+                            "_title": "操作者編號"
                         },
                         "interpreter_id": {
-                            "_title": "判讀者編號",
-                            "_default_value": "D000010"
+                            "_title": "判讀者編號"
                         },
                         "machine_id": {
                             "_title": "檢查機器編號 ",
@@ -60,8 +55,7 @@
                                 "Screening US",
                                 "Diagnostic US",
                                 "Both"
-                            ],
-                            "_default_value": 1
+                            ]
                         }
                     }
                 }
@@ -170,8 +164,7 @@
                                         "B",
                                         "C",
                                         "D"
-                                    ],
-                                    "_default_value": 2
+                                    ]
                                 },
                                 "recommendation": {
                                     "_title": "27. Recomendation",
@@ -419,8 +412,7 @@
                 "tumour_summary": {
                     "_title": "檢查總結",
                     "_type": "big_string",
-                    "_cols": 12,
-                    "_default_value": "What is life?"
+                    "_cols": 12
                 }
             }
         }
