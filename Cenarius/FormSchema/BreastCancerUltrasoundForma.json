@@ -63,139 +63,147 @@
         },
         "indications": {
             "_title": "檢查適應症",
-            "_default_type": "boolean",
+            "_grouping": "either",
             "_properties": {
-                "asymptomatic_screening": {
-                    "_title": "00. Asymptomatic Screening",
-                    "_cols": 12
-                },
-                "exam_for_symptomatic_patient": {
-                    "_title": "10. Exam for symptomatic patient",
-                    "_default_cols": 4,
-                    "_enum_multi": [
-                        "11. Pain",
-                        "12. Palpable mass",
-                        "13. Discharge"
-                    ]
-                },
-                "screening_mammographic_category": {
-                    "_title": "20. Screening Mammographic Category (0-5)",
-                    "_cols": 12,
-                    "_enum": [
-                        0,
-                        1,
-                        2,
-                        3,
-                        4,
-                        5
-                    ]
-                },
-                "benign_lesions": {
-                    "_title": "Benign Lesion(s)",
-                    "_type": "subobject",
-                    "_default_type": "boolean",
+                "Asymptomatic": {
                     "_properties": {
-                        "location": {
+                        "asymptomatic_screening": {
+                            "_title": "00. Asymptomatic Screening",
+                            "_cols": 12,
+                            "_type": "label"
+                        }
+                    }
+                },
+                "Symptommatic": {
+                    "_properties": {
+                        "exam_for_symptomatic_patient": {
+                            "_title": "10. Exam for symptomatic patient",
+                            "_default_cols": 4,
+                            "_enum_multi": [
+                                "11. Pain",
+                                "12. Palpable mass",
+                                "13. Discharge"
+                            ]
+                        },
+                        "screening_mammographic_category": {
+                            "_title": "20. Screening Mammographic Category (0-5)",
+                            "_cols": 12,
+                            "_enum": [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5
+                            ]
+                        },
+                        "benign_lesions": {
+                            "_title": "Benign Lesion(s)",
+                            "_type": "subobject",
                             "_default_type": "boolean",
-                            "_grouping": "either", 
                             "_properties": {
-                                "general": {
+                                "location": {
+                                    "_default_type": "boolean",
+                                    "_grouping": "either",
                                     "_properties": {
-                                        "side": {
-                                            "_enum": [
-                                                "Right",
-                                                "Left"
-                                            ]
+                                        "general": {
+                                            "_properties": {
+                                                "side": {
+                                                    "_enum": [
+                                                        "Right",
+                                                        "Left"
+                                                    ]
+                                                },
+                                                "quarter": {
+                                                    "_enum": [
+                                                        "UOQ",
+                                                        "UIQ",
+                                                        "LOQ",
+                                                        "LIQ"
+                                                    ]
+                                                }
+                                            }
                                         },
-                                        "quarter": {
-                                            "_enum": [
-
-                                                "UOQ",
-                                                "UIQ",
-                                                "LOQ",
-                                                "LIQ"
-                                            ]
+                                        "specific": {
+                                            "_properties": {
+                                                "angle": {
+                                                    "_type": "number",
+                                                    "_ending": "o'clock"
+                                                },
+                                                "distance": {
+                                                    "_type": "number",
+                                                    "_ending": "cm"
+                                                }
+                                            }
                                         }
                                     }
                                 },
-                                "specific": {
-                                    "_properties": {
-                                        "angle": {
-                                            "_type": "number",
-                                            "_ending": "o'clock"
-                                        },
-                                        "distance": {
-                                            "_type": "number",
-                                            "_ending": "cm"
-                                        }
-                                    }
+                                "mass": {
+                                    "_title": "21. Mass"
+                                },
+                                "calcification": {
+                                    "_title": "22. Calcification"
+                                },
+                                "asymmetry": {
+                                    "_title": "23. Asymmetry"
+                                },
+                                "architecture_distortion": {
+                                    "_title": "24. Architecture distortion"
+                                },
+                                "others": {
+                                    "_title": "25. Others",
+                                    "_type": "string",
+                                    "_force_checkbox": true,
+                                    "_cols": 12
+                                },
+                                "density_of_breast": {
+                                    "_title": "26. Density of breast",
+                                    "_force_checkbox": true,
+                                    "_enum": [
+                                        "A",
+                                        "B",
+                                        "C",
+                                        "D"
+                                    ]
+                                },
+                                "recommendation": {
+                                    "_title": "27. Recomendation",
+                                    "_type": "string",
+                                    "_force_checkbox": true,
+                                    "_cols": 6
                                 }
                             }
                         },
-                        "mass": {
-                            "_title": "21. Mass"
+                        "f_u_for_previous_noted_benign_lesions": {
+                            "_title": "30. F/U for previous noted benign lesions",
+                            "_default_type": "boolean",
+                            "_properties": {
+                                "fibroadenoma": {
+                                    "_title": "31. Fibroadenoma"
+                                },
+                                "fibrocystic_change": {
+                                    "_title": "32. Fibrocystic change"
+                                },
+                                "cyst": {
+                                    "_title": "33. Cyst"
+                                },
+                                "other": {
+                                    "_title": "34. Other",
+                                    "_type": "string",
+                                    "_force_checkbox": true
+                                }
+                            }
                         },
-                        "calcification": {
-                            "_title": "22. Calcification"
-                        },
-                        "asymmetry": {
-                            "_title": "23. Asymmetry"
-                        },
-                        "architecture_distortion": {
-                            "_title": "24. Architecture distortion"
-                        },
-                        "others": {
-                            "_title": "25. Others",
-                            "_type": "string",
-                            "_force_checkbox": true,
-                            "_cols": 12
-                        },
-                        "density_of_breast": {
-                            "_title": "26. Density of breast (A,B,C,D)",
-                            "_force_checkbox": true,
-                            "_enum": [
-                                "A",
-                                "B",
-                                "C",
-                                "D"
+                        "surgically_altered_breast": {
+                            "_title": "40. Surgically altered breast",
+                            "_default_cols": 12,
+                            "_enum_multi": [
+                                "41. S/P biopsy/wide excision/BCS",
+                                "42. S/P breast augmentation/Reconstruction",
+                                "50. Other reasons for breast sono examination"
                             ]
-                        },
-                        "recommendation": {
-                            "_title": "27. Recomendation",
-                            "_type": "string",
-                            "_force_checkbox": true,
-                            "_cols": 6
                         }
                     }
-                },
-                "f_u_for_previous_noted_benign_lesions": {
-                    "_title": "30. F/U for previous noted benign lesions",
-                    "_default_type": "boolean",
-                    "_properties": {
-                        "fibroadenoma": {
-                            "_title": "31. Fibroadenoma"
-                        },
-                        "fibrocystic_change": {
-                            "_title": "32. Fibrocystic change"
-                        },
-                        "cyst": {
-                            "_title": "33. Cyst"
-                        },
-                        "other": {
-                            "_title": "34. Other",
-                            "_type": "string",
-                            "_force_checkbox": true
-                        }
-                    }
-                },
-                "surgically_altered_breast": {
-                    "_title": "40. Surgically altered breast",
-                    "_default_cols": 12,
-                    "_enum_multi": [
-                        "41. S/P biopsy/wide excision/BCS",
-                        "42. S/P breast augmentation/Reconstruction",
-                        "50. Other reasons for breast sono examination"
-                    ]
                 }
             }
         },
@@ -335,8 +343,7 @@
                     "_enum_multi": [
                         "1. Architectural distortion",
                         "2. Duct Changes ",
-                        "3. Skin changes/Skin Thickening",
-                        {
+                        "3. Skin changes/Skin Thickening", {
                             "_title": "4. Skin changes/Skin Retraction",
                             "_cols": 8
                         },

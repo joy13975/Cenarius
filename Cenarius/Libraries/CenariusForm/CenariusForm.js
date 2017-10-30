@@ -25,8 +25,8 @@ var config = {
         "multi"
     ],
     defaultNumberStep: 0.01,
-    autoLabelColon: ':',
-    autoLabelSpace: ' ',
+    autoLabelColon: '',
+    autoLabelSpace: '',
     defaultEnumOptionText: '--',
 
     ui: {
@@ -125,7 +125,8 @@ class FormGenerator {
                     }
                 });
             });
-
+            console.log('oii');
+            console.log(pages);
             const tabHeaderStr = mapJoin(pages, (page) => {
                 return Htmler.genTabRef(identifierize(page.name) + '_groupingtab', page.name, page.attr);
             });
@@ -158,9 +159,10 @@ class FormGenerator {
 
         const html = needTabs ? genTabs(sandwich()) : sandwich();
         return Htmler.genPanel(name + helpAlert, html,
-            extraHtmlClass,
             nCols, {
                 name: 'cenarius-object-group'
+            }, {
+                class: extraHtmlClass
             }
         );
     };
@@ -229,10 +231,11 @@ class FormGenerator {
 
         return Htmler.genPanel(name + helpAlert,
             panelBody,
-            extraHtmlClass,
             nCols, {
                 name: 'cenarius-subobject-group'
-            }, {}, panelHeadingFunc);
+            }, {
+                class: extraHtmlClass
+            }, panelHeadingFunc);
     };
 
     genEnum(nodeParent, node, key, name, sandwich) {
@@ -314,9 +317,10 @@ class FormGenerator {
             html =
                 Htmler.genPanel(name + choiceTypeIcon,
                     sandwich(),
-                    extraHtmlClass,
                     nCols, {
                         name: isMultiChoice ? 'cenarius-multi-choice-group' : 'cenarius-single-choice-group'
+                    }, {
+                        class: extraHtmlClass
                     }
                 );
             this.unsetForceCheckbox();
@@ -403,6 +407,17 @@ class FormGenerator {
         const inputHtml =
             (() => {
                 switch (inputType) {
+                    case 'label':
+                        {
+                            const html =
+                                $_$('div', {
+                                        class: 'alert alert-success',
+                                        style: 'text-align: center'
+                                    },
+                                    fieldName
+                                );
+                            return html;
+                        }
                     case 'checkbox':
                         {
                             const html =
@@ -462,9 +477,7 @@ class FormGenerator {
 
                             if (needCheckbox) {
                                 // This should only happen in complex lists
-                                const checkboxID = fieldID + '_ckbx';
-                                const html = Htmler.genCheckboxWrapper(checkboxID, this.forceCheckbox, fieldHtml);
-                                return html;
+                                return Htmler.genCheckboxWrapper(fieldID + '_ckbx', this.forceCheckbox, fieldHtml);
                             } else {
                                 return fieldHtml;
                             }
@@ -564,7 +577,8 @@ class Htmler {
                     onchange: checkboxType === 'single' ? 'singleChoiceToggle(this);' : ''
                 },
                 $_$('span', {
-                        style: 'width:100%; display: table-cell'
+                        style: 'width:100%; display: table-cell',
+                        class: 'cenarius-checkbox-wrapper'
                     },
                     $_$('span', {
                         style: 'width:100%; min-height: 34px; display: table'
@@ -625,7 +639,7 @@ class Htmler {
                 ) +
                 $_$('button', {
                         type: 'button',
-                        class: 'btn btn-success btn-lg',
+                        class: 'btn btn-primary btn-lg',
                         name: 'submit_btn'
                     },
                     $_$('span', {
@@ -635,7 +649,7 @@ class Htmler {
                 ) +
                 $_$('button', {
                         type: 'button',
-                        class: 'btn btn-info btn-lg',
+                        class: 'btn btn-success btn-lg',
                         name: 'summarize_btn',
                         'data-toggle': 'modal',
                         'data-target': '#summary_modal'
@@ -683,9 +697,17 @@ class Htmler {
                                 class: 'modal-body'
                             },
                             $_$('p', {},
-                                'Summary Placeholder'
+                                '//Summary Placeholder//'
                             )
                         ) +
+                        Htmler.genPanel('Comment', $_$('textarea', {
+                            class: 'form-control',
+                            style: 'min-height: 10vh'
+                        }), 12, {
+                            style: 'padding: 0'
+                        }, {
+                            style: 'border-radius: 0px; '
+                        }) +
                         $_$('div', {
                                 class: 'modal-footer'
                             },
@@ -698,7 +720,7 @@ class Htmler {
                             ) +
                             $_$('button', {
                                     type: 'button',
-                                    class: 'btn btn-success',
+                                    class: 'btn btn-primary',
                                     'data-dismiss': 'modal'
                                 },
                                 'Submit'
@@ -752,7 +774,6 @@ class Htmler {
 
     static genPanel(heading,
         body,
-        extraHtmlClass,
         nCols = 12,
         wrapperProps = {},
         panelProps = {},
@@ -762,7 +783,7 @@ class Htmler {
                 class: 'col-md-' + nCols
             }, wrapperProps),
             $_$('div', mergeStrProps({
-                    class: 'panel panel-default clearfix ' + extraHtmlClass,
+                    class: 'panel panel-default clearfix ',
                 }, panelProps),
                 headingFunc(heading) +
                 bodyFunc(body)
@@ -795,15 +816,16 @@ class SummaryGenerator {
         const name = this.getPlainText(panelHeading);
         const body = $(parent).children('.panel').children('.panel-body');
 
-        let str = '<br/>' + this.indent() + '{OG::' + name + '}:';
+        let str = this.indent() + 'OG::' + name + ' {<br/>';
 
         this.indentLvl++;
-        str += mapJoin($(body).children(), function(subdom) {
-            return sgSelf.visitDomNode(subdom);
-        });
+        const subdoms = $(body).children();
+        for (let i = 0; i < subdoms.length; i++) {
+            str += sgSelf.visitDomNode(subdoms[i], i < subdoms.length - 1);
+        }
         this.indentLvl--;
 
-        return str;
+        return str + '<br/>' + this.indent() + '}';
     };
 
     genSubobjectGroup(parent) {
@@ -814,42 +836,42 @@ class SummaryGenerator {
             .children('.panel-body').children('div[name=subobject-tabcontent]')
             .children('.tab-pane:not([skip-in-summary])');
 
-        let str = '<br/>' + this.indent() + '{SOG::' + name + '}:';
+        let str = this.indent() + 'SOG::' + name + ' {<br/>';
 
         this.indentLvl++;
         str += mapJoin(tabs, function(tab) {
             return mapJoin($(tab).children(), function(tabContent) {
-                return $(tabContent).prop('id') + sgSelf.visitDomNode(tabContent);
+                return $(tabContent).prop('id') + sgSelf.visitDomNode(tabContent, false);
             });
         });
         this.indentLvl--;
 
-        return str;
-    };
-
-    genInputGroup(parent) {
-        const sgSelf = this;
-        const body = $(parent).children('.input-group');
-
-        let str = '';
-        str += mapJoin($(body).children(), function(subdom) {
-            return '[' + $(subdom).text() + ']';
-        });
-
-        return str;
+        return str + '<br/>' + this.indent() + '}';
     };
 
     genSingleChoiceGroup(parent) {
         const sgSelf = this;
         const panelHeading = $(parent).children('.panel').children('.panel-heading');
         const name = this.getPlainText(panelHeading);
-        const body = $(parent).children('.panel').children('.panel-body');
+        const ckbx = $(parent).children('.panel').children('.panel-body')
+            .find('div[name=cenarius-input-group] > div.input-group > input[type=checkbox]:checked');
 
-        let str = '<br/>' + this.indent() + '{SCG::' + name + '}:';
-
-        str += mapJoin($(body).children(), function(subdom) {
-            return sgSelf.visitDomNode(subdom);
-        });
+        let str = name + ' is ';
+        if (ckbx.length == 0) {
+            str += 'unknown (not selected). ';
+        } else {
+            const lbl = $(ckbx).siblings('label.cenarius-ckbx-lbl');
+            let value = '';
+            if (lbl.length > 0) {
+                value = lbl.text();
+            } else {
+                // Checkbox-wrapped regular input field
+                const $wrapperSpan = $($(ckbx).siblings('span.cenarius-checkbox-wrapper').children('span'));
+                value = $wrapperSpan.children('span.input-group-addon').text() +
+                    ' (' + $wrapperSpan.children('input').val() + ')';
+            }
+            str += value + '. ';
+        }
 
         return str;
     };
@@ -858,13 +880,25 @@ class SummaryGenerator {
         const sgSelf = this;
         const panelHeading = $(parent).children('.panel').children('.panel-heading');
         const name = this.getPlainText(panelHeading);
-        const body = $(parent).children('.panel').children('.panel-body');
+        const ckbxs = $(parent).children('.panel').children('.panel-body')
+            .find('div[name=cenarius-input-group] > div.input-group > input[type=checkbox]:checked');
 
-        let str = '<br/>' + this.indent() + '{MCG::' + name + '}:';
-
-        str += mapJoin($(body).children(), function(subdom) {
-            return sgSelf.visitDomNode(subdom);
-        });
+        let str = name + ' is ';
+        if (ckbxs.length == 0) {
+            str += 'unknown (not selected). ';
+        } else {
+            str += mapJoin($(ckbxs), function(ckbx) {
+                const lbl = $(ckbx).siblings('label.cenarius-ckbx-lbl');
+                if (lbl.length > 0) {
+                    return lbl.text();
+                } else {
+                    // Checkbox-wrapped regular input field
+                    const $wrapperSpan = $($(ckbx).siblings('span.cenarius-checkbox-wrapper').children('span'));
+                    return $wrapperSpan.children('span.input-group-addon').text() +
+                        ' (' + $wrapperSpan.children('input').val() + ')';
+                }
+            }, ', ') + '. ';
+        }
 
         return str;
     };
@@ -878,46 +912,85 @@ class SummaryGenerator {
         const activeTabName = this.getPlainText(activeTabRef);
 
 
-        let str = '<br/>' + this.indent() + '{EG::' + activeTabName + '}:';
+        let str = this.indent() + 'EG::' + activeTabName + ' {<br/>';
 
         this.indentLvl++;
-        str += mapJoin($(activeTab).children(), function(subdom) {
-            return sgSelf.visitDomNode(subdom);
-        });
+        const tabContent = $(activeTab).children();
+        for (let i = 0; i < tabContent.length; i++) {
+            str += sgSelf.visitDomNode(tabContent[i], i < tabContent.length - 1);
+        }
         this.indentLvl--;
-        str += '<br/>';
+
+        return str + '<br/>' + this.indent() + '}';
+    };
+
+    genInputGroup(parent) {
+        const sgSelf = this;
+        const $body = $($(parent).children('.input-group'));
+
+        const selectElt = $body.children('select');
+        const ckbxElt = $body.children('input[type=checkbox]');
+        const cbkxWrapper = $body.children('.cenarius-checkbox-wrapper');
+
+        const eltExists = (selRes) => {
+            return selRes.length > 0;
+        };
+
+        let str = '';
+        if (eltExists(selectElt)) {
+            str += $body.children('.cenarius-input-tag').text() + ' is ' + $(selectElt).val() + '. ';
+        } else if (eltExists(ckbxElt)) {
+            // Regular checkbox field
+            if ($(ckbxElt).prop('checked')) {
+                if (eltExists(cbkxWrapper)) {
+                    // If this field is not wrapper in a multi-choice-group or a single-choice-group
+                    // then it need only be stringified if the ckbx is checked
+                    const $wrapperSpan = $($(cbkxWrapper).children('span'));
+                    str += $wrapperSpan.children('span.input-group-addon').text() +
+                        ' (' + $wrapperSpan.children('input').val() + '). ';
+                } else {
+                    str += $body.children('.cenarius-ckbx-lbl').text() + '. ';
+                }
+            }
+        } else {
+            // Regular input field
+            str += mapJoin($body.children(), function(subdom) {
+                return $(subdom).text() + '. ';
+            });
+        }
 
         return str;
     };
 
-    visitDomNode(dom) {
+    visitDomNode(dom, appendNL = true) {
         const $dom = $(dom);
         const domName = $dom.attr('name');
+        const nl = appendNL ? '<br/>' : '';
 
         switch (domName) {
             case 'cenarius-object-group':
                 {
-                    return this.genObjectGroup(dom);
+                    return this.genObjectGroup(dom) + nl;
                 }
             case 'cenarius-subobject-group':
                 {
-                    return this.genSubobjectGroup(dom);
+                    return this.genSubobjectGroup(dom) + nl;
+                }
+            case 'cenarius-single-choice-group':
+                {
+                    return this.genSingleChoiceGroup(dom) + nl;
+                }
+            case 'cenarius-multi-choice-group':
+                {
+                    return this.genMultiChoiceGroup(dom) + nl;
+                }
+            case 'cenarius-either-group':
+                {
+                    return this.genEitherGroup(dom) + nl;
                 }
             case 'cenarius-input-group':
                 {
                     return this.genInputGroup(dom);
-                }
-            case 'cenarius-single-choice-group':
-                {
-                    return this.genSingleChoiceGroup(dom);
-                }
-            case 'cenarius-multi-choice-group':
-                {
-                    return this.genMultiChoiceGroup(dom);
-                }
-            case 'cenarius-either-group':
-                {
-                    return this.genEitherGroup(dom);
                 }
             default:
                 {
@@ -1046,7 +1119,7 @@ function addSubobjectInstance(tabHeaders) {
         if (typeof fieldVal !== typeof undefined && fieldVal !== false) {
             const fieldVal = node.prop(fieldName);
             if (isSet(fieldVal)) {
-                // console.log('Fix ' + fieldName + '::' + fieldVal + '\n-> ' + valGenFunc(node, fieldVal, '_template_' + cloneIndex));
+                // console.log('Fix ' + fieldName + '}' + fieldVal + 'n-> ' + valGenFunc(node, fieldVal, '_template_' + cloneIndex));
                 node.prop(fieldName, valGenFunc(node, fieldVal, '_template_' + cloneIndex));
             }
         }
@@ -1113,8 +1186,8 @@ function summarizeForm(cenariusForm) {
     return $_$('p', {}, summary);
 };
 
-function mapJoin(obj, func) {
-    return _.map(obj, func).join('');
+function mapJoin(obj, func, sep = '') {
+    return _.map(obj, func).join(sep);
 }
 
 function $_$(tag, attr = {}, content = '', close = true) {
