@@ -30,7 +30,7 @@ cenarius-hr {
 
 #bootstrap-overrides textarea {
 	resize: vertical;
-	min-height: 60px;
+	min-height: 110px;
 }
 
 
@@ -79,6 +79,10 @@ input[type=checkbox] ~ .checkbox-displayer span:first-child {
 
 input[type=checkbox]:checked ~ .checkbox-displayer span:first-child {
 	opacity: 1;
+}
+
+input[type=checkbox]:checked ~ .cenarius-ckbx-lbl{
+	background: #bbddbb;
 }
 
 .cenarius-ckbx-lbl {
@@ -189,4 +193,8 @@ button[name=submit_btn]{
 #bootstrap-overrides .tight {
 	padding: 0 !important;
 	margin: 0 !important;
+}
+
+#bootstrap-overrides .force-right {
+	float: right !important;
 }

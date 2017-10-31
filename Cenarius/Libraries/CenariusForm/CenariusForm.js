@@ -498,9 +498,11 @@ class FormGenerator {
         const nCols = node.hasOwnProperty('_cols') ? node._cols :
             this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
             config.nCols.input;
+        const extraHtmlClass = node.hasOwnProperty('_html_class') ?
+            node._html_class : '';
 
         return $_$('div', {
-            class: 'col-md-' + nCols,
+            class: 'col-md-offset-' + nCols + ' ' + extraHtmlClass,
             style: 'height: 46px !important'
         });
     }
@@ -1340,5 +1342,14 @@ $(() => { /* DOM ready */
         let $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
         const summaryHtml = summarizeForm($(this).parent().siblings('div[name=cenarius-content]').children('div[name=cenarius-form]'));
         $summary.html(summaryHtml);
-    })
+    });
+
+    // Textarea auto resize
+    // Credits to https://stackoverflow.com/questions/454202/creating-a-textarea-with-auto-resize
+    $('textarea').each(function() {
+        this.setAttribute('style', 'height:' + (this.scrollHeight) + 'px;overflow-y:hidden;');
+    }).on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
 });
