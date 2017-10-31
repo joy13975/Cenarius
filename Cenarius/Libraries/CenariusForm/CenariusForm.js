@@ -414,10 +414,6 @@ class FormGenerator {
                                         onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle(this);' : ''
                                     },
                                     $_$('label', {
-                                        for: fieldID,
-                                        class: 'btn btn-default cenarius-ckbx-lbl'
-                                    }, name) +
-                                    $_$('label', {
                                             for: fieldID,
                                             class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
                                         },
@@ -425,7 +421,11 @@ class FormGenerator {
                                             class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
                                         }) +
                                         $_$('span', {}, _space)
-                                    )
+                                    ) +
+                                    $_$('label', {
+                                        for: fieldID,
+                                        class: 'btn btn-default cenarius-ckbx-lbl'
+                                    }, name)
                                 );
 
                             return html;
@@ -469,7 +469,7 @@ class FormGenerator {
                         }
                     default:
                         {
-                            return $_$('p', $_$('b', '[CenariusFormError] Unknown field type: ' + inputType));
+                            return $_$('p', {}, $_$('b', {}, '[CenariusFormError] Unknown field type: ' + inputType));
                         }
                 }
             })();
@@ -493,6 +493,17 @@ class FormGenerator {
 
         return html;
     };
+
+    genSpace(node) {
+        const nCols = node.hasOwnProperty('_cols') ? node._cols :
+            this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
+            config.nCols.input;
+
+        return $_$('div', {
+            class: 'col-md-' + nCols,
+            style: 'height: 46px !important'
+        });
+    }
 
     visitFormaNode(node, key) {
         let formGenSelf = this;
@@ -545,6 +556,8 @@ class FormGenerator {
                 return formGenSelf.genSubobj(next, key, name, sandwich);
             case 'enum':
                 return formGenSelf.genEnum(node, next, key, name, sandwich);
+            case 'space':
+                return formGenSelf.genSpace(next);
             default:
                 return formGenSelf.genLeaf(node, next, type, key, name);
         }
@@ -561,14 +574,6 @@ class Htmler {
                     autocomplete: 'off',
                     onchange: checkboxType === 'single' ? 'singleChoiceToggle(this);' : ''
                 },
-                $_$('span', {
-                        style: 'width:100%; display: table-cell',
-                        class: 'cenarius-checkbox-wrapper'
-                    },
-                    $_$('span', {
-                        style: 'width:100%; min-height: 34px; display: table'
-                    }, fieldHtml)
-                ) +
                 $_$('label', {
                         for: checkboxID,
                         class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
@@ -576,6 +581,14 @@ class Htmler {
                     $_$('span', {
                         class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
                     })
+                ) +
+                $_$('span', {
+                        style: 'width:100%; display: table-cell',
+                        class: 'cenarius-checkbox-wrapper'
+                    },
+                    $_$('span', {
+                        style: 'width:100%; min-height: 34px; display: table'
+                    }, fieldHtml)
                 )
             );
         return resHtml;
