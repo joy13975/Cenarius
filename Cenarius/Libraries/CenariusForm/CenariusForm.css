@@ -29,7 +29,7 @@ cenarius-hr {
 }
 
 #bootstrap-overrides textarea {
-	resize: vertical;
+	resize: none;
 	min-height: 110px;
 }
 

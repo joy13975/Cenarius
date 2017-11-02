@@ -604,7 +604,7 @@ class Htmler {
                 },
                 $_$('div', {
                         class: 'row',
-                        name: 'cenarius-header'
+                        name: 'cenarius-header',
                     },
                     $_$('h1', {}, headingText)
                 ) +
@@ -613,7 +613,8 @@ class Htmler {
                         name: 'cenarius-form'
                     },
                     $_$('div', {
-                        class: 'col-md-12'
+                        class: 'col-md-12',
+                        style: 'padding-bottom: 10px'
                     }, formaHtml)
                 )
             );
@@ -701,14 +702,6 @@ class Htmler {
                                 '//Summary Placeholder//'
                             )
                         ) +
-                        Htmler.genPanel('Comment', $_$('textarea', {
-                            class: 'form-control',
-                            style: 'min-height: 10vh'
-                        }), 12, {
-                            style: 'padding: 0'
-                        }, {
-                            style: 'border-radius: 0px; '
-                        }) +
                         $_$('div', {
                                 class: 'modal-footer'
                             },

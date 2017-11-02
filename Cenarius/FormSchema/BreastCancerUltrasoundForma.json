@@ -422,6 +422,12 @@
                     "_default_value": "What is life?"
                 }
             }
+        },
+        "overall_summary": {
+            "_title": "報告總結",
+            "_type": "big_string",
+            "_cols": 12,
+            "_default_value": "Life is about finding happiness."
         }
     }
 }
