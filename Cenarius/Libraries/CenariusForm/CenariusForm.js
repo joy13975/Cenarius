@@ -102,6 +102,8 @@ class FormGenerator {
             node._cols : config.nCols.object;
         const fieldID = this.getNextID(key + '_grouping');
         const needTabs = node.hasOwnProperty('_grouping') && node._grouping === 'either';
+        const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
+        const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
 
         const helpAlert = node.hasOwnProperty('_help_text') ?
             $_$('div', {
@@ -158,10 +160,16 @@ class FormGenerator {
         }
 
         const html = needTabs ? genTabs(sandwich()) : sandwich();
+        let ogProps = {
+            name: 'cenarius-object-group'
+        };
+        if (isSet(excludeFromSummary))
+            ogProps.excludeFromSummary = excludeFromSummary;
+        if (isSet(summaryBreakStyle))
+            ogProps.summaryBreakStyle = summaryBreakStyle;
+
         return Htmler.genPanel(name + helpAlert, html,
-            nCols, {
-                name: 'cenarius-object-group'
-            }, {
+            nCols, ogProps, {
                 class: extraHtmlClass
             }
         );
@@ -176,6 +184,8 @@ class FormGenerator {
         const nCols = node.hasOwnProperty('_cols') ?
             node._cols : config.nCols.subobject;
         const fieldID = this.getNextID(key + '_subobject');
+        const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
+        const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
 
         const panelBody =
             $_$('ul', {
@@ -188,7 +198,7 @@ class FormGenerator {
                     name: "subobject-tabcontent"
                 },
                 Htmler.genTabPane(fieldID + '_template', sandwich(), {
-                    'skip-in-summary': undefined
+                    'excludeFromSummary': true
                 })
             );
 
@@ -229,11 +239,17 @@ class FormGenerator {
                 node._help_text
             ) : '';
 
+        let sogProps = {
+            name: 'cenarius-subobject-group'
+        };
+        if (isSet(excludeFromSummary))
+            sogProps.excludeFromSummary = excludeFromSummary;
+        if (isSet(summaryBreakStyle))
+            sogProps.summaryBreakStyle = summaryBreakStyle;
+
         return Htmler.genPanel(name + helpAlert,
             panelBody,
-            nCols, {
-                name: 'cenarius-subobject-group'
-            }, {
+            nCols, sogProps, {
                 class: extraHtmlClass
             }, panelHeadingFunc);
     };
@@ -267,6 +283,8 @@ class FormGenerator {
             this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
             simpleEnum ? config.nCols.enum :
             config.nCols.complexEnum;
+        const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
+        const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
 
         const fieldID = this.getNextID(key);
         const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
@@ -293,7 +311,6 @@ class FormGenerator {
 
         // The value of "true" is required - "undefined" only works sometimes
         $($(selectDom).children()[defaultValue]).attr('selected', true);
-
         const selectHtml = selectDom.outerHTML;
 
         let html = '';
@@ -306,11 +323,17 @@ class FormGenerator {
                 ) +
                 selectHtml;
 
+            let seProps = {
+                name: 'cenarius-input-group',
+                class: 'col-md-' + nCols + ' ' + extraHtmlClass
+            };
+            if (isSet(excludeFromSummary))
+                seProps.excludeFromSummary = excludeFromSummary;
+            if (isSet(summaryBreakStyle))
+                seProps.summaryBreakStyle = summaryBreakStyle;
+
             html =
-                $_$('div', {
-                    class: 'col-md-' + nCols + ' ' + extraHtmlClass,
-                    name: 'cenarius-input-group'
-                }, $_$('div', {
+                $_$('div', seProps, $_$('div', {
                     class: 'input-group'
                 }, needCheckbox ? Htmler.genCheckboxWrapper(checkboxID, this.forceCheckbox, enumHtml) : enumHtml));
         } else {
@@ -320,14 +343,19 @@ class FormGenerator {
                     name: 'choice-type-icon'
                 });
 
-            this.setForceCheckbox(isMultiChoice);
+            let ceProps = {
+                name: isMultiChoice ? 'cenarius-multi-choice-group' : 'cenarius-single-choice-group'
+            };
+            if (isSet(excludeFromSummary))
+                ceProps.excludeFromSummary = excludeFromSummary;
+            if (isSet(summaryBreakStyle))
+                ceProps.summaryBreakStyle = summaryBreakStyle;
 
+            this.setForceCheckbox(isMultiChoice);
             html =
                 Htmler.genPanel(name + choiceTypeIcon,
                     sandwich(),
-                    nCols, {
-                        name: isMultiChoice ? 'cenarius-multi-choice-group' : 'cenarius-single-choice-group'
-                    }, {
+                    nCols, ceProps, {
                         class: extraHtmlClass
                     }
                 );
@@ -479,12 +507,23 @@ class FormGenerator {
             config.nCols.input;
         const extraHtmlClass = node.hasOwnProperty('_html_class') ?
             node._html_class : '';
+        const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
+        const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
+        const titleInSummary = node.hasOwnProperty('_title_in_summary') ? node._title_in_summary : undefined;
+
+        let igProps = {
+            name: 'cenarius-input-group',
+            class: 'col-md-' + nCols + ' ' + extraHtmlClass
+        };
+        if (isSet(excludeFromSummary))
+            igProps.excludeFromSummary = true;
+        if (isSet(summaryBreakStyle))
+            igProps.summaryBreakStyle = summaryBreakStyle;
+        if (isSet(titleInSummary))
+            igProps.titleInSummary = titleInSummary;
 
         const html =
-            $_$('div', {
-                    class: 'col-md-' + nCols + ' ' + extraHtmlClass,
-                    name: 'cenarius-input-group'
-                },
+            $_$('div', igProps,
                 $_$('div', {
                     class: 'input-group',
                     style: 'width: 100% !important'
@@ -503,7 +542,8 @@ class FormGenerator {
 
         return $_$('div', {
             class: 'col-md-offset-' + nCols + ' ' + extraHtmlClass,
-            style: 'height: 46px !important'
+            style: 'height: 46px !important',
+            excludeFromSummary: true
         });
     }
 
@@ -637,16 +677,6 @@ class Htmler {
                         class: 'glyphicon glyphicon-trash'
                     }) +
                     _space + _space + _space + 'Reset Fields'
-                ) +
-                $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-primary btn-lg',
-                        name: 'submit_btn'
-                    },
-                    $_$('span', {
-                        class: 'glyphicon glyphicon-send'
-                    }) +
-                    _space + _space + _space + 'Submit'
                 ) +
                 $_$('button', {
                         type: 'button',
@@ -787,14 +817,7 @@ class Htmler {
 }
 
 class SummaryGenerator {
-    constructor() {
-        this.indentEach = '  ';
-        this.indentLvl = 0;
-    };
-
-    indent(i = this.indentLvl) {
-        return i <= 0 ? '' : (this.indentEach + this.indent(i - 1));
-    };
+    constructor() {};
 
     getPlainText(ph) {
         const singleLevelText =
@@ -812,16 +835,13 @@ class SummaryGenerator {
         const name = this.getPlainText(panelHeading);
         const body = $(parent).children('.panel').children('.panel-body');
 
-        let str = name + ' {<br/>';
+        let str = name + '<br/><br/>';
 
-        this.indentLvl++;
-        str += this.indent();
         const subdoms = $(body).children();
         for (let i = 0; i < subdoms.length; i++) {
-            str += sgSelf.visitDomNode(subdoms[i], i < subdoms.length - 1);
+            str += sgSelf.visitDomNode(subdoms[i]);
         }
-        str += '<br/>' + this.indent() + 'o}';
-        this.indentLvl--;
+        str += '<br/>End of ' + name + '<br/><br/>';
 
         return str;
     };
@@ -835,26 +855,21 @@ class SummaryGenerator {
         const tabContent = $(parent).children('.panel')
             .children('.panel-body').children('div[name=subobject-tabcontent]');
 
-        let str = '<br/>' + this.indent() + '[#] ' + name + ' {<br/>';
+        let str = name + '(#)<br/><br/>';
 
-        this.indentLvl++;
         str += mapJoin(tabHeaders.children(), function(tabHeader) {
             const tabName = sgSelf.getPlainText($(tabHeader));
             const tabID = $(tabHeader).children('a').attr('href');
             const tabBody = $(tabContent).children(tabID);
 
-            sgSelf.indentLvl++;
             const tabBodyStr = mapJoin($(tabBody).children(), function(tabBodyElt) {
                 return sgSelf.visitDomNode(tabBodyElt);
             });
 
-            sgSelf.indentLvl--;
 
-            return sgSelf.indent() + tabName + ': {<br/>' +
-                sgSelf.indent(sgSelf.indentLvl + 1) + tabBodyStr + 't}';
+            return tabName + ':<br/>' + tabBodyStr + '<br/><br/>';
         }, '<br/>');
-        str += '<br/>' + this.indent() + 's}';
-        this.indentLvl--;
+        str += 'End of ' + name + '<br/><br/>';
 
         return str;
     };
@@ -924,14 +939,11 @@ class SummaryGenerator {
 
         let str = activeTabName + ' {<br/>';
 
-        this.indentLvl++;
-        str += this.indent();
         const tabContent = $(activeTab).children();
         for (let i = 0; i < tabContent.length; i++) {
-            str += sgSelf.visitDomNode(tabContent[i], i < tabContent.length - 1);
+            str += sgSelf.visitDomNode(tabContent[i]);
         }
-        str += '<br/>' + this.indent() + '}';
-        this.indentLvl--;
+        str += '<br/>eg}';
 
         return str;
     };
@@ -945,6 +957,10 @@ class SummaryGenerator {
         const cbkxWrapper = $body.children('.cenarius-checkbox-wrapper');
         const alertElt = $body.children('div.alert');
         const textareaElt = $body.children('textarea');
+        let includeTitle = $(parent).attr('titleInSummary');
+        if (!isSet(includeTitle))
+            includeTitle = false;
+
 
         const eltExists = (selRes) => {
             return selRes.length > 0;
@@ -952,18 +968,16 @@ class SummaryGenerator {
 
         let str = '';
         if (eltExists(alertElt)) {
-            str += $(alertElt).text();
+            str += $(alertElt).text() + '. ';
         } else if (eltExists(selectElt)) {
-            str += $body.children('.cenarius-input-tag').text() + ' is {' + $(selectElt).val() + '}. ';
+            str += $(selectElt).val() + '. ';
         } else if (eltExists(ckbxElt)) {
             // Regular checkbox field
             if ($(ckbxElt).prop('checked')) {
                 if (eltExists(cbkxWrapper)) {
-                    // If this field is not wrapper in a multi-choice-group or a single-choice-group
-                    // then it need only be stringified if the ckbx is checked
                     const $wrapperSpan = $($(cbkxWrapper).children('span'));
-                    str += $wrapperSpan.children('span.input-group-addon').text() +
-                        ' (' + $wrapperSpan.children('input').val() + '). ';
+                    str += (includeTitle ? ($wrapperSpan.children('span.input-group-addon').text() + ': ') : '') +
+                        $wrapperSpan.children('input').val() + '. ';
                 } else {
                     str += $body.children('.cenarius-ckbx-lbl').text() + '. ';
                 }
@@ -971,46 +985,54 @@ class SummaryGenerator {
         } else if (eltExists(textareaElt)) {
             const name = $($body.children('span.input-group-addon')[0]).text();
             const val = $(textareaElt).val();
-            str += name + ' is {' + val + '}. ';
+            str += (includeTitle ? (name + ': ') : '') + val + '. ';
         } else {
             // Regular input field
             const name = $($body.children('span.input-group-addon')[0]).text();
             const val = $body.children('input').val();
-            str += name + ' is {' + val + '}. ';
+            str += (includeTitle ? (name + ': ') : '') +val + '. ';
         }
 
         return str;
     };
 
-    visitDomNode(dom, appendNL = true) {
+    visitDomNode(dom) {
         const $dom = $(dom);
+        const skip = $dom.attr('excludeFromSummary');
+        if (isSet(skip) && skip)
+            return '';
+
         const domName = $dom.attr('name');
-        const anl = appendNL ? ('<br/>' + this.indent()) : '';
+        const breakStyle = $dom.attr('summaryBreakStyle');
+        const brBefore = breakStyle === 'before' ? '<br/>' : '';
+        const brAfter = breakStyle === 'after' ? '<br/>' : '';
+
+        console.log('GenSum: ' + domName);
 
         switch (domName) {
             case 'cenarius-object-group':
                 {
-                    return this.genObjectGroup(dom) + anl;
+                    return brBefore + this.genObjectGroup(dom) + brAfter;
                 }
             case 'cenarius-subobject-group':
                 {
-                    return this.genSubobjectGroup(dom) + anl;
+                    return brBefore + this.genSubobjectGroup(dom) + brAfter;
                 }
             case 'cenarius-single-choice-group':
                 {
-                    return this.genSingleChoiceGroup(dom) + anl;
+                    return brBefore + this.genSingleChoiceGroup(dom) + brAfter;
                 }
             case 'cenarius-multi-choice-group':
                 {
-                    return this.genMultiChoiceGroup(dom) + anl;
+                    return brBefore + this.genMultiChoiceGroup(dom) + brAfter;
                 }
             case 'cenarius-either-group':
                 {
-                    return this.genEitherGroup(dom) + anl;
+                    return brBefore + this.genEitherGroup(dom) + brAfter;
                 }
             case 'cenarius-input-group':
                 {
-                    return this.genInputGroup(dom);
+                    return brBefore + this.genInputGroup(dom) + brAfter;
                 }
             default:
                 {
@@ -1139,8 +1161,8 @@ function addSubobjectInstance(tabHeaders) {
         if (typeof fieldVal !== typeof undefined && fieldVal !== false) {
             const fieldVal = node.prop(fieldName);
             if (isSet(fieldVal)) {
-                // console.log('Fix ' + fieldName + '}' + fieldVal + 'n-> ' + valGenFunc(node, fieldVal, '_template_' + cloneIndex));
-                node.prop(fieldName, valGenFunc(node, fieldVal, '_template_' + cloneIndex));
+                // console.log('Fix ' + fieldName + '}' + fieldVal + 'n-> ' + valGenFunc(node, fieldVal, '::instance-'' + cloneIndex));
+                node.prop(fieldName, valGenFunc(node, fieldVal, '_instance-' + cloneIndex));
             }
         }
     }
@@ -1152,8 +1174,8 @@ function addSubobjectInstance(tabHeaders) {
         fixCloneField(node, 'href');
     });
 
-    // Remove skip-in-summary attr
-    $(clone).removeAttr('skip-in-summary');
+    // Remove excludeFromSummary attr
+    $(clone).removeAttr('excludeFromSummary');
 
     clone.prop('id', cloneID);
     $tabContent.append(clone);
@@ -1200,10 +1222,10 @@ function summarizeForm(cenariusForm) {
 
     const mainCol = $(cenariusForm).children()[0];
     const summary = mapJoin($(mainCol).children(), function(group) {
-        return mySG.visitDomNode(group) + '<br/>';
+        return mySG.visitDomNode(group);
     });
 
-    return $_$('pre', {}, summary);
+    return $_$('p', {}, summary);
 };
 
 function mapJoin(obj, func, sep = '') {

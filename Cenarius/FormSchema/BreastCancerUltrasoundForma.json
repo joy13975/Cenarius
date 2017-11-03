@@ -2,6 +2,7 @@
     "forma": {
         "basic_info": {
             "_title": "基本資料",
+            "_exclude_from_summary": true,
             "_properties": {
                 "patient": {
                     "_title": "受檢者",
@@ -70,6 +71,7 @@
         "indications": {
             "_title": "檢查適應症",
             "_default_type": "boolean",
+            "_exclude_from_summary": true,
             "_properties": {
                 "00_asymptomatic_screening": {
                     "_title": "00. Asymptomatic Screening",
@@ -214,6 +216,7 @@
             }
         },
         "interpretation": {
+            "_exclude_from_summary": true,
             "_properties": {
                 "us_category": {
                     "_title": "US Category 分類",
@@ -419,7 +422,9 @@
                     "_title": "檢查小結",
                     "_type": "big_string",
                     "_cols": 12,
-                    "_default_value": "What is life?"
+                    "_default_value": "What is life?",
+                    "_summary_break_style": "before",
+                    "_title_in_summary": true
                 }
             }
         },
@@ -427,7 +432,8 @@
             "_title": "報告總結",
             "_type": "big_string",
             "_cols": 12,
-            "_default_value": "Life is about finding happiness."
+            "_default_value": "Life is about finding happiness.",
+            "_title_in_summary": true
         }
     }
 }
