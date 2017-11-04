@@ -75,7 +75,8 @@
             "_properties": {
                 "00_asymptomatic_screening": {
                     "_title": "00. Asymptomatic Screening",
-                    "_cols": 12
+                    "_cols": 12,
+                    "_default_value": true
                 },
                 "10_exam_for_symptomatic_patient": {
                     "_title": "10. Exam for symptomatic patient",
@@ -132,11 +133,12 @@
                                 "specific": {
                                     "_properties": {
                                         "angle": {
-                                            "_type": "number",
-                                            "_ending": "o'clock"
+                                            "_type": "float",
+                                            "_ending": "o'clock",
+                                            "_number_step": 0.1
                                         },
                                         "distance": {
-                                            "_type": "number",
+                                            "_type": "float",
                                             "_ending": "cm"
                                         }
                                     }
@@ -300,12 +302,12 @@
                 },
                 "distance": {
                     "_title": "距離乳頭距離",
-                    "_type": "number",
+                    "_type": "float",
                     "_ending": "cm"
                 },
                 "max_diameter": {
                     "_title": "最大徑",
-                    "_type": "number",
+                    "_type": "float",
                     "_ending": "mm"
                 },
                 "shape": {

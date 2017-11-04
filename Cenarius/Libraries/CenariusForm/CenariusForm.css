@@ -49,10 +49,6 @@ cenarius-hr {
 	text-align: right;
 }
 
-#bootstrap-overrides .panel-default {
-	padding: 1px;
-}
-
 #bootstrap-overrides div[name=cenarius-input-group] {
 	padding: 5px;
 }
@@ -135,9 +131,18 @@ input[type=checkbox]:checked ~ .cenarius-ckbx-lbl{
 	height: 36px;
 }
 
+#bootstrap-overrides .panel {
+	margin-bottom: 0px;
+}
+
 #bootstrap-overrides .panel-heading {
 	font-weight:bold; 
 	font-size: 20px; 
+}
+
+#bootstrap-overrides .panel-body {
+	padding: 5px;
+	margin: 5px;
 }
 
 #bootstrap-overrides span[name=choice-type-icon] {
@@ -148,6 +153,7 @@ input[type=checkbox]:checked ~ .cenarius-ckbx-lbl{
 #bootstrap-overrides div[class*=col-] {
 	padding-left: 10px;
 	padding-right: 10px;
+	padding: 5px;
 }
 
 div[name=cenarius-content] {
@@ -177,7 +183,7 @@ button[name=summarize_btn]{
 	margin-right: 20px;
 }
 
-button[name=submit_btn]{ 
+button[name=sql_btn]{ 
 	float: right;
 	position: relative;
 	top: 25%;

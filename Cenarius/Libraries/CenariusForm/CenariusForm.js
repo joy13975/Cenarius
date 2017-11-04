@@ -44,12 +44,41 @@ var config = {
         input: '6'
     },
 
-    minSubobjectInstance: 1
+    minSubobjectInstance: 1,
+
+    maxLength: {
+        float: '',
+        integer: '',
+        big_string: '4096',
+        string: '255',
+        boolean: '',
+        date: '',
+        label: ''
+    }
 };
 const _space = '&nbsp;';
 const nullStm = () => {};
 let forma = '';
 
+const HtmlInputTypeTable = {
+    float: 'number',
+    integer: 'number',
+    big_string: 'text',
+    string: 'text',
+    boolean: 'checkbox',
+    date: 'date',
+    label: 'label'
+}
+
+const SQLTypeTable = {
+    float: 'float',
+    integer: 'integer',
+    big_string: 'nvarchar',
+    string: 'nvarchar',
+    boolean: 'bit',
+    date: 'date',
+    // label: 'nvarchar' // Label should not be stored -- unless spec changes
+}
 
 class FormGenerator {
     constructor() {
@@ -90,7 +119,9 @@ class FormGenerator {
     }
 
     getNextID(key) {
-        return (key + '_f' + (this.fieldID++).toString());
+        const id = key + '_f' + this.fieldID;
+        this.fieldID++;
+        return id;
     }
 
     genObj(node, key, name, sandwich) {
@@ -100,7 +131,7 @@ class FormGenerator {
             node._html_class : '';
         const nCols = node.hasOwnProperty('_cols') ?
             node._cols : config.nCols.object;
-        const fieldID = this.getNextID(key + '_grouping');
+        const fieldID = key + '_grouping'; //Not a field so do not increment this.fieldID
         const needTabs = node.hasOwnProperty('_grouping') && node._grouping === 'either';
         const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
         const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
@@ -294,27 +325,28 @@ class FormGenerator {
         // Default value
         const defaultValue = node.hasOwnProperty('_default_value') ? node._default_value : 0;
 
-        const selectDom =
-            $.parseHTML($_$('select', {
-                    class: 'selectpicker form-control',
-                    id: fieldID,
-                    'data-live-search': true,
-                    onchange: 'inputToggleCheckbox(this);'
-                },
-                (needCheckbox ? $_$('option', {
-                    defaultOption: undefined
-                }, config.defaultEnumOptionText) : '') +
-                mapJoin(enumData, (item) => {
-                    return $_$('option', {}, item);
-                })
-            ))[0];
-
-        // The value of "true" is required - "undefined" only works sometimes
-        $($(selectDom).children()[defaultValue]).attr('selected', true);
-        const selectHtml = selectDom.outerHTML;
-
         let html = '';
         if (simpleEnum) {
+            const selectDom =
+                $.parseHTML($_$('select', {
+                        class: 'selectpicker form-control',
+                        id: fieldID,
+                        name: fieldID,
+                        'data-live-search': true,
+                        onchange: 'inputToggleCheckbox(this);'
+                    },
+                    (needCheckbox ? $_$('option', {
+                        defaultOption: undefined
+                    }, config.defaultEnumOptionText) : '') +
+                    mapJoin(enumData, (item) => {
+                        return $_$('option', {}, item);
+                    })
+                ))[0];
+
+            // The value of "true" is required - "undefined" only works sometimes
+            $($(selectDom).children()[defaultValue]).attr('selected', true);
+            const selectHtml = selectDom.outerHTML;
+
             const enumHtml =
                 $_$('span', {
                         class: 'input-group-addon cenarius-input-tag'
@@ -368,16 +400,7 @@ class FormGenerator {
     genLeaf(nodeParent, node, type, key, name) {
         console.log('genLeaf()');
 
-        const FormaTypeTable = {
-            number: 'number',
-            integer: 'number',
-            big_string: 'text',
-            string: 'text',
-            boolean: 'checkbox',
-            date: 'date',
-            label: 'label'
-        }
-        const inputType = FormaTypeTable[type];
+        const htmlInputType = HtmlInputTypeTable[type];
         const isTextArea = type === 'big_string';
         const inputTag = isTextArea ? 'textarea' : 'input';
 
@@ -387,26 +410,17 @@ class FormGenerator {
         const numMin = node.hasOwnProperty('_min') ? node._min : '';
         const numMax = node.hasOwnProperty('_max') ? node._max : '';
 
-        const MaxLengthTable = {
-            number: '',
-            integer: '',
-            big_string: '4096',
-            string: '255',
-            boolean: '',
-            date: '',
-            label: ''
-        }
         let maxStringLength = isInt(node._max_string_length) ?
-            node._max_string_length : MaxLengthTable[type];
+            node._max_string_length : config.maxLength[type];
 
         // Default value
         let defaultValue = '';
         if (node.hasOwnProperty('_default_value')) {
             defaultValue = node._default_value;
         } else {
-            if (inputType === 'number') {
+            if (htmlInputType === 'number') {
                 defaultValue = '0';
-            } else if (inputType === 'date') {
+            } else if (htmlInputType === 'date') {
                 defaultValue = (new Date()).toISOString().slice(0, 10);
             }
         }
@@ -436,7 +450,7 @@ class FormGenerator {
         // Generate the field html which might include an input addon and an ending
         const inputHtml =
             (() => {
-                switch (inputType) {
+                switch (htmlInputType) {
                     case 'label':
                         {
                             const html =
@@ -451,13 +465,18 @@ class FormGenerator {
                     case 'checkbox':
                         {
                             const html =
-                                $_$('input', {
-                                        type: 'checkbox',
-                                        name: fieldID,
-                                        id: fieldID,
-                                        autocomplete: 'off',
-                                        onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle(this);' : ''
-                                    },
+                                $_$('input', (() => {
+                                        let ckbxProps = {
+                                            type: 'checkbox',
+                                            id: fieldID,
+                                            name: fieldID,
+                                            autocomplete: 'off',
+                                            onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle(this);' : ''
+                                        }
+
+                                        defaultValue === true ? (ckbxProps.checked = true) : nullStm();
+                                        return ckbxProps;
+                                    })(),
                                     $_$('label', {
                                             for: fieldID,
                                             class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
@@ -486,23 +505,24 @@ class FormGenerator {
                                     },
                                     $_$('b', {}, fieldName)) +
                                 $_$(inputTag, (() => {
-                                    let inputAttr = {
+                                    let inputProps = {
                                         class: 'form-control',
                                         style: fieldStyle,
                                         id: fieldID,
-                                        type: inputType,
+                                        name: fieldID,
+                                        type: htmlInputType,
                                         onkeyup: checkboxToggleJS,
                                         onchange: checkboxToggleJS,
                                         step: numStep,
                                         defaultValue: defaultValue,
                                         value: defaultValue
                                     };
-                                    numMin.length > 0 ? (inputAttr.min = numMin) : nullStm();
-                                    numMax.length > 0 ? (inputAttr.max = numMax) : nullStm();
-                                    defaultValue.length > 0 ? (inputAttr.value = defaultValue) : nullStm();
-                                    textAreaRows.length > 0 ? (inputAttr.rows = textAreaRows) : nullStm();
-                                    maxStringLength.length > 0 ? (inputAttr.maxlength = maxStringLength) : nullStm();
-                                    return inputAttr;
+                                    numMin.length > 0 ? (inputProps.min = numMin) : nullStm();
+                                    numMax.length > 0 ? (inputProps.max = numMax) : nullStm();
+                                    defaultValue.length > 0 ? (inputProps.value = defaultValue) : nullStm();
+                                    textAreaRows.length > 0 ? (inputProps.rows = textAreaRows) : nullStm();
+                                    maxStringLength.length > 0 ? (inputProps.maxlength = maxStringLength) : nullStm();
+                                    return inputProps;
                                 })(), isTextArea ? defaultValue : '', isTextArea) +
                                 endingSpan;
 
@@ -515,7 +535,7 @@ class FormGenerator {
                         }
                     default:
                         {
-                            return $_$('p', {}, $_$('b', {}, '[CenariusFormError] Unknown field type: ' + inputType));
+                            return $_$('p', {}, $_$('b', {}, '[CenariusFormError] Unknown field type: ' + htmlInputType));
                         }
                 }
             })();
@@ -629,8 +649,8 @@ class Htmler {
         const resHtml =
             $_$('input', {
                     type: 'checkbox',
-                    name: checkboxID,
                     id: checkboxID,
+                    name: checkboxID,
                     autocomplete: 'off',
                     onchange: checkboxType === 'single' ? 'singleChoiceToggle(this);' : ''
                 },
@@ -666,9 +686,11 @@ class Htmler {
                     },
                     $_$('h1', {}, headingText)
                 ) +
-                $_$('div', {
+                $_$('form', {
                         class: 'row',
-                        name: 'cenarius-form'
+                        name: 'cenarius-form',
+                        action: '/Home/Test1',
+                        method: 'post'
                     },
                     $_$('div', {
                         class: 'col-md-12',
@@ -707,6 +729,18 @@ class Htmler {
                         class: 'glyphicon glyphicon-book'
                     }) +
                     _space + _space + _space + 'Summarize'
+                ) +
+                $_$('button', {
+                        type: 'button',
+                        class: 'btn btn-primary btn-lg',
+                        name: 'sql_btn',
+                        'data-toggle': 'modal',
+                        'data-target': '#sql_modal'
+                    },
+                    $_$('span', {
+                        class: 'glyphicon glyphicon-cloud-upload'
+                    }) +
+                    _space + _space + _space + 'Get SQL'
                 )
             );
 
@@ -763,9 +797,64 @@ class Htmler {
                             $_$('button', {
                                     type: 'button',
                                     class: 'btn btn-primary',
+                                    id: 'submit_btn',
                                     'data-dismiss': 'modal'
                                 },
                                 'Submit'
+                            )
+                        )
+                    )
+                )
+            );
+        return html;
+    };
+
+    static genSQLModalHtml() {
+        const html =
+            $_$('div', {
+                    class: 'modal fade',
+                    id: 'sql_modal',
+                    role: 'dialog',
+                    tabindex: -1
+                },
+                $_$('div', {
+                        class: 'modal-dialog modal-lg'
+                    },
+                    $_$('div', {
+                            class: 'modal-content'
+                        },
+                        $_$('div', {
+                                class: 'modal-header'
+                            },
+                            $_$('button', {
+                                    type: 'button',
+                                    class: 'close',
+                                    'data-dismiss': 'modal'
+                                },
+                                '&times;'
+                            ) +
+                            $_$('h4', {
+                                    class: 'modal-title'
+                                },
+                                'Form Summary'
+                            )
+                        ) +
+                        $_$('div', {
+                                class: 'modal-body'
+                            },
+                            $_$('p', {},
+                                '//SQL Placeholder//'
+                            )
+                        ) +
+                        $_$('div', {
+                                class: 'modal-footer'
+                            },
+                            $_$('button', {
+                                    type: 'button',
+                                    class: 'btn btn-default',
+                                    'data-dismiss': 'modal'
+                                },
+                                'Close'
                             )
                         )
                     )
@@ -1006,6 +1095,10 @@ class SummaryGenerator {
         } else if (eltExists(textareaElt)) {
             val = $(textareaElt).val();
             addPeriod = false;
+
+            // Do not inlcude counter text
+            if ($(igas[1]).attr('name') === 'textarea-counter')
+                ending = '';
         } else {
             // Regular input field
             val = $body.children('input').val();
@@ -1079,11 +1172,13 @@ function main(global, $) {
 
         const summaryModalHtml = Htmler.genSummaryModalHtml();
 
+        const sqlModalHtml = Htmler.genSQLModalHtml();
+
         const finalHtml =
             $_$('div', {
                     id: 'bootstrap-overrides'
                 },
-                contentHtml + ctrlHtml + summaryModalHtml
+                contentHtml + ctrlHtml + summaryModalHtml + sqlModalHtml
             );
 
         this.replaceWith(finalHtml);
@@ -1232,6 +1327,12 @@ function spawnMinimumSubobjectInstances(tabHeaders, tabContent = $(tabHeaders).s
 }
 
 
+
+
+function genSQLSchema(){
+
+}
+
 function summarizeForm(cenariusForm) {
     let inSingleChoiceGroup = false;
     let inMultiChoiceGroup = false;
@@ -1378,8 +1479,19 @@ $(() => { /* DOM ready */
 
     $("button[name=summarize_btn]").click(function() {
         let $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
-        const summaryHtml = summarizeForm($(this).parent().siblings('div[name=cenarius-content]').children('div[name=cenarius-form]'));
+        const summaryHtml = summarizeForm($(this).parent().siblings('div[name=cenarius-content]').children('form[name=cenarius-form]'));
         $summary.html(summaryHtml);
+    });
+
+    $("button[name=sql_btn]").click(function() {
+        const sqlSchema = genSQLSchema();
+        alert(JSON.stringify(sqlSchema));
+    });
+
+    $("#submit_btn").click(function() {
+        const formData = $('form[name=cenarius-form]').serializeArray();
+        const str = JSON.stringify(formData);
+        alert(str);
     });
 
     // Textarea auto resize
