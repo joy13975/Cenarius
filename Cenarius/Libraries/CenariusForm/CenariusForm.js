@@ -387,6 +387,18 @@ class FormGenerator {
         const numMin = node.hasOwnProperty('_min') ? node._min : '';
         const numMax = node.hasOwnProperty('_max') ? node._max : '';
 
+        const MaxLengthTable = {
+            number: '',
+            integer: '',
+            big_string: '4096',
+            string: '255',
+            boolean: '',
+            date: '',
+            label: ''
+        }
+        let maxStringLength = isInt(node._max_string_length) ?
+            node._max_string_length : MaxLengthTable[type];
+
         // Default value
         let defaultValue = '';
         if (node.hasOwnProperty('_default_value')) {
@@ -408,13 +420,18 @@ class FormGenerator {
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
         const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
         const needCheckbox = this.forceCheckbox !== 'none' || forceCheckbox;
-        const endingSpan = node.hasOwnProperty('_ending') ?
+        let endingSpan = node.hasOwnProperty('_ending') ?
             $_$('span', {
                 class: 'input-group-addon cenarius-input-tag'
             }, node._ending) : '';
-
         const checkboxID = fieldID + '_ckbx';
 
+        if (endingSpan.length === 0 && type === 'big_string') {
+            endingSpan = $_$('span', {
+                class: 'input-group-addon cenarius-input-tag',
+                name: 'textarea-counter'
+            }, defaultValue.length + '<br>------<br>' + maxStringLength);
+        }
 
         // Generate the field html which might include an input addon and an ending
         const inputHtml =
@@ -480,10 +497,11 @@ class FormGenerator {
                                         defaultValue: defaultValue,
                                         value: defaultValue
                                     };
-                                    numMin === '' ? nullStm() : (inputAttr.min = numMin);
-                                    numMax === '' ? nullStm() : (inputAttr.max = numMax);
-                                    defaultValue === '' ? nullStm() : (inputAttr.value = defaultValue);
-                                    textAreaRows === '' ? nullStm() : (inputAttr.rows = textAreaRows);
+                                    numMin.length > 0 ? (inputAttr.min = numMin) : nullStm();
+                                    numMax.length > 0 ? (inputAttr.max = numMax) : nullStm();
+                                    defaultValue.length > 0 ? (inputAttr.value = defaultValue) : nullStm();
+                                    textAreaRows.length > 0 ? (inputAttr.rows = textAreaRows) : nullStm();
+                                    maxStringLength.length > 0 ? (inputAttr.maxlength = maxStringLength) : nullStm();
                                     return inputAttr;
                                 })(), isTextArea ? defaultValue : '', isTextArea) +
                                 endingSpan;
@@ -835,13 +853,13 @@ class SummaryGenerator {
         const name = this.getPlainText(panelHeading);
         const body = $(parent).children('.panel').children('.panel-body');
 
-        let str = name + '<br/><br/>';
+        let str = name + '<br><br>';
 
         const subdoms = $(body).children();
         for (let i = 0; i < subdoms.length; i++) {
             str += sgSelf.visitDomNode(subdoms[i]);
         }
-        str += '<br/>End of ' + name + '<br/><br/>';
+        str += '<br>End of ' + name + '<br><br>';
 
         return str;
     };
@@ -855,7 +873,7 @@ class SummaryGenerator {
         const tabContent = $(parent).children('.panel')
             .children('.panel-body').children('div[name=subobject-tabcontent]');
 
-        let str = name + '(#)<br/><br/>';
+        let str = name + '(#)<br><br>';
 
         str += mapJoin(tabHeaders.children(), function(tabHeader) {
             const tabName = sgSelf.getPlainText($(tabHeader));
@@ -867,9 +885,9 @@ class SummaryGenerator {
             });
 
 
-            return tabName + ':<br/>' + tabBodyStr + '<br/><br/>';
-        }, '<br/>');
-        str += 'End of ' + name + '<br/><br/>';
+            return tabName + ':<br>' + tabBodyStr + '<br><br>';
+        }, '<br>');
+        str += 'End of ' + name + '<br><br>';
 
         return str;
     };
@@ -881,24 +899,21 @@ class SummaryGenerator {
         const ckbx = $(parent).children('.panel').children('.panel-body')
             .find('div[name=cenarius-input-group] > div.input-group > input[type=checkbox]:checked');
 
-        let str = name + ' is ';
         if (ckbx.length == 0) {
-            str += '{unknown (not selected)}. ';
+            val = 'unknown (not selected)';
         } else {
             const lbl = $(ckbx).siblings('label.cenarius-ckbx-lbl');
-            let value = '';
             if (lbl.length > 0) {
-                value = lbl.text();
+                val = lbl.text();
             } else {
                 // Checkbox-wrapped regular input field
                 const $wrapperSpan = $($(ckbx).siblings('span.cenarius-checkbox-wrapper').children('span'));
-                value = $wrapperSpan.children('span.input-group-addon').text() +
+                val = $wrapperSpan.children('span.input-group-addon').text() +
                     ' (' + $wrapperSpan.children('input').val() + ')';
             }
-            str += value + '. ';
         }
 
-        return str;
+        return name + ': ' + val + '. ';
     };
 
     genMultiChoiceGroup(parent) {
@@ -908,11 +923,11 @@ class SummaryGenerator {
         const ckbxs = $(parent).children('.panel').children('.panel-body')
             .find('div[name=cenarius-input-group] > div.input-group > input[type=checkbox]:checked');
 
-        let str = name + ' is ';
+        let val = '';
         if (ckbxs.length == 0) {
-            str += 'unknown (not selected). ';
+            val = 'unknown (not selected)';
         } else {
-            str += mapJoin($(ckbxs), function(ckbx) {
+            val = mapJoin($(ckbxs), function(ckbx) {
                 const lbl = $(ckbx).siblings('label.cenarius-ckbx-lbl');
                 if (lbl.length > 0) {
                     return lbl.text();
@@ -922,10 +937,10 @@ class SummaryGenerator {
                     return $wrapperSpan.children('span.input-group-addon').text() +
                         ' (' + $wrapperSpan.children('input').val() + ')';
                 }
-            }, ', ') + '. ';
+            }, ', ');
         }
 
-        return str;
+        return name + ': ' + val + '. ';
     };
 
     genEitherGroup(parent) {
@@ -937,13 +952,13 @@ class SummaryGenerator {
         const activeTabName = this.getPlainText(activeTabRef);
 
 
-        let str = activeTabName + ' {<br/>';
+        let str = activeTabName + ' {<br>';
 
         const tabContent = $(activeTab).children();
         for (let i = 0; i < tabContent.length; i++) {
             str += sgSelf.visitDomNode(tabContent[i]);
         }
-        str += '<br/>eg}';
+        str += '<br>eg}';
 
         return str;
     };
@@ -966,34 +981,39 @@ class SummaryGenerator {
             return selRes.length > 0;
         };
 
-        let str = '';
+        const igas = $body.children('span.input-group-addon');
+        let title = includeTitle ? $(igas[0]).text() : '';
+        let val = '';
+        let ending = igas.length > 1 ? $(igas[1]).text() : '';
+        let addPeriod = true;
+
         if (eltExists(alertElt)) {
-            str += $(alertElt).text() + '. ';
+            val = $(alertElt).text();
         } else if (eltExists(selectElt)) {
-            str += $(selectElt).val() + '. ';
+            val = $(selectElt).val();
         } else if (eltExists(ckbxElt)) {
             // Regular checkbox field
             if ($(ckbxElt).prop('checked')) {
                 if (eltExists(cbkxWrapper)) {
                     const $wrapperSpan = $($(cbkxWrapper).children('span'));
-                    str += (includeTitle ? ($wrapperSpan.children('span.input-group-addon').text() + ': ') : '') +
-                        $wrapperSpan.children('input').val() + '. ';
+                    title = $wrapperSpan.children('span.input-group-addon').text();
+                    val = $wrapperSpan.children('input').val();
                 } else {
-                    str += $body.children('.cenarius-ckbx-lbl').text() + '. ';
+                    title = $body.children('.cenarius-ckbx-lbl').text();
+                    val = 'yes';
                 }
             }
         } else if (eltExists(textareaElt)) {
-            const name = $($body.children('span.input-group-addon')[0]).text();
-            const val = $(textareaElt).val();
-            str += (includeTitle ? (name + ': ') : '') + val + '. ';
+            val = $(textareaElt).val();
+            addPeriod = false;
         } else {
             // Regular input field
-            const name = $($body.children('span.input-group-addon')[0]).text();
-            const val = $body.children('input').val();
-            str += (includeTitle ? (name + ': ') : '') +val + '. ';
+            val = $body.children('input').val();
         }
 
-        return str;
+        if (ending.length > 0)
+            ending = ' ' + ending;
+        return (includeTitle ? (title + ': ') : '') + val + ending + (addPeriod ? '. ' : '');
     };
 
     visitDomNode(dom) {
@@ -1004,10 +1024,8 @@ class SummaryGenerator {
 
         const domName = $dom.attr('name');
         const breakStyle = $dom.attr('summaryBreakStyle');
-        const brBefore = breakStyle === 'before' ? '<br/>' : '';
-        const brAfter = breakStyle === 'after' ? '<br/>' : '';
-
-        console.log('GenSum: ' + domName);
+        const brBefore = breakStyle === 'before' ? '<br>' : '';
+        const brAfter = breakStyle === 'after' ? '<br>' : '';
 
         switch (domName) {
             case 'cenarius-object-group':
@@ -1316,6 +1334,11 @@ function mergeStrProps(a, b, separater = ' ') {
     return res;
 }
 
+function isInt(value) {
+    var x;
+    return isNaN(value) ? false : (x = parseFloat(value), (0 | x) === x);
+}
+
 function isSet(value) {
     return !(_.isUndefined(value) || _.isNull(value));
 };
@@ -1366,5 +1389,12 @@ $(() => { /* DOM ready */
     }).on('input', function() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    $('textarea').keyup(function() {
+        const valLen = $(this).val().length;
+        let counterSpan = $(this).siblings('span[name=textarea-counter]');
+        const oldCounter = $(counterSpan).html();
+        $(counterSpan).html(valLen + oldCounter.substr(oldCounter.indexOf('<br>')));
     });
 });

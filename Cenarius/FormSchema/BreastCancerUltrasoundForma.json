@@ -294,7 +294,9 @@
                 },
                 "position": {
                     "_title": "方位",
-                    "_ending": "o'clock"
+                    "_ending": "o'clock",
+                    "_type": "integer",
+                    "_default_value": 2
                 },
                 "distance": {
                     "_title": "距離乳頭距離",
@@ -349,6 +351,7 @@
                 },
                 "associated_features": {
                     "_default_cols": 4,
+                    "_summary_break_style": "before",
                     "_enum_multi": [
                         "1. Architectural distortion",
                         "2. Duct Changes ",
@@ -431,6 +434,7 @@
         "overall_summary": {
             "_title": "報告總結",
             "_type": "big_string",
+            "_max_string_length": 8096,
             "_cols": 12,
             "_default_value": "Life is about finding happiness.",
             "_title_in_summary": true
