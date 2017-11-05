@@ -25,20 +25,8 @@ namespace Cenarius.Controllers
 
             string bcuPathHeader = "~/FormSchema/BreastCancerUltrasound";
 
-            string schemaPath = HttpContext.Server.MapPath(bcuPathHeader + "Schema.json");
-            string formPath = HttpContext.Server.MapPath(bcuPathHeader + "Form.json");
-            string paramsPath = HttpContext.Server.MapPath(bcuPathHeader + "Params.json");
 
-            string schemaStr = System.IO.File.ReadAllText(schemaPath);
-            string formStr = System.IO.File.ReadAllText(formPath);
-            string paramsStr = System.IO.File.ReadAllText(paramsPath);
-
-            ViewData["Schema"] = schemaStr;
-            ViewData["Form"] = formStr;
-            ViewData["Params"] = paramsStr;
-
-
-            string formaPath = HttpContext.Server.MapPath(bcuPathHeader + "Forma.json");
+            string formaPath = HttpContext.Server.MapPath(bcuPathHeader + "FormaDemo.json");
             string formaStr = System.IO.File.ReadAllText(formaPath);
             JObject forma = JObject.Parse(formaStr);
             

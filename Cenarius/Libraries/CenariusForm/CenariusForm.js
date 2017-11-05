@@ -124,6 +124,46 @@ class FormGenerator {
         return id;
     }
 
+    genEitherGroup(fieldID, bodyDoms) {
+        // Generate sandwich content and separate them
+        let pages = [];
+        $(bodyDoms).children().each(function() {
+            const $this = $(this);
+            pages.push({
+                name: $this.children('div.panel-heading').text(),
+                contentDoms: $this.children('div.panel-body').children(),
+                attr: {
+                    class: pages.length == 0 ? 'active' : ''
+                }
+            });
+        });
+        const tabHeaderDoms = _.map(pages, (page) => {
+            return DomMaker.genTabRef(identifierize(page.name) + '_groupingtab', page.name, page.attr);
+        });
+
+        const tabContentDoms = _.map(pages, (page) => {
+            return DomMaker.genTabPane(identifierize(page.name) + '_groupingtab', page.contentDoms, page.attr);
+        })
+
+        const egDom =
+            $_$('div', {
+                name: 'cenarius-either-group'
+            }, [
+                $_$('ul', {
+                    class: 'nav nav-tabs nav-justified',
+                    id: fieldID + '_tabs',
+                    name: 'cenarius-either-group-tabheaders'
+                }, tabHeaderDoms),
+
+                $_$('div', {
+                    class: 'tab-content col-md-12',
+                    name: 'cenarius-either-group-tabcontent'
+                }, tabContentDoms)
+            ]);
+
+        return egDom;
+    }
+
     genObj(node, key, name, sandwich) {
         console.log('genObj()');
 
@@ -136,61 +176,6 @@ class FormGenerator {
         const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
         const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
 
-        const helpAlert = node.hasOwnProperty('_help_text') ?
-            $_$('div', {
-                    class: 'alert alert-info'
-                },
-                node._help_text
-            ) : '';
-
-
-        const genTabs = (bodyStr) => {
-            // Generate sandwich content and separate them
-            const bodyDom = $.parseHTML(bodyStr);
-            let pages = [];
-            $(bodyDom).children().each(function() {
-                const $this = $(this);
-                pages.push({
-                    name: $this.children('div.panel-heading').html(),
-                    content: $($this.children('div.panel-body')).html(),
-                    attr: {
-                        class: pages.length == 0 ? 'active' : ''
-                    }
-                });
-            });
-            console.log('oii');
-            console.log(pages);
-            const tabHeaderStr = mapJoin(pages, (page) => {
-                return Htmler.genTabRef(identifierize(page.name) + '_groupingtab', page.name, page.attr);
-            });
-
-            const tabContentStr = mapJoin(pages, (page) => {
-                return Htmler.genTabPane(identifierize(page.name) + '_groupingtab', page.content, page.attr);
-            })
-
-            const tabsHtml =
-                $_$('div', {
-                        name: 'cenarius-either-group'
-                    },
-                    $_$('ul', {
-                            class: 'nav nav-tabs nav-justified',
-                            id: fieldID + '_tabs',
-                            name: 'cenarius-either-group-tabheaders'
-                        },
-                        tabHeaderStr
-                    ) +
-                    $_$('div', {
-                            class: 'tab-content col-md-12',
-                            name: 'cenarius-either-group-tabcontent'
-                        },
-                        tabContentStr
-                    )
-                );
-
-            return tabsHtml;
-        }
-
-        const html = needTabs ? genTabs(sandwich()) : sandwich();
         let ogProps = {
             name: 'cenarius-object-group'
         };
@@ -199,7 +184,15 @@ class FormGenerator {
         if (isSet(summaryBreakStyle))
             ogProps.summaryBreakStyle = summaryBreakStyle;
 
-        return Htmler.genPanel(name + helpAlert, html,
+        let headingDoms = [name];
+        if (node.hasOwnProperty('_help_text'))
+            headingDoms.push($_$('div', {
+                class: 'alert alert-info'
+            }, [node._help_text]))
+
+        const bodyDoms = needTabs ? [this.genEitherGroup(fieldID, sandwich())] : sandwich();
+
+        return DomMaker.genPanel(headingDoms, bodyDoms,
             nCols, ogProps, {
                 class: extraHtmlClass
             }
@@ -218,57 +211,47 @@ class FormGenerator {
         const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
         const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
 
-        const panelBody =
-            $_$('ul', {
-                class: 'nav nav-tabs',
-                name: 'subobject-tabheaders',
-                id: fieldID + '_tabs'
-            }) +
-            $_$('div', {
+        const bodyDoms =
+            [
+                $_$('ul', {
+                    class: 'nav nav-tabs',
+                    name: 'subobject-tabheaders',
+                    id: fieldID + '_tabs'
+                }),
+
+                $_$('div', {
                     class: 'tab-content col-md-12',
                     name: 'subobject-tabcontent'
-                },
-                Htmler.genTabPane(fieldID + '_template', sandwich(), {
+                }, [DomMaker.genTabPane(fieldID + '_template', sandwich(), {
                     'excludeFromSummary': true
-                })
+                })])
+            ];
+
+        const panelHeadingFunc = (headingDoms) => {
+            headingDoms.push(
+                $_$('div', {
+                    style: 'float: right;'
+                }, [
+                    $_$('button', {
+                        type: 'button',
+                        class: 'btn btn-default btn-md cenarius-del-tab-btn',
+                        name: 'del_tab_btn'
+                    }, [$_$('span', {
+                        class: 'glyphicon glyphicon-remove'
+                    })]),
+
+                    $_$('button', {
+                        type: 'button',
+                        class: 'btn btn-default btn-md cenarius-new-tab-btn',
+                        name: 'new_tab_btn'
+                    }, [$_$('span', {
+                        class: 'glyphicon glyphicon-plus'
+                    })])
+                ])
             );
 
-        const panelHeadingFunc = (heading) => {
-            const subobjectHeading =
-                heading +
-                $_$('div', {
-                        style: 'float: right;'
-                    },
-                    $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-default btn-md cenarius-del-tab-btn',
-                            name: 'del_tab_btn'
-                        },
-                        $_$('span', {
-                            class: 'glyphicon glyphicon-remove'
-                        })
-                    ) +
-                    $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-default btn-md cenarius-new-tab-btn',
-                            name: 'new_tab_btn'
-                        },
-                        $_$('span', {
-                            class: 'glyphicon glyphicon-plus'
-                        })
-                    )
-                );
-
-            return Htmler.genPanelHeading(subobjectHeading, 'overflow: hidden');
+            return DomMaker.genPanelHeading(headingDoms, 'overflow: hidden');
         };
-
-        const helpAlert = node.hasOwnProperty('_help_text') ?
-            $_$('div', {
-                    class: 'alert alert-info',
-                    style: ''
-                },
-                node._help_text
-            ) : '';
 
         let sogProps = {
             name: 'cenarius-subobject-group'
@@ -279,10 +262,16 @@ class FormGenerator {
             sogProps.summaryBreakStyle = summaryBreakStyle;
 
         node._fieldID = fieldID;
-        node._sql_type = 'subobject';
+        node._sql_signal = 'subobject';
 
-        return Htmler.genPanel(name + helpAlert,
-            panelBody,
+        let headingDoms = [name];
+        if (node.hasOwnProperty('_help_text'))
+            headingDoms.push($_$('div', {
+                class: 'alert alert-info',
+                style: ''
+            }, [node._help_text]))
+
+        return DomMaker.genPanel(headingDoms, bodyDoms,
             nCols, sogProps, {
                 class: extraHtmlClass
             }, panelHeadingFunc);
@@ -329,34 +318,34 @@ class FormGenerator {
         // Default value
         const defaultValue = node.hasOwnProperty('_default_value') ? node._default_value : 0;
 
-        let html = '';
+        let enumDoms = [];
         if (simpleEnum) {
-            const selectDom =
-                $.parseHTML($_$('select', {
-                        class: 'selectpicker form-control',
-                        id: fieldID,
-                        name: fieldID,
-                        'data-live-search': true
-                    },
-                    (needCheckbox ? $_$('option', {
-                        defaultOption: undefined
-                    }, config.defaultEnumOptionText) : '') +
-                    mapJoin(enumData, (item) => {
-                        return $_$('option', {}, item);
-                    })
-                ))[0];
+            let selectOptions = [];
+            if (needCheckbox)
+                selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
+
+            _.each(enumData, (item) => {
+                selectOptions.push($_$('option', {}, [item]));
+            })
+
+            const selectDom = $_$('select', {
+                class: 'selectpicker form-control',
+                id: fieldID,
+                name: fieldID,
+                'data-live-search': true,
+                defaultValue: defaultValue
+            }, selectOptions);
 
             // The value of "true" is required - "undefined" only works sometimes
             $($(selectDom).children()[defaultValue]).attr('selected', true);
-            const selectHtml = selectDom.outerHTML;
 
-            const enumHtml =
-                $_$('span', {
+            const inputName = name + config.autoLabelColon + config.autoLabelSpace;
+            const inputDoms =
+                [$_$('span', {
                         class: 'input-group-addon cenarius-input-tag'
-                    },
-                    $_$('b', {}, name + config.autoLabelColon + config.autoLabelSpace)
-                ) +
-                selectHtml;
+                    }, [$_$('b', {}, [inputName])]),
+                    selectDom
+                ];
 
             let seProps = {
                 name: 'cenarius-input-group',
@@ -369,10 +358,10 @@ class FormGenerator {
             if (isSet(titleInSummary))
                 seProps.titleInSummary = titleInSummary;
 
-            html =
-                $_$('div', seProps, $_$('div', {
+            enumDoms = $_$('div', seProps, [$_$('div', {
                     class: 'input-group'
-                }, needCheckbox ? Htmler.genCheckboxWrapper(checkboxID, this.forceCheckbox, enumHtml) : enumHtml));
+                }, needCheckbox ?
+                DomMaker.genCheckboxWrapper(checkboxID, this.forceCheckbox, inputDoms) : inputDoms)]);
         } else {
             const choiceTypeIcon =
                 $_$('span', {
@@ -392,20 +381,19 @@ class FormGenerator {
 
 
             this.setForceCheckbox(isMultiChoice);
-            html =
-                Htmler.genPanel(name + choiceTypeIcon,
-                    sandwich(),
-                    nCols, ceProps, {
-                        class: extraHtmlClass
-                    }
-                );
+            enumDoms = DomMaker.genPanel([name, choiceTypeIcon],
+                sandwich(),
+                nCols, ceProps, {
+                    class: extraHtmlClass
+                }
+            );
             this.unsetForceCheckbox();
         }
 
         node._fieldID = fieldID;
-        node._sql_type = 'string';
+        node._sql_signal = SQLTypeTable.string;
 
-        return html;
+        return enumDoms;
     };
 
     genLeaf(nodeParent, node, type, key, name) {
@@ -448,102 +436,102 @@ class FormGenerator {
         let endingSpan = node.hasOwnProperty('_ending') ?
             $_$('span', {
                 class: 'input-group-addon cenarius-input-tag'
-            }, node._ending) : '';
+            }, [node._ending]) : undefined;
         const checkboxID = fieldID + '_ckbx';
 
-        if (endingSpan.length === 0 && type === 'big_string') {
+        if (!isSet(endingSpan) && type === 'big_string') {
             endingSpan = $_$('span', {
                 class: 'input-group-addon cenarius-input-tag',
                 name: 'textarea-counter'
-            }, defaultValue.length + '<br>------<br>' + maxStringLength);
+            }, [defaultValue.length + '<br>------<br>' + maxStringLength]);
         }
 
         // Generate the field html which might include an input addon and an ending
-        const inputHtml =
+        const inputDoms =
             (() => {
                 switch (htmlInputType) {
                     case 'label':
                         {
-                            const html =
+                            const labelDom =
                                 $_$('div', {
-                                        class: 'alert alert-success',
-                                        style: 'text-align: center'
-                                    },
-                                    fieldName
-                                );
-                            return html;
+                                    class: 'alert alert-success',
+                                    style: 'text-align: center'
+                                }, [fieldName]);
+                            return [labelDom];
                         }
                     case 'checkbox':
                         {
-                            const html =
-                                $_$('input', (() => {
-                                        let ckbxProps = {
-                                            type: 'checkbox',
-                                            id: fieldID,
-                                            name: fieldID,
-                                            class: this.forceCheckbox === 'single' ? 'single-choice-checkbox' : '',
-                                            autocomplete: 'off',
-                                        }
+                            let ckbxProps = {
+                                type: 'checkbox',
+                                id: fieldID,
+                                name: fieldID,
+                                class: this.forceCheckbox === 'single' ? 'single-choice-checkbox' : '',
+                                autocomplete: 'off',
+                            }
 
-                                        defaultValue === true ? (ckbxProps.checked = true) : nullStm();
-                                        return ckbxProps;
-                                    })(),
+                            defaultValue === true ? (ckbxProps.checked = true) : nullStm();
+
+                            const ckbxDoms =
+                                [$_$('input', ckbxProps),
                                     $_$('label', {
-                                            for: fieldID,
-                                            class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
-                                        },
+                                        for: fieldID,
+                                        class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
+                                    }, [
                                         $_$('span', {
                                             class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
-                                        }) +
-                                        $_$('span', {}, _space)
-                                    ) +
+                                        })
+                                    ]),
                                     $_$('label', {
                                         for: fieldID,
                                         class: 'btn btn-default cenarius-ckbx-lbl'
-                                    }, name)
-                                );
+                                    }, [name])
+                                ];
 
-                            return html;
+                            return ckbxDoms;
                         }
                     case 'text':
                     case 'number':
                     case 'date':
                         {
-                            const fieldHtml =
-                                $_$('span', {
+                            let regularFieldDoms =
+                                [
+                                    $_$('span', {
                                         class: 'input-group-addon cenarius-input-tag'
-                                    },
-                                    $_$('b', {}, fieldName)) +
-                                $_$(inputTag, (() => {
-                                    let inputProps = {
-                                        class: 'form-control',
-                                        style: fieldStyle,
-                                        id: fieldID,
-                                        name: fieldID,
-                                        type: htmlInputType,
-                                        step: numStep,
-                                        defaultValue: defaultValue,
-                                        value: defaultValue
-                                    };
-                                    numMin.length > 0 ? (inputProps.min = numMin) : nullStm();
-                                    numMax.length > 0 ? (inputProps.max = numMax) : nullStm();
-                                    defaultValue.length > 0 ? (inputProps.value = defaultValue) : nullStm();
-                                    textAreaRows.length > 0 ? (inputProps.rows = textAreaRows) : nullStm();
-                                    maxStringLength.length > 0 ? (inputProps.maxlength = maxStringLength) : nullStm();
-                                    return inputProps;
-                                })(), isTextArea ? defaultValue : '', isTextArea) +
-                                endingSpan;
+                                    }, [$_$('b', {}, [fieldName])]),
+
+                                    $_$(inputTag, (() => {
+                                        let inputProps = {
+                                            class: 'form-control',
+                                            style: fieldStyle,
+                                            id: fieldID,
+                                            name: fieldID,
+                                            type: htmlInputType,
+                                            step: numStep,
+                                            defaultValue: defaultValue,
+                                            value: defaultValue
+                                        };
+                                        numMin.length > 0 ? (inputProps.min = numMin) : nullStm();
+                                        numMax.length > 0 ? (inputProps.max = numMax) : nullStm();
+                                        defaultValue.length > 0 ? (inputProps.value = defaultValue) : nullStm();
+                                        textAreaRows.length > 0 ? (inputProps.rows = textAreaRows) : nullStm();
+                                        maxStringLength.length > 0 ? (inputProps.maxlength = maxStringLength) : nullStm();
+                                        return inputProps;
+                                    })(), [defaultValue])
+                                ];
+
+                            if (isSet(endingSpan))
+                                regularFieldDoms.push(endingSpan);
 
                             if (needCheckbox) {
                                 // This should only happen in complex lists
-                                return Htmler.genCheckboxWrapper(fieldID + '_ckbx', this.forceCheckbox, fieldHtml);
+                                return DomMaker.genCheckboxWrapper(fieldID + '_ckbx', this.forceCheckbox, regularFieldDoms);
                             } else {
-                                return fieldHtml;
+                                return regularFieldDoms;
                             }
                         }
                     default:
                         {
-                            return $_$('p', {}, $_$('b', {}, '[CenariusFormError] Unknown field type: ' + type));
+                            return $_$('p', {}, [$_$('b', {}, ['[CenariusFormError] Unknown field type: ' + type])]);
                         }
                 }
             })();
@@ -568,22 +556,22 @@ class FormGenerator {
         if (isSet(titleInSummary))
             igProps.titleInSummary = titleInSummary;
 
-        const html =
-            $_$('div', igProps,
+        const inputGroupDom =
+            $_$('div', igProps, [
                 $_$('div', {
-                    class: 'input-group',
-                    style: 'width: 100% !important'
-                }, inputHtml)
-            );
-
-        node._fieldID = fieldID;
+                        class: 'input-group',
+                        style: 'width: 100% !important'
+                    },
+                    inputDoms)
+            ]);
 
         // Forced checkbox fields are just multi-choice or complex selections
         if (this.forceCheckbox === 'none') {
-            node._sql_type = SQLTypeTable[type];
+            node._fieldID = fieldID;
+            node._sql_signal = SQLTypeTable[type];
         }
 
-        return html;
+        return inputGroupDom;
     };
 
     genSpace(node) {
@@ -635,17 +623,17 @@ class FormGenerator {
         const defaultNCols = next.hasOwnProperty('_default_cols') ? next._default_cols : '';
 
         function sandwich() {
-            return mapJoin(Object.keys(children),
+            return _.map(Object.keys(children),
                 (nextKey) => {
                     formGenSelf.setDefaultType(defaultType);
                     formGenSelf.setDefaultNCols(defaultNCols);
 
-                    const resHtml = formGenSelf.visitFormaNode(children, nextKey);
+                    const resDom = formGenSelf.visitFormaNode(children, nextKey);
 
                     formGenSelf.resetDefaultType();
                     formGenSelf.resetDefaultNCols();
 
-                    return resHtml;
+                    return resDom;
                 }
             );
         };
@@ -665,300 +653,247 @@ class FormGenerator {
     }
 };
 
-class Htmler {
-    static genCheckboxWrapper(checkboxID, checkboxType, fieldHtml) {
-        const resHtml =
-            $_$('input', {
+class DomMaker {
+    static genCheckboxWrapper(checkboxID, checkboxType, fieldDoms) {
+        const doms =
+            [
+                $_$('input', {
                     type: 'checkbox',
                     id: checkboxID,
                     name: checkboxID,
                     class: this.forceCheckbox === 'single' ? 'single-choice-checkbox' : '',
                     autocomplete: 'off'
-                },
+                }),
                 $_$('label', {
-                        for: checkboxID,
-                        class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
-                    },
+                    for: checkboxID,
+                    class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
+                }, [
                     $_$('span', {
                         class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
                     })
-                ) +
+                ]),
                 $_$('span', {
-                        style: 'width:100%; display: table-cell',
-                        class: 'cenarius-checkbox-wrapper'
-                    },
+                    style: 'width:100%; display: table-cell',
+                    class: 'cenarius-checkbox-wrapper'
+                }, [
                     $_$('span', {
                         style: 'width:100%; min-height: 34px; display: table'
-                    }, fieldHtml)
-                )
-            );
-        return resHtml;
+                    }, fieldDoms)
+                ])
+            ];
+        return doms;
     };
 
-    static genContentHtml(headingText, formaHtml) {
+    static genContent(headingText, formaDoms) {
         const html =
             $_$('div', {
-                    class: 'container',
-                    name: 'cenarius-content'
-                },
-                $_$('div', {
-                        class: 'row',
-                        name: 'cenarius-header',
-                    },
-                    $_$('h1', {}, headingText)
-                ) +
+                class: 'container',
+                name: 'cenarius-content'
+            }, [$_$('div', {
+                    class: 'row',
+                    name: 'cenarius-header',
+                }, [$_$('h1', {}, [headingText])]),
                 $_$('form', {
-                        class: 'row',
-                        name: 'cenarius-form',
-                        action: '/Home/Test1',
-                        method: 'post'
-                    },
-                    $_$('div', {
-                        class: 'col-md-12',
-                        style: 'padding-bottom: 10px'
-                    }, formaHtml)
-                )
-            );
+                    class: 'row',
+                    name: 'cenarius-form',
+                    action: '/Home/Test1',
+                    method: 'post'
+                }, [$_$('div', {
+                    class: 'col-md-12',
+                    style: 'padding-bottom: 10px'
+                }, formaDoms)])
+            ]);
         return html;
     };
 
     static genCtrlPanel() {
         const html =
             $_$('div', {
-                    class: 'container',
-                    name: 'cenarius-ctrl-panel',
-                    style: 'padding: 0'
-                },
+                class: 'container',
+                name: 'cenarius-ctrl-panel',
+                style: 'padding: 0'
+            }, [
                 $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-danger btn-lg',
-                        name: 'reset_btn'
-                    },
+                    type: 'button',
+                    class: 'btn btn-danger btn-lg',
+                    name: 'reset_btn'
+                }, [
                     $_$('span', {
                         class: 'glyphicon glyphicon-trash'
-                    }) +
-                    _space + _space + _space + 'Reset Fields'
-                ) +
+                    }), [' Reset Fields']
+                ]),
                 $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-success btn-lg',
-                        name: 'summarize_btn',
-                        'data-toggle': 'modal',
-                        'data-target': '#summary_modal'
-                    },
+                    type: 'button',
+                    class: 'btn btn-success btn-lg',
+                    name: 'summarize_btn',
+                    'data-toggle': 'modal',
+                    'data-target': '#summary_modal'
+                }, [
                     $_$('span', {
                         class: 'glyphicon glyphicon-book'
-                    }) +
-                    _space + _space + _space + 'Summarize'
-                ) +
+                    }), [' Summarize']
+                ]),
                 $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-primary btn-lg',
-                        name: 'sql_btn',
-                        'data-toggle': 'modal',
-                        'data-target': '#sql_modal'
-                    },
+                    type: 'button',
+                    class: 'btn btn-primary btn-lg',
+                    name: 'sql_btn',
+                    'data-toggle': 'modal',
+                    'data-target': '#sql_modal'
+                }, [
                     $_$('span', {
                         class: 'glyphicon glyphicon-cloud-upload'
-                    }) +
-                    _space + _space + _space + 'Get SQL'
-                )
-            );
+                    }), [' Get SQL']
+                ])
+            ]);
 
         return html;
     };
 
-    static genSummaryModalHtml() {
+    static genSummaryModal() {
         const html =
             $_$('div', {
-                    class: 'modal fade',
-                    id: 'summary_modal',
-                    role: 'dialog',
-                    tabindex: -1
-                },
+                class: 'modal fade',
+                id: 'summary_modal',
+                role: 'dialog',
+                tabindex: -1
+            }, [$_$('div', {
+                class: 'modal-dialog modal-lg'
+            }, [$_$('div', {
+                class: 'modal-content'
+            }, [$_$('div', {
+                    class: 'modal-header'
+                }, [$_$('button', {
+                        type: 'button',
+                        class: 'close',
+                        'data-dismiss': 'modal'
+                    }, ['&times;']),
+                    $_$('h4', {
+                        class: 'modal-title'
+                    }, ['Form Summary'])
+                ]),
                 $_$('div', {
-                        class: 'modal-dialog modal-lg'
-                    },
-                    $_$('div', {
-                            class: 'modal-content'
-                        },
-                        $_$('div', {
-                                class: 'modal-header'
-                            },
-                            $_$('button', {
-                                    type: 'button',
-                                    class: 'close',
-                                    'data-dismiss': 'modal'
-                                },
-                                '&times;'
-                            ) +
-                            $_$('h4', {
-                                    class: 'modal-title'
-                                },
-                                'Form Summary'
-                            )
-                        ) +
-                        $_$('div', {
-                                class: 'modal-body'
-                            },
-                            $_$('p', {},
-                                '//Summary Placeholder//'
-                            )
-                        ) +
-                        $_$('div', {
-                                class: 'modal-footer'
-                            },
-                            $_$('button', {
-                                    type: 'button',
-                                    class: 'btn btn-default',
-                                    'data-dismiss': 'modal',
-                                    style: 'float: left'
-                                },
-                                'Close'
-                            ) +
-                            $_$('button', {
-                                    type: 'button',
-                                    class: 'btn btn-success',
-                                    id: 'copy_summary_btn',
-                                    'data-dismiss': 'modal'
-                                },
-                                'Copy'
-                            ) +
-                            $_$('button', {
-                                    type: 'button',
-                                    class: 'btn btn-primary',
-                                    id: 'submit_btn',
-                                    'data-dismiss': 'modal'
-                                },
-                                'Submit'
-                            )
-                        )
-                    )
-                )
-            );
+                    class: 'modal-body'
+                }, [$_$('p', {}, ['//Summary Placeholder//'])]),
+                $_$('div', {
+                    class: 'modal-footer'
+                }, [$_$('button', {
+                        type: 'button',
+                        class: 'btn btn-default',
+                        'data-dismiss': 'modal',
+                        style: 'float: left'
+                    }, ['Close']),
+                    $_$('button', {
+                        type: 'button',
+                        class: 'btn btn-success',
+                        id: 'copy_summary_btn',
+                        'data-dismiss': 'modal'
+                    }, ['Copy']),
+                    $_$('button', {
+                        type: 'button',
+                        class: 'btn btn-primary',
+                        id: 'submit_btn',
+                        'data-dismiss': 'modal'
+                    }, ['Submit'])
+                ])
+            ])])]);
         return html;
     };
 
-    static genSQLModalHtml() {
+    static genSQLModal() {
         const html =
             $_$('div', {
-                    class: 'modal fade',
-                    id: 'sql_modal',
-                    role: 'dialog',
-                    tabindex: -1
-                },
+                class: 'modal fade',
+                id: 'sql_modal',
+                role: 'dialog',
+                tabindex: -1
+            }, [$_$('div', {
+                class: 'modal-dialog modal-lg'
+            }, [$_$('div', {
+                class: 'modal-content'
+            }, [$_$('div', {
+                    class: 'modal-header'
+                }, [$_$('button', {
+                        type: 'button',
+                        class: 'close',
+                        'data-dismiss': 'modal'
+                    }, ['&times;']),
+                    $_$('h4', {
+                        class: 'modal-title'
+                    }, ['SQL Schema']),
+                    $_$('button', {
+                        type: 'button',
+                        class: 'btn btn-success',
+                        id: 'copy_sql_btn',
+                        'data-dismiss': 'modal',
+                        style: 'float:right'
+                    }, ['Copy'])
+                ]),
                 $_$('div', {
-                        class: 'modal-dialog modal-lg'
-                    },
-                    $_$('div', {
-                            class: 'modal-content'
-                        },
-                        $_$('div', {
-                                class: 'modal-header'
-                            },
-                            $_$('button', {
-                                    type: 'button',
-                                    class: 'close',
-                                    'data-dismiss': 'modal'
-                                },
-                                '&times;'
-                            ) +
-                            $_$('h4', {
-                                    class: 'modal-title'
-                                },
-                                'SQL Schema'
-                            ) +
-                            $_$('button', {
-                                    type: 'button',
-                                    class: 'btn btn-success',
-                                    id: 'copy_sql_btn',
-                                    'data-dismiss': 'modal',
-                                    style: 'float:right'
-                                },
-                                'Copy'
-                            )
-                        ) +
-                        $_$('div', {
-                                class: 'modal-body'
-                            },
-                            $_$('p', {},
-                                '//SQL Placeholder//'
-                            )
-                        ) +
-                        $_$('div', {
-                                class: 'modal-footer'
-                            },
-                            $_$('button', {
-                                    type: 'button',
-                                    class: 'btn btn-default',
-                                    'data-dismiss': 'modal'
-                                },
-                                'Close'
-                            )
-                        )
-                    )
-                )
-            );
+                    class: 'modal-body'
+                }, [$_$('p', {}, ['//SQL Placeholder//'])]),
+                $_$('div', {
+                    class: 'modal-footer'
+                }, [$_$('button', {
+                    type: 'button',
+                    class: 'btn btn-default',
+                    'data-dismiss': 'modal'
+                }, ['Close'])])
+            ])])]);
         return html;
     };
 
     static genTabRef(hrefLink, tabTitle, liAttr = {}, titleAttr = {}) {
-        const html =
+        const tabRefDom =
             $_$('li', mergeStrProps({
-                    class: 'cenarius-tab-ref'
-                }, liAttr),
+                class: 'cenarius-tab-ref'
+            }, liAttr), [
                 $_$('a', mergeStrProps({
-                        'data-toggle': 'tab',
-                        href: '#' + hrefLink
-                    }, titleAttr),
-                    $_$('b', {}, tabTitle)
-                )
-            );
-        return html;
+                    'data-toggle': 'tab',
+                    href: '#' + hrefLink
+                }, titleAttr), [
+                    $_$('b', {}, [tabTitle])
+                ])
+            ]);
+        return tabRefDom;
     };
 
-    static genTabPane(id, content, attr = {}) {
-        const html =
+    static genTabPane(id, contentDoms, attr = {}) {
+        const tabPaneDom =
             $_$('div', mergeStrProps({
-                    id: id,
-                    class: 'tab-pane'
-                }, attr),
-                content
-            );
-        return html;
+                id: id,
+                class: 'tab-pane'
+            }, attr), contentDoms);
+        return tabPaneDom;
     }
 
-    static genPanelHeading(content, styleStr = '') {
+    static genPanelHeading(contentDoms, styleStr = '') {
         return $_$('div', {
             class: 'panel-heading',
             style: styleStr
-        }, content);
+        }, contentDoms);
     };
 
-    static genPanelBody(content, styleStr = '') {
+    static genPanelBody(contentDoms, styleStr = '') {
         return $_$('div', {
             class: 'panel-body',
             style: styleStr
-        }, content);
+        }, contentDoms);
     };
 
-    static genPanel(heading,
-        body,
+    static genPanel(headingDoms,
+        bodyDoms,
         nCols = 12,
         wrapperProps = {},
         panelProps = {},
         headingFunc = this.genPanelHeading,
         bodyFunc = this.genPanelBody) {
         return $_$('div', mergeStrProps({
-                class: 'col-md-' + nCols
-            }, wrapperProps),
-            $_$('div', mergeStrProps({
-                    class: 'panel panel-default clearfix ',
-                }, panelProps),
-                headingFunc(heading) +
-                bodyFunc(body)
-            )
-        );
+            class: 'col-md-' + nCols
+        }, wrapperProps), [$_$('div', mergeStrProps({
+            class: 'panel panel-default clearfix ',
+        }, panelProps), [headingFunc(headingDoms),
+            bodyFunc(bodyDoms)
+        ])]);
     };
 }
 
@@ -1005,7 +940,8 @@ class SummaryGenerator {
 
         str += mapJoin(tabHeaders.children(), function(tabHeader) {
             const tabName = sgSelf.getPlainText($(tabHeader));
-            const tabID = $(tabHeader).children('a').attr('href');
+            let tabHref = $(tabHeader).children('a')[0].getAttribute('href');
+            const tabID = tabHref.substring(tabHref.lastIndexOf('#'));
             const tabBody = $(tabContent).children(tabID);
 
             const tabBodyStr = mapJoin($(tabBody).children(), function(tabBodyElt) {
@@ -1030,6 +966,7 @@ class SummaryGenerator {
             includeTitle = true;
         const title = includeTitle ? this.getPlainText(panelHeading) : '';
 
+        let val = '';
         if (ckbx.length == 0) {
             val = 'unknown (not selected)';
         } else {
@@ -1101,11 +1038,11 @@ class SummaryGenerator {
         const sgSelf = this;
         const $body = $($(parent).children('.input-group'));
 
-        const selectElt = $body.children('select');
-        const ckbxElt = $body.children('input[type=checkbox]');
-        const cbkxWrapper = $body.children('.cenarius-checkbox-wrapper');
-        const alertElt = $body.children('div.alert');
-        const textareaElt = $body.children('textarea');
+        const $selectElt = $($body.children('select'));
+        const $ckbxElt = $($body.children('input[type=checkbox]'));
+        const $cbkxWrapper = $($body.children('.cenarius-checkbox-wrapper'));
+        const $alertElt = $($body.children('div.alert'));
+        const $textareaElt = $($body.children('textarea'));
         let includeTitle = $(parent).attr('titleInSummary');
         if (!isSet(includeTitle))
             includeTitle = true;
@@ -1116,18 +1053,22 @@ class SummaryGenerator {
 
         const igas = $body.children('span.input-group-addon');
         let title = $(igas[0]).text();
+        let id = '';
         let val = '';
         let ending = igas.length > 1 ? $(igas[1]).text() : '';
         let addPeriod = true;
 
-        if (eltExists(alertElt)) {
-            val = $(alertElt).text();
-        } else if (eltExists(selectElt)) {
-            val = $(selectElt).val();
-        } else if (eltExists(ckbxElt)) {
+        if (eltExists($alertElt)) {
+            id = $alertElt.attr('id');
+            val = $alertElt.text();
+        } else if (eltExists($selectElt)) {
+            id = $selectElt.attr('id');
+            val = $selectElt.val();
+        } else if (eltExists($ckbxElt)) {
             // Regular checkbox field
-            if ($(ckbxElt).prop('checked')) {
-                if (eltExists(cbkxWrapper)) {
+            id = $ckbxElt.attr('id');
+            if ($ckbxElt.prop('checked')) {
+                if (eltExists($cbkxWrapper)) {
                     const $wrapperSpan = $($(cbkxWrapper).children('span'));
                     title = $wrapperSpan.children('span.input-group-addon').text();
                     val = $wrapperSpan.children('input').val();
@@ -1136,8 +1077,9 @@ class SummaryGenerator {
                     val = 'yes';
                 }
             }
-        } else if (eltExists(textareaElt)) {
-            val = $(textareaElt).val();
+        } else if (eltExists($textareaElt)) {
+            id = $ckbxElt.attr('id');
+            val = $textareaElt.val();
             addPeriod = false;
 
             // Do not inlcude counter text
@@ -1145,56 +1087,68 @@ class SummaryGenerator {
                 ending = '';
         } else {
             // Regular input field
+            id = $body.children('input').attr('id');
             val = $body.children('input').val();
         }
 
         if (ending.length > 0)
             ending = ' ' + ending;
+
         return (includeTitle ? (title + ': ') : '') + val + ending + (addPeriod ? '. ' : '');
     };
 
     visitDomNode(dom) {
         const $dom = $(dom);
         const skip = $dom.attr('excludeFromSummary');
-        if (isSet(skip) && skip)
-            return '';
 
         const domName = $dom.attr('name');
         const breakStyle = $dom.attr('summaryBreakStyle');
         const brBefore = breakStyle === 'before' ? '<br>' : '';
         const brAfter = breakStyle === 'after' ? '<br>' : '';
 
+        let res = '';
         switch (domName) {
             case 'cenarius-object-group':
                 {
-                    return brBefore + this.genObjectGroup(dom) + brAfter;
+                    res = brBefore + this.genObjectGroup(dom) + brAfter;
+                    break;
                 }
             case 'cenarius-subobject-group':
                 {
-                    return brBefore + this.genSubobjectGroup(dom) + brAfter;
+                    res = brBefore + this.genSubobjectGroup(dom) + brAfter;
+                    break;
                 }
             case 'cenarius-single-choice-group':
                 {
-                    return brBefore + this.genSingleChoiceGroup(dom) + brAfter;
+                    res = brBefore + this.genSingleChoiceGroup(dom) + brAfter;
+                    break;
                 }
             case 'cenarius-multi-choice-group':
                 {
-                    return brBefore + this.genMultiChoiceGroup(dom) + brAfter;
+                    res = brBefore + this.genMultiChoiceGroup(dom) + brAfter;
+                    break;
                 }
             case 'cenarius-either-group':
                 {
-                    return brBefore + this.genEitherGroup(dom) + brAfter;
+                    res = brBefore + this.genEitherGroup(dom) + brAfter;
+                    break;
                 }
             case 'cenarius-input-group':
                 {
-                    return brBefore + this.genInputGroup(dom) + brAfter;
+                    res = brBefore + this.genInputGroup(dom) + brAfter;
+                    break;
                 }
             default:
                 {
-                    alert('[CenariusFormError]: Unknown DOM name found (' + domName + '): ' + $(dom).html())
-                    return 'ERROR';
+                    alert('[CenariusFormError]: Unknown DOM name found (' + domName + ')[' + $(dom).length + ']: \n' + dom.outerHTML)
+                    res = '__ERROR__';
                 }
         }
+
+        if (isSet(skip) && skip)
+            return '';
+        else
+            return res;
     };
 
     static gen(cenariusForm) {
@@ -1205,17 +1159,26 @@ class SummaryGenerator {
             return mySG.visitDomNode(group);
         });
 
-        return $_$('p', {}, summary);
+        return $_$('p', {}, [summary]);
     };
 }
 
 class SQLSchemaGenerator {
+    static genIDColumn(tableName) {
+        return {
+            name: tableName + '_id',
+            sqlType: 'integer',
+            notNull: true,
+            autoIncrement: true,
+            primaryKey: true
+        };
+    }
     constructor(tableName) {
+        this.mainTableName = tableName;
         this.tables = [{
             tableName: tableName,
-            fields: []
+            fields: [SQLSchemaGenerator.genIDColumn(tableName)]
         }];
-        this.mainTableName = tableName;
     }
 
     visitFormaNode(node, key, dest) {
@@ -1224,21 +1187,27 @@ class SQLSchemaGenerator {
         const type = next._type;
         const parentTableName = dest.tableName;
 
-        if (next.hasOwnProperty('_sql_type')) {
-            if (next._sql_type === 'subobject') {
+        if (next.hasOwnProperty('_sql_signal')) {
+            if (next._sql_signal === 'subobject') {
+                const soTableName = parentTableName +
+                    '.' + next._fieldID.replace(/_subobject_f[0-9]*$/, '');
                 const soTable = {
-                    tableName: next._fieldID.replace(/_subobject_f[0-9]*$/, '_subobject_of_' + parentTableName),
-                    fields: [{
-                        name: parentTableName + '_ref',
-                        sqlType: ''
-                    }]
+                    tableName: soTableName,
+                    fields: [
+                        SQLSchemaGenerator.genIDColumn(soTableName), {
+                            name: parentTableName + '_ref',
+                            sqlType: 'integer',
+                            notNull: true,
+                            foreignRef: parentTableName
+                        }
+                    ]
                 }
                 this.tables.push(soTable);
                 dest = this.tables.last();
             } else {
                 dest.fields.push({
                     name: next._fieldID,
-                    sqlType: next._sql_type
+                    sqlType: next._sql_signal
                 });
             }
         }
@@ -1256,6 +1225,30 @@ class SQLSchemaGenerator {
         }
     }
 
+    static stringify(tableData) {
+        const bracket = (s) => {
+            return '[' + s + ']';
+        };
+        const str = 'CREATE TABLE ' + bracket(tableData.tableName) + '\n' +
+            '(\n' +
+            mapJoin(tableData.fields, (fd) => {
+                const fdStr =
+                    '    ' +
+                    bracket(fd.name) +
+                    ' ' + fd.sqlType +
+                    (fd.notNull === true ? ' NOT NULL' : '') +
+                    (fd.autoIncrement === true ? ' IDENTITY(1,1)' : '') +
+                    (fd.primaryKey === true ? ' PRIMARY KEY' : '') +
+                    (typeof fd.foreignRef === 'string' ?
+                        (' FOREIGN KEY REFERENCES ' + bracket(fd.foreignRef) + '(' +
+                            bracket(fd.foreignRef + '_id') + ')') : '')
+                return fdStr;
+            }, ', \n') +
+            '\n);';
+
+        return str;
+    }
+
     static gen(forma, tableName) {
         let sqlGen = new SQLSchemaGenerator(tableName);
 
@@ -1263,7 +1256,9 @@ class SQLSchemaGenerator {
             sqlGen.visitFormaNode(forma, key, sqlGen.tables[0]);
         })
 
-        return sqlGen.tables;
+        return mapJoin(sqlGen.tables, (td) => {
+            return SQLSchemaGenerator.stringify(td);
+        }, '\n');
     }
 }
 
@@ -1272,29 +1267,27 @@ function main(global, $) {
         myForma = options.forma;
         let myFG = new FormGenerator();
 
-        const formaHtml =
-            mapJoin(Object.keys(myForma),
+        const formaDoms =
+            _.map(Object.keys(myForma),
                 function(key) {
                     return myFG.visitFormaNode(myForma, key);
                 }
             );
 
-        const contentHtml = Htmler.genContentHtml(headingText, formaHtml);
+        const contentDoms = DomMaker.genContent(headingText, formaDoms);
 
-        const ctrlHtml = Htmler.genCtrlPanel();
+        const ctrlDoms = DomMaker.genCtrlPanel();
 
-        const summaryModalHtml = Htmler.genSummaryModalHtml();
+        const summaryModalDoms = DomMaker.genSummaryModal();
 
-        const sqlModalHtml = Htmler.genSQLModalHtml();
+        const sqlModalDoms = DomMaker.genSQLModal();
 
-        const finalHtml =
+        const finalDom =
             $_$('div', {
-                    id: 'bootstrap-overrides'
-                },
-                contentHtml + ctrlHtml + summaryModalHtml + sqlModalHtml
-            );
+                id: 'bootstrap-overrides'
+            }, [contentDoms, ctrlDoms, summaryModalDoms, sqlModalDoms]);
 
-        this.replaceWith(finalHtml);
+        this.replaceWith(finalDom);
     }
 
     $.fn.sortByDepth = function() {
@@ -1305,6 +1298,21 @@ function main(global, $) {
 };
 
 
+function showSnackbar(text, timeout = 3000) {
+    let sb = document.createElement('div');
+    sb.setAttribute('class', 'snackbar show');
+    sb.innerHTML = text;
+
+    let parent = $('#bootstrap-overrides');
+    parent.append(sb);
+
+    setTimeout(() => {
+        sb.setAttribute('class', 'snackbar')
+        setTimeout(() => {
+            sb.remove();
+        }, timeout);
+    }, timeout);
+}
 
 function resetAllFields() {
     $('input').each(function() {
@@ -1379,12 +1387,12 @@ function addSubobjectInstance(tabHeaders) {
         // Remove everything before template token
         const idStrTmplIdx = idStr.lastIndexOf('_template_');
         if (idStrTmplIdx > 0)
-            idStr = idStr.substr(idStrTmplIdx + '_template_'.length);
+            idStr = idStr.substring(idStrTmplIdx + '_template_'.length);
 
         // Remove everything after the stat of the instance token
         const idStrInstIdx = idStr.indexOf('_instance-');
         if (idStrInstIdx > 0)
-            idStr = idStr.substr(0, idStrInstIdx);
+            idStr = idStr.substring(0, idStrInstIdx);
 
         const id = parseInt(idStr, 10);
         if (!isNaN(id))
@@ -1402,7 +1410,7 @@ function addSubobjectInstance(tabHeaders) {
             return oldVal + toAppend;
         }) {
         const fieldVal = node.attr(fieldName);
-        if (typeof fieldVal !== typeof undefined && fieldVal !== false) {
+        if (typeof fieldVal !== 'undefined' && fieldVal !== false) {
             const fieldVal = node.prop(fieldName);
             if (isSet(fieldVal)) {
                 // console.log('Fix ' + fieldName + '}' + fieldVal + 'n-> ' + valGenFunc(node, fieldVal, '::instance-'' + cloneIndex));
@@ -1424,7 +1432,7 @@ function addSubobjectInstance(tabHeaders) {
     let cloneSONewBtns = $(clone).find('button[name^=new_tab_btn]');
     cloneSONewBtns.unbind('click');
     cloneSONewBtns.click(newTabBtnClicked);
-    
+
     let cloneSODelBtns = $(clone).find('button[name^=del_tab_btn]');
     cloneSODelBtns.unbind('click');
     cloneSODelBtns.click(delTabBtnClicked);
@@ -1436,7 +1444,7 @@ function addSubobjectInstance(tabHeaders) {
     $tabHeaders.children().removeClass('active in');
     $tabContent.children().removeClass('active in');
 
-    $tabHeaders.append(Htmler.genTabRef(cloneID, '#' + cloneIndex, {
+    $tabHeaders.append(DomMaker.genTabRef(cloneID, '#' + cloneIndex, {
         class: 'active'
     }));
     $('#' + cloneID).addClass('active in');
@@ -1482,19 +1490,44 @@ function mapJoin(obj, func, sep = '') {
     return _.map(obj, func).join(sep);
 }
 
-function $_$(tag, attr = {}, content = '', close = true) {
-    function genAttrStr(data) {
-        return mapJoin(Object.getOwnPropertyNames(data),
-            (field) => {
-                const val = data[field];
-                return ' ' +
-                    (_.isUndefined(val) ? field : (field + '=\"' + val + '\"'));
+//Returns true if it is a DOM node
+function isNode(o) {
+    return (
+        typeof Node === "object" ? o instanceof Node :
+        o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string"
+    );
+}
+
+//Returns true if it is a DOM element    
+function isElement(o) {
+    return (
+        typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+        o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string"
+    );
+}
+
+function $_$(tag, attr = {}, content = [], close = true) {
+    let dom = document.createElement(tag);
+    _.each(Object.getOwnPropertyNames(attr), (field) => {
+        dom.setAttribute(field, attr[field]);
+    });
+
+    _.each(content, (c) => {
+        if (!isElement(c)) {
+            const cDoms = $.parseHTML(c);
+            if (cDoms.length > 0) {
+                _.each(cDoms, (cDom) => {
+                    dom.appendChild(cDom)
+                });
+            } else {
+                dom.appendChild(document.createTextNode(c));
             }
-        );
-    }
-    return '<' + tag + genAttrStr(attr) + '>' +
-        content +
-        (close ? ('</' + tag + '>') : '');
+        } else {
+            dom.appendChild(c);
+        }
+    });
+
+    return dom;
 }
 
 function getNameFromKey(key) {
@@ -1529,12 +1562,10 @@ function titleize(str) {
 }
 
 function identifierize(str) {
-    return str.replace(/[^a-z0-9]/g, function(s) {
-        var c = s.charCodeAt(0);
-        if (c == 32) return '-';
-        if (c >= 65 && c <= 90) return '_' + s.toLowerCase();
-        return '__' + ('000' + c.toString(16)).slice(-4);
-    }).substr(1);
+    const res = mapJoin(str.replaceAll('_', ' ').match(/\w+/g), (w) => {
+        return w.charAt(0).toUpperCase() + w.substring(1);
+    }, '');
+    return res;
 }
 
 String.prototype.replaceAll = function(search, replacement) {
@@ -1636,8 +1667,7 @@ $(() => { /* DOM ready */
         let $sql = $('#sql_modal .modal-dialog .modal-content .modal-body');
         const tableName = prompt('New table name: ', 'new_test_table');
         if (tableName !== null && tableName.length > 0) {
-            const sqlSchema = SQLSchemaGenerator.gen(myForma, tableName);
-            $sql.html($_$('pre', {}, JSON.stringify(sqlSchema, null, 2)));
+            $sql.html($_$('pre', {}, [SQLSchemaGenerator.gen(myForma, tableName)]));
         } else {
             e.stopPropagation();
         }
@@ -1654,18 +1684,18 @@ $(() => { /* DOM ready */
         const res = copyToClipboard($(this).parent().siblings('.modal-body')
             .children('p')[0]);
         if (res)
-            alert('Copied to clipboard.');
+            showSnackbar('Copied to clipboard.');
         else
-            alert('Browser does not support copy function.');
+            showSnackbar('Browser does not support copy function.');
     });
 
     $('#copy_sql_btn').click(function(e) {
         e.stopPropagation();
         const res = copyToClipboard($(this).parent().siblings('.modal-body').children('pre')[0]);
         if (res)
-            alert('Copied to clipboard.');
+            showSnackbar('Copied to clipboard.');
         else
-            alert('Browser does not support copy function.');
+            showSnackbar('Browser does not support copy function.');
     });
 
     // Textarea auto resize
@@ -1681,16 +1711,19 @@ $(() => { /* DOM ready */
         const valLen = $(this).val().length;
         let counterSpan = $(this).siblings('span[name=textarea-counter]');
         const oldCounter = $(counterSpan).html();
-        $(counterSpan).html(valLen + oldCounter.substr(oldCounter.indexOf('<br>')));
+        $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
     });
 
-    $('.format-control').keyup(function() {
+    $('.form-control').keyup(function() {
         inputToggleCheckbox(this);
     });
 
-    $('.format-control').change(function() {
+    $('.form-control').change(function() {
         inputToggleCheckbox(this);
     });
+
+    // Set initial state for checkboxes
+    $('.form-control').trigger('change');
 
     $('input[type=checkbox].single-choice-checkbox').change(function() {
         singleChoiceToggle(this);

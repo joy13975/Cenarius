@@ -9,12 +9,10 @@
                     "_default_cols": 4,
                     "_properties": {
                         "patient_id": {
-                            "_title": "病歷號",
-                            "_default_value": "A1337"
+                            "_title": "病歷號"
                         },
                         "patient_name": {
-                            "_title": "姓名",
-                            "_default_value": "王小明"
+                            "_title": "姓名"
                         },
                         "patient_no_of_checks_today": {
                             "_title": "今日檢查次數",
@@ -34,8 +32,7 @@
                             "_type": "date"
                         },
                         "report_id": {
-                            "_title": "編號 ",
-                            "_default_value": "B12938"
+                            "_title": "編號 "
                         },
                         "report_no_of_checks": {
                             "_title": "次數 ",
@@ -45,12 +42,10 @@
                             "_default_value": 1
                         },
                         "operator_id": {
-                            "_title": "操作者編號",
-                            "_default_value": "C000301"
+                            "_title": "操作者編號"
                         },
                         "interpreter_id": {
-                            "_title": "判讀者編號",
-                            "_default_value": "D000010"
+                            "_title": "判讀者編號"
                         },
                         "machine_id": {
                             "_title": "檢查機器編號 ",
@@ -63,8 +58,7 @@
                                 "Screening US",
                                 "Diagnostic US",
                                 "Both"
-                            ],
-                            "_default_value": 1
+                            ]
                         }
                     }
                 }
@@ -77,8 +71,7 @@
             "_properties": {
                 "00_asymptomatic_screening": {
                     "_title": "00. Asymptomatic Screening",
-                    "_cols": 12,
-                    "_default_value": true
+                    "_cols": 12
                 },
                 "10_exam_for_symptomatic_patient": {
                     "_title": "10. Exam for symptomatic patient",
@@ -109,15 +102,6 @@
                     "_default_type": "boolean",
                     "_default_cols": 4,
                     "_properties": {
-                        "test_so_lv2": {
-                            "_type": "subobject",
-                            "_properties": {
-                                "fill_me": {},
-                                "fill_me2": {
-                                    "_type": "float"
-                                }
-                            }
-                        },
                         "location": {
                             "_default_type": "boolean",
                             "_cols": 8,
@@ -183,8 +167,7 @@
                                 "B",
                                 "C",
                                 "D"
-                            ],
-                            "_default_value": 2
+                            ]
                         },
                         "recommendation": {
                             "_title": "27. Recomendation",
@@ -308,8 +291,7 @@
                 "position": {
                     "_title": "方位",
                     "_ending": "o'clock",
-                    "_type": "integer",
-                    "_default_value": 2
+                    "_type": "integer"
                 },
                 "distance": {
                     "_title": "距離乳頭距離",
@@ -388,10 +370,8 @@
                     "_default_cols": 4,
                     "_enum_multi": [
                         "1. Duct changes",
-                        "2. Cooper’s ligament changes", {
-                            "_title": "3. Edema",
-                            "_default_value": true
-                        },
+                        "2. Cooper’s ligament changes",
+                        "3. Edema",
                         "4. Architectural distortion",
                         "5. Skin thickening",
                         "6. Skin retraction/irregularity"
@@ -440,7 +420,6 @@
                     "_title": "檢查小結",
                     "_type": "big_string",
                     "_cols": 12,
-                    "_default_value": "What is life?",
                     "_summary_break_style": "before"
                 }
             }
@@ -449,8 +428,7 @@
             "_title": "報告總結",
             "_type": "big_string",
             "_max_string_length": 8096,
-            "_cols": 12,
-            "_default_value": "Life is about finding happiness."
+            "_cols": 12
         }
     }
 }
