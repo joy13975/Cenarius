@@ -58,7 +58,7 @@ var config = {
 };
 const _space = '&nbsp;';
 const nullStm = () => {};
-let forma = '';
+let myForma = '';
 
 const HtmlInputTypeTable = {
     float: 'number',
@@ -278,6 +278,9 @@ class FormGenerator {
         if (isSet(summaryBreakStyle))
             sogProps.summaryBreakStyle = summaryBreakStyle;
 
+        node._fieldID = fieldID;
+        node._sql_type = 'subobject';
+
         return Htmler.genPanel(name + helpAlert,
             panelBody,
             nCols, sogProps, {
@@ -316,6 +319,7 @@ class FormGenerator {
             config.nCols.complexEnum;
         const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
         const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
+        const titleInSummary = node.hasOwnProperty('_title_in_summary') ? node._title_in_summary : undefined;
 
         const fieldID = this.getNextID(key);
         const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
@@ -332,8 +336,7 @@ class FormGenerator {
                         class: 'selectpicker form-control',
                         id: fieldID,
                         name: fieldID,
-                        'data-live-search': true,
-                        onchange: 'inputToggleCheckbox(this);'
+                        'data-live-search': true
                     },
                     (needCheckbox ? $_$('option', {
                         defaultOption: undefined
@@ -363,6 +366,8 @@ class FormGenerator {
                 seProps.excludeFromSummary = excludeFromSummary;
             if (isSet(summaryBreakStyle))
                 seProps.summaryBreakStyle = summaryBreakStyle;
+            if (isSet(titleInSummary))
+                seProps.titleInSummary = titleInSummary;
 
             html =
                 $_$('div', seProps, $_$('div', {
@@ -382,6 +387,9 @@ class FormGenerator {
                 ceProps.excludeFromSummary = excludeFromSummary;
             if (isSet(summaryBreakStyle))
                 ceProps.summaryBreakStyle = summaryBreakStyle;
+            if (isSet(titleInSummary))
+                ceProps.titleInSummary = titleInSummary;
+
 
             this.setForceCheckbox(isMultiChoice);
             html =
@@ -393,6 +401,9 @@ class FormGenerator {
                 );
             this.unsetForceCheckbox();
         }
+
+        node._fieldID = fieldID;
+        node._sql_type = 'string';
 
         return html;
     };
@@ -470,8 +481,8 @@ class FormGenerator {
                                             type: 'checkbox',
                                             id: fieldID,
                                             name: fieldID,
+                                            class: this.forceCheckbox === 'single' ? 'single-choice-checkbox' : '',
                                             autocomplete: 'off',
-                                            onchange: this.forceCheckbox === 'single' ? 'singleChoiceToggle(this);' : ''
                                         }
 
                                         defaultValue === true ? (ckbxProps.checked = true) : nullStm();
@@ -498,7 +509,6 @@ class FormGenerator {
                     case 'number':
                     case 'date':
                         {
-                            const checkboxToggleJS = 'inputToggleCheckbox(this);';
                             const fieldHtml =
                                 $_$('span', {
                                         class: 'input-group-addon cenarius-input-tag'
@@ -511,8 +521,6 @@ class FormGenerator {
                                         id: fieldID,
                                         name: fieldID,
                                         type: htmlInputType,
-                                        onkeyup: checkboxToggleJS,
-                                        onchange: checkboxToggleJS,
                                         step: numStep,
                                         defaultValue: defaultValue,
                                         value: defaultValue
@@ -568,6 +576,13 @@ class FormGenerator {
                 }, inputHtml)
             );
 
+        node._fieldID = fieldID;
+
+        // Forced checkbox fields are just multi-choice or complex selections
+        if (this.forceCheckbox === 'none') {
+            node._sql_type = SQLTypeTable[type];
+        }
+
         return html;
     };
 
@@ -587,7 +602,7 @@ class FormGenerator {
 
     visitFormaNode(node, key) {
         let formGenSelf = this;
-        const next = node[key];
+        let next = node[key];
 
         // Extract flags
         let name;
@@ -600,11 +615,17 @@ class FormGenerator {
             next.hasOwnProperty('_enum') ? next._enum :
             next.hasOwnProperty('_enum_multi') ? next._enum_multi : {};
 
-        const isMultiChoice = next.hasOwnProperty('_enum_multi');
         const type = (next.hasOwnProperty('_type') ? next._type :
-            (next.hasOwnProperty('_enum') || isMultiChoice ? 'enum' :
+            (next.hasOwnProperty('_enum') || next.hasOwnProperty('_enum_multi') ? 'enum' :
                 (hasProps && config.inferObjectFromProps ? 'object' :
                     formGenSelf.currentDefaultType)));
+        if (typeof next === 'string') {
+            next = {
+                _title: next
+            }
+            node[key] = next;
+        }
+        next._type = type;
 
         // console.log('key: ' + key + ', name: ' + name + ', content: ' + next + ', type: ' + type);
 
@@ -651,8 +672,8 @@ class Htmler {
                     type: 'checkbox',
                     id: checkboxID,
                     name: checkboxID,
-                    autocomplete: 'off',
-                    onchange: checkboxType === 'single' ? 'singleChoiceToggle(this);' : ''
+                    class: this.forceCheckbox === 'single' ? 'single-choice-checkbox' : '',
+                    autocomplete: 'off'
                 },
                 $_$('label', {
                         for: checkboxID,
@@ -984,9 +1005,12 @@ class SummaryGenerator {
     genSingleChoiceGroup(parent) {
         const sgSelf = this;
         const panelHeading = $(parent).children('.panel').children('.panel-heading');
-        const name = this.getPlainText(panelHeading);
         const ckbx = $(parent).children('.panel').children('.panel-body')
             .find('div[name=cenarius-input-group] > div.input-group > input[type=checkbox]:checked');
+        let includeTitle = $(parent).attr('titleInSummary');
+        if (!isSet(includeTitle))
+            includeTitle = true;
+        const title = includeTitle ? this.getPlainText(panelHeading) : '';
 
         if (ckbx.length == 0) {
             val = 'unknown (not selected)';
@@ -1002,15 +1026,18 @@ class SummaryGenerator {
             }
         }
 
-        return name + ': ' + val + '. ';
+        return (includeTitle ? (title + ': ') : '') + val + '. ';
     };
 
     genMultiChoiceGroup(parent) {
         const sgSelf = this;
         const panelHeading = $(parent).children('.panel').children('.panel-heading');
-        const name = this.getPlainText(panelHeading);
         const ckbxs = $(parent).children('.panel').children('.panel-body')
             .find('div[name=cenarius-input-group] > div.input-group > input[type=checkbox]:checked');
+        let includeTitle = $(parent).attr('titleInSummary');
+        if (!isSet(includeTitle))
+            includeTitle = true;
+        const title = includeTitle ? this.getPlainText(panelHeading) : '';
 
         let val = '';
         if (ckbxs.length == 0) {
@@ -1029,7 +1056,7 @@ class SummaryGenerator {
             }, ', ');
         }
 
-        return name + ': ' + val + '. ';
+        return (includeTitle ? (title + ': ') : '') + val + '. ';
     };
 
     genEitherGroup(parent) {
@@ -1063,15 +1090,14 @@ class SummaryGenerator {
         const textareaElt = $body.children('textarea');
         let includeTitle = $(parent).attr('titleInSummary');
         if (!isSet(includeTitle))
-            includeTitle = false;
-
+            includeTitle = true;
 
         const eltExists = (selRes) => {
             return selRes.length > 0;
         };
 
         const igas = $body.children('span.input-group-addon');
-        let title = includeTitle ? $(igas[0]).text() : '';
+        let title = $(igas[0]).text();
         let val = '';
         let ending = igas.length > 1 ? $(igas[1]).text() : '';
         let addPeriod = true;
@@ -1152,17 +1178,76 @@ class SummaryGenerator {
                 }
         }
     };
+
+    static gen(cenariusForm) {
+        let mySG = new SummaryGenerator();
+
+        const mainCol = $(cenariusForm).children()[0];
+        const summary = mapJoin($(mainCol).children(), function(group) {
+            return mySG.visitDomNode(group);
+        });
+
+        return $_$('p', {}, summary);
+    };
+}
+
+class SQLSchemaGenerator {
+    constructor(tableName) {
+        this.data = [];
+    }
+
+    visitFormaNode(node, key, dest = this.data) {
+        let sqlGenSelf = this;
+        const next = node[key];
+        const type = next._type;
+
+        let newDest = dest;
+        if (next.hasOwnProperty('_sql_type')) {
+            if (next._sql_type === 'subobject') {
+                // add foreign ID from SO referring back to main table
+                dest.push([]);
+                newDest = dest.last();
+            } else {
+                dest.push({
+                    name: next._fieldID,
+                    sqlType: next._sql_type
+                });
+            }
+        }
+
+        switch (type) {
+            case 'object':
+            case 'subobject':
+                {
+                    _.each(Object.keys(next._properties), function(childKey) {
+                        sqlGenSelf.visitFormaNode(next._properties, childKey, newDest);
+                    })
+                    break;
+                }
+            default:
+        }
+    }
+
+    static gen(forma, tableName) {
+        let sqlGen = new SQLSchemaGenerator(tableName);
+
+        _.each(Object.keys(forma), function(key) {
+            sqlGen.visitFormaNode(forma, key);
+        })
+
+        return sqlGen.data;
+    }
 }
 
 function main(global, $) {
     $.fn.cenarius = function(headingText, options) {
-        forma = options.forma;
+        myForma = options.forma;
         let myFG = new FormGenerator();
 
         const formaHtml =
-            mapJoin(Object.keys(forma),
-                function(groupKey) {
-                    return myFG.visitFormaNode(forma, groupKey);
+            mapJoin(Object.keys(myForma),
+                function(key) {
+                    return myFG.visitFormaNode(myForma, key);
                 }
             );
 
@@ -1328,25 +1413,6 @@ function spawnMinimumSubobjectInstances(tabHeaders, tabContent = $(tabHeaders).s
 
 
 
-
-function genSQLSchema(){
-
-}
-
-function summarizeForm(cenariusForm) {
-    let inSingleChoiceGroup = false;
-    let inMultiChoiceGroup = false;
-
-    let mySG = new SummaryGenerator();
-
-    const mainCol = $(cenariusForm).children()[0];
-    const summary = mapJoin($(mainCol).children(), function(group) {
-        return mySG.visitDomNode(group);
-    });
-
-    return $_$('p', {}, summary);
-};
-
 function mapJoin(obj, func, sep = '') {
     return _.map(obj, func).join(sep);
 }
@@ -1408,6 +1474,10 @@ function identifierize(str) {
 
 String.prototype.replaceAll = function(search, replacement) {
     return this.replace(new RegExp(search, 'g'), replacement);
+};
+
+Array.prototype.last = function() {
+    return this[this.length - 1];
 };
 
 function descendAll(node, func) {
@@ -1479,13 +1549,15 @@ $(() => { /* DOM ready */
 
     $("button[name=summarize_btn]").click(function() {
         let $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
-        const summaryHtml = summarizeForm($(this).parent().siblings('div[name=cenarius-content]').children('form[name=cenarius-form]'));
+        const summaryHtml = SummaryGenerator.gen($(this).parent().siblings('div[name=cenarius-content]').children('form[name=cenarius-form]'));
         $summary.html(summaryHtml);
     });
 
     $("button[name=sql_btn]").click(function() {
-        const sqlSchema = genSQLSchema();
-        alert(JSON.stringify(sqlSchema));
+        let $sql = $('#sql_modal .modal-dialog .modal-content .modal-body');
+        const tableName = prompt('New table name: ', 'new_test_table');
+        const sqlSchema = SQLSchemaGenerator.gen(myForma, tableName);
+        $sql.html($_$('pre', {}, JSON.stringify(sqlSchema, null, 2)));
     });
 
     $("#submit_btn").click(function() {
@@ -1508,5 +1580,17 @@ $(() => { /* DOM ready */
         let counterSpan = $(this).siblings('span[name=textarea-counter]');
         const oldCounter = $(counterSpan).html();
         $(counterSpan).html(valLen + oldCounter.substr(oldCounter.indexOf('<br>')));
+    });
+
+    $('.format-control').keyup(function() {
+        inputToggleCheckbox(this);
+    });
+
+    $('.format-control').change(function() {
+        inputToggleCheckbox(this);
+    });
+
+    $('input[type=checkbox].single-choice-checkbox').change(function() {
+        singleChoiceToggle(this);
     });
 });

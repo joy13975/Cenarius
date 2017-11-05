@@ -8,19 +8,20 @@
                     "_title": "受檢者",
                     "_default_cols": 4,
                     "_properties": {
-                        "id": {
+                        "patient_id": {
                             "_title": "病歷號",
                             "_default_value": "A1337"
                         },
-                        "name": {
+                        "patient_name": {
                             "_title": "姓名",
                             "_default_value": "王小明"
                         },
-                        "no_of_checks_today": {
+                        "patient_no_of_checks_today": {
                             "_title": "今日檢查次數",
                             "_ending": "次",
                             "_type": "integer",
-                            "_min": 0
+                            "_min": 0,
+                            "_default_value": 1
                         }
                     }
                 },
@@ -40,7 +41,8 @@
                             "_title": "次數 ",
                             "_ending": "次",
                             "_type": "integer",
-                            "_min": 0
+                            "_min": 0,
+                            "_default_value": 1
                         },
                         "operator_id": {
                             "_title": "操作者編號",
@@ -378,7 +380,10 @@
                     "_enum_multi": [
                         "1. Duct changes",
                         "2. Cooper’s ligament changes",
-                        "3. Edema",
+                        {
+                            "_title": "3. Edema",
+                            "_default_value": true
+                        },
                         "4. Architectural distortion",
                         "5. Skin thickening",
                         "6. Skin retraction/irregularity"
@@ -428,8 +433,7 @@
                     "_type": "big_string",
                     "_cols": 12,
                     "_default_value": "What is life?",
-                    "_summary_break_style": "before",
-                    "_title_in_summary": true
+                    "_summary_break_style": "before"
                 }
             }
         },
@@ -438,8 +442,7 @@
             "_type": "big_string",
             "_max_string_length": 8096,
             "_cols": 12,
-            "_default_value": "Life is about finding happiness.",
-            "_title_in_summary": true
+            "_default_value": "Life is about finding happiness."
         }
     }
 }

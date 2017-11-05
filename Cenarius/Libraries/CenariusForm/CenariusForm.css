@@ -136,6 +136,7 @@ input[type=checkbox]:checked ~ .cenarius-ckbx-lbl{
 }
 
 #bootstrap-overrides .panel-heading {
+	margin-top: 1px;
 	font-weight:bold; 
 	font-size: 20px; 
 }
