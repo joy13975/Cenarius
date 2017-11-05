@@ -9,20 +9,20 @@
 'use strict';
 
 var config = {
-    defaultType: "string",
+    defaultType: 'string',
     inferObjectFromProps: true,
-    defaultTitle: "key_titleize",
+    defaultTitle: 'key_titleize',
     titleOptions: [
-        "key_titleize",
-        "key_lower_case",
-        "key_upper_case",
-        "key"
+        'key_titleize',
+        'key_lower_case',
+        'key_upper_case',
+        'key'
     ],
 
     autoCheckboxOptions: [
-        "none",
-        "single",
-        "multi"
+        'none',
+        'single',
+        'multi'
     ],
     defaultNumberStep: 0.01,
     autoLabelColon: '',
@@ -30,10 +30,10 @@ var config = {
     defaultEnumOptionText: '--',
 
     ui: {
-        enumSingle: "dropdown",
-        enumMulti: "checkboxes",
-        subobject: "tabs-editable",
-        eitherGroup: "tabs",
+        enumSingle: 'dropdown',
+        enumMulti: 'checkboxes',
+        subobject: 'tabs-editable',
+        eitherGroup: 'tabs',
     },
 
     nCols: {
@@ -221,12 +221,12 @@ class FormGenerator {
         const panelBody =
             $_$('ul', {
                 class: 'nav nav-tabs',
-                name: "subobject-tabheaders",
+                name: 'subobject-tabheaders',
                 id: fieldID + '_tabs'
             }) +
             $_$('div', {
                     class: 'tab-content col-md-12',
-                    name: "subobject-tabcontent"
+                    name: 'subobject-tabcontent'
                 },
                 Htmler.genTabPane(fieldID + '_template', sandwich(), {
                     'excludeFromSummary': true
@@ -293,7 +293,7 @@ class FormGenerator {
 
         let formGenSelf = this;
 
-        const isMultiChoice = node.hasOwnProperty("_enum_multi");
+        const isMultiChoice = node.hasOwnProperty('_enum_multi');
 
         let enumData = [];
         let simpleEnum = true;
@@ -811,9 +811,18 @@ class Htmler {
                             $_$('button', {
                                     type: 'button',
                                     class: 'btn btn-default',
-                                    'data-dismiss': 'modal'
+                                    'data-dismiss': 'modal',
+                                    style: 'float: left'
                                 },
                                 'Close'
+                            ) +
+                            $_$('button', {
+                                    type: 'button',
+                                    class: 'btn btn-success',
+                                    id: 'copy_summary_btn',
+                                    'data-dismiss': 'modal'
+                                },
+                                'Copy'
                             ) +
                             $_$('button', {
                                     type: 'button',
@@ -857,7 +866,16 @@ class Htmler {
                             $_$('h4', {
                                     class: 'modal-title'
                                 },
-                                'Form Summary'
+                                'SQL Schema'
+                            ) +
+                            $_$('button', {
+                                    type: 'button',
+                                    class: 'btn btn-success',
+                                    id: 'copy_sql_btn',
+                                    'data-dismiss': 'modal',
+                                    style: 'float:right'
+                                },
+                                'Copy'
                             )
                         ) +
                         $_$('div', {
@@ -1193,22 +1211,32 @@ class SummaryGenerator {
 
 class SQLSchemaGenerator {
     constructor(tableName) {
-        this.data = [];
+        this.tables = [{
+            tableName: tableName,
+            fields: []
+        }];
+        this.mainTableName = tableName;
     }
 
-    visitFormaNode(node, key, dest = this.data) {
+    visitFormaNode(node, key, dest) {
         let sqlGenSelf = this;
         const next = node[key];
         const type = next._type;
+        const parentTableName = dest.tableName;
 
-        let newDest = dest;
         if (next.hasOwnProperty('_sql_type')) {
             if (next._sql_type === 'subobject') {
-                // add foreign ID from SO referring back to main table
-                dest.push([]);
-                newDest = dest.last();
+                const soTable = {
+                    tableName: next._fieldID.replace(/_subobject_f[0-9]*$/, '_subobject_of_' + parentTableName),
+                    fields: [{
+                        name: parentTableName + '_ref',
+                        sqlType: ''
+                    }]
+                }
+                this.tables.push(soTable);
+                dest = this.tables.last();
             } else {
-                dest.push({
+                dest.fields.push({
                     name: next._fieldID,
                     sqlType: next._sql_type
                 });
@@ -1220,7 +1248,7 @@ class SQLSchemaGenerator {
             case 'subobject':
                 {
                     _.each(Object.keys(next._properties), function(childKey) {
-                        sqlGenSelf.visitFormaNode(next._properties, childKey, newDest);
+                        sqlGenSelf.visitFormaNode(next._properties, childKey, dest);
                     })
                     break;
                 }
@@ -1232,10 +1260,10 @@ class SQLSchemaGenerator {
         let sqlGen = new SQLSchemaGenerator(tableName);
 
         _.each(Object.keys(forma), function(key) {
-            sqlGen.visitFormaNode(forma, key);
+            sqlGen.visitFormaNode(forma, key, sqlGen.tables[0]);
         })
 
-        return sqlGen.data;
+        return sqlGen.tables;
     }
 }
 
@@ -1434,25 +1462,25 @@ function $_$(tag, attr = {}, content = '', close = true) {
 
 function getNameFromKey(key) {
     switch (config.defaultTitle) {
-        case "key_titleize":
+        case 'key_titleize':
             {
                 return titleize(key.replaceAll('_', ' '));
             }
-        case "key_lower_case":
+        case 'key_lower_case':
             {
                 return key.replace('_', ' ').toLowerCase();
             }
-        case "key_upper_case":
+        case 'key_upper_case':
             {
                 return key.replace('_', ' ').toUpperCase();
             }
-        case "key":
+        case 'key':
             {
                 return key;
             }
         default:
             {
-                return "invalid_default_name_config";
+                return 'invalid_default_name_config';
             }
     }
 }
@@ -1505,6 +1533,28 @@ function mergeStrProps(a, b, separater = ' ') {
     return res;
 }
 
+function selectText(elt) {
+    let doc = document,
+        text = elt,
+        range, selection;
+    if (doc.body.createTextRange) {
+        range = document.body.createTextRange();
+        range.moveToElementText(text);
+        range.select();
+    } else if (window.getSelection) {
+        selection = window.getSelection();
+        range = document.createRange();
+        range.selectNodeContents(text);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
+function copyToClipboard(elt) {
+    selectText(elt);
+    return document.execCommand('copy');
+}
+
 function isInt(value) {
     var x;
     return isNaN(value) ? false : (x = parseFloat(value), (0 | x) === x);
@@ -1525,11 +1575,11 @@ $(() => { /* DOM ready */
     });
 
     // Fix button stuck in focus
-    $(".btn").click(function(event) {
+    $('.btn').click(function(event) {
         $(this).blur();
     });
 
-    $("button[name=del_tab_btn]").click(function() {
+    $('button[name=del_tab_btn]').click(function() {
         if (confirm('Confirm delete?')) {
             let tabHeaders = $(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]');
             delSubobjectInstance(tabHeaders);
@@ -1537,33 +1587,56 @@ $(() => { /* DOM ready */
         }
     })
 
-    $("button[name=new_tab_btn]").click(function() {
+    $('button[name=new_tab_btn]').click(function() {
         addSubobjectInstance($(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]'));
     })
 
-    $("button[name=reset_btn]").click(function() {
+    $('button[name=reset_btn]').click(function() {
         if (confirm('Are you sure you want to reset (clear) all fields?')) {
             resetAllFields();
         }
     });
 
-    $("button[name=summarize_btn]").click(function() {
+    $('button[name=summarize_btn]').click(function() {
         let $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
         const summaryHtml = SummaryGenerator.gen($(this).parent().siblings('div[name=cenarius-content]').children('form[name=cenarius-form]'));
         $summary.html(summaryHtml);
     });
 
-    $("button[name=sql_btn]").click(function() {
+    $('button[name=sql_btn]').click(function(e) {
         let $sql = $('#sql_modal .modal-dialog .modal-content .modal-body');
         const tableName = prompt('New table name: ', 'new_test_table');
-        const sqlSchema = SQLSchemaGenerator.gen(myForma, tableName);
-        $sql.html($_$('pre', {}, JSON.stringify(sqlSchema, null, 2)));
+        if (tableName !== null && tableName.length > 0) {
+            const sqlSchema = SQLSchemaGenerator.gen(myForma, tableName);
+            $sql.html($_$('pre', {}, JSON.stringify(sqlSchema, null, 2)));
+        } else {
+            e.stopPropagation();
+        }
     });
 
-    $("#submit_btn").click(function() {
+    $('#submit_btn').click(function() {
         const formData = $('form[name=cenarius-form]').serializeArray();
         const str = JSON.stringify(formData);
         alert(str);
+    });
+
+    $('#copy_summary_btn').click(function(e) {
+        e.stopPropagation();
+        const res = copyToClipboard($(this).parent().siblings('.modal-body')
+            .children('p')[0]);
+        if (res)
+            alert('Copied to clipboard.');
+        else
+            alert('Browser does not support copy function.');
+    });
+
+    $('#copy_sql_btn').click(function(e) {
+        e.stopPropagation();
+        const res = copyToClipboard($(this).parent().siblings('.modal-body').children('pre')[0]);
+        if (res)
+            alert('Copied to clipboard.');
+        else
+            alert('Browser does not support copy function.');
     });
 
     // Textarea auto resize
