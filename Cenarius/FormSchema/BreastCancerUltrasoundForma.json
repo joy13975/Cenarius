@@ -109,6 +109,15 @@
                     "_default_type": "boolean",
                     "_default_cols": 4,
                     "_properties": {
+                        "test_so_lv2": {
+                            "_type": "subobject",
+                            "_properties": {
+                                "fill_me": {},
+                                "fill_me2": {
+                                    "_type": "float"
+                                }
+                            }
+                        },
                         "location": {
                             "_default_type": "boolean",
                             "_cols": 8,
@@ -379,8 +388,7 @@
                     "_default_cols": 4,
                     "_enum_multi": [
                         "1. Duct changes",
-                        "2. Cooper’s ligament changes",
-                        {
+                        "2. Cooper’s ligament changes", {
                             "_title": "3. Edema",
                             "_default_value": true
                         },

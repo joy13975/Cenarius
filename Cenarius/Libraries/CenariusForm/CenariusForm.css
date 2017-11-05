@@ -151,7 +151,7 @@ input[type=checkbox]:checked ~ .cenarius-ckbx-lbl{
 	margin-top: 3px;
 }
 
-#bootstrap-overrides div[class*=col-] {
+#bootstrap-overrides div[class^=col-] {
 	padding-left: 10px;
 	padding-right: 10px;
 	padding: 5px;
@@ -191,7 +191,7 @@ button[name=sql_btn]{
 	margin-right: 20px;
 }
 
-#bootstrap-overrides div[class*=alert] {
+#bootstrap-overrides div[class^=alert] {
 	margin-bottom: 10px; 
 	margin-top: 10px;
 	font-size: 16px;

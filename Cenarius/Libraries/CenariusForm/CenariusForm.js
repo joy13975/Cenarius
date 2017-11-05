@@ -543,7 +543,7 @@ class FormGenerator {
                         }
                     default:
                         {
-                            return $_$('p', {}, $_$('b', {}, '[CenariusFormError] Unknown field type: ' + htmlInputType));
+                            return $_$('p', {}, $_$('b', {}, '[CenariusFormError] Unknown field type: ' + type));
                         }
                 }
             })();
@@ -1296,6 +1296,12 @@ function main(global, $) {
 
         this.replaceWith(finalHtml);
     }
+
+    $.fn.sortByDepth = function() {
+        return $(this).sort(function(a, b) {
+            return $(b).parents().length - $(a).parents().length;
+        });
+    };
 };
 
 
@@ -1360,7 +1366,7 @@ function singleChoiceToggle(ckbx) {
 function addSubobjectInstance(tabHeaders) {
     let $tabHeaders = $(tabHeaders);
     const tabID = $tabHeaders.prop('id');
-    const templateID = tabID.substr(0, tabID.length - 5) + '_template';
+    const templateID = tabID.replace('_tabs', '_template');
     let $tabContent = ($tabHeaders.siblings('div[name=subobject-tabcontent]'));
     const template = $tabContent.children('#' + templateID);
 
@@ -1368,14 +1374,26 @@ function addSubobjectInstance(tabHeaders) {
     let clone = template.clone();
     let cloneIndex = 0;
     template.parent().children().each(function() {
-        const idStr = $(this).prop('id');
-        const id = parseInt(idStr.substr(idStr.lastIndexOf('_') + 1), 10);
-        cloneIndex = id > cloneIndex ? id : cloneIndex;
+        let idStr = $(this).prop('id');
+
+        // Remove everything before template token
+        const idStrTmplIdx = idStr.lastIndexOf('_template_');
+        if (idStrTmplIdx > 0)
+            idStr = idStr.substr(idStrTmplIdx + '_template_'.length);
+
+        // Remove everything after the stat of the instance token
+        const idStrInstIdx = idStr.indexOf('_instance-');
+        if (idStrInstIdx > 0)
+            idStr = idStr.substr(0, idStrInstIdx);
+
+        const id = parseInt(idStr, 10);
+        if (!isNaN(id))
+            cloneIndex = id > cloneIndex ? id : cloneIndex;
     });
     cloneIndex += 1;
 
     // Fix cloned element IDs
-    const cloneID = templateID + '_' + cloneIndex;
+    const cloneID = tabID.replace('_tabs', '_template_' + cloneIndex);
 
     function fixCloneField(
         node,
@@ -1400,8 +1418,16 @@ function addSubobjectInstance(tabHeaders) {
         fixCloneField(node, 'href');
     });
 
-    // Remove excludeFromSummary attr
+    // Remove excludeFromSummary attr (template is never included in summary)
     $(clone).removeAttr('excludeFromSummary');
+
+    let cloneSONewBtns = $(clone).find('button[name^=new_tab_btn]');
+    cloneSONewBtns.unbind('click');
+    cloneSONewBtns.click(newTabBtnClicked);
+    
+    let cloneSODelBtns = $(clone).find('button[name^=del_tab_btn]');
+    cloneSODelBtns.unbind('click');
+    cloneSODelBtns.click(delTabBtnClicked);
 
     clone.prop('id', cloneID);
     $tabContent.append(clone);
@@ -1439,6 +1465,17 @@ function spawnMinimumSubobjectInstances(tabHeaders, tabContent = $(tabHeaders).s
     }
 }
 
+function delTabBtnClicked() {
+    if (confirm('Confirm delete?')) {
+        let tabHeaders = $(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]');
+        delSubobjectInstance(tabHeaders);
+        spawnMinimumSubobjectInstances(tabHeaders);
+    }
+}
+
+function newTabBtnClicked() {
+    addSubobjectInstance($(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]'));
+}
 
 
 function mapJoin(obj, func, sep = '') {
@@ -1569,27 +1606,19 @@ main(window, ((typeof jQuery !== 'undefined') ? jQuery : {
 }));
 
 $(() => { /* DOM ready */
+    $('button[name^=del_tab_btn]').click(delTabBtnClicked);
+
+    $('button[name^=new_tab_btn]').click(newTabBtnClicked);
+
     // Spawn one instance of each suboject using their template
-    $('ul[name=subobject-tabheaders]').each(function(index) {
+    $('ul[name=subobject-tabheaders]').sortByDepth().each(function(index) {
         spawnMinimumSubobjectInstances($(this));
     });
 
-    // Fix button stuck in focus
+    // Fix button stuck in focus when alert shows up
     $('.btn').click(function(event) {
         $(this).blur();
     });
-
-    $('button[name=del_tab_btn]').click(function() {
-        if (confirm('Confirm delete?')) {
-            let tabHeaders = $(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]');
-            delSubobjectInstance(tabHeaders);
-            spawnMinimumSubobjectInstances(tabHeaders);
-        }
-    })
-
-    $('button[name=new_tab_btn]').click(function() {
-        addSubobjectInstance($(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]'));
-    })
 
     $('button[name=reset_btn]').click(function() {
         if (confirm('Are you sure you want to reset (clear) all fields?')) {
