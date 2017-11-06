@@ -469,10 +469,11 @@ class FormGenerator {
                                 autocomplete: 'off',
                             }
 
-                            defaultValue === true ? (ckbxProps.checked = true) : nullStm();
-
+                            if (defaultValue === true) ckbxProps.checked = true;
+                            const ckbxInputDom = $_$('input', ckbxProps);
                             const ckbxDoms =
-                                [$_$('input', ckbxProps),
+                                [
+                                    ckbxInputDom,
                                     $_$('label', {
                                         for: fieldID,
                                         class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
@@ -493,30 +494,33 @@ class FormGenerator {
                     case 'number':
                     case 'date':
                         {
+                            let regularInputProps = {
+                                class: 'form-control',
+                                style: fieldStyle,
+                                id: fieldID,
+                                name: fieldID,
+                                type: htmlInputType,
+                                step: numStep,
+                                defaultValue: defaultValue,
+                                value: defaultValue
+                            };
+                            if (numMin.length > 0) regularInputProps.min = numMin;
+                            if (numMax.length > 0) regularInputProps.max = numMax;
+                            if (defaultValue.length > 0) regularInputProps.value = defaultValue;
+                            if (textAreaRows.length > 0) regularInputProps.rows = textAreaRows;
+                            if (maxStringLength.length > 0) regularInputProps.maxlength = maxStringLength;
+
+                            const regularInputDom =
+                                $_$(inputTag, regularInputProps, [defaultValue]);
+                            $(regularInputDom).change(function() {
+                                node._value = $(this).val()
+                            })
                             let regularFieldDoms =
                                 [
                                     $_$('span', {
                                         class: 'input-group-addon cenarius-input-tag'
                                     }, [$_$('b', {}, [fieldName])]),
-
-                                    $_$(inputTag, (() => {
-                                        let inputProps = {
-                                            class: 'form-control',
-                                            style: fieldStyle,
-                                            id: fieldID,
-                                            name: fieldID,
-                                            type: htmlInputType,
-                                            step: numStep,
-                                            defaultValue: defaultValue,
-                                            value: defaultValue
-                                        };
-                                        numMin.length > 0 ? (inputProps.min = numMin) : nullStm();
-                                        numMax.length > 0 ? (inputProps.max = numMax) : nullStm();
-                                        defaultValue.length > 0 ? (inputProps.value = defaultValue) : nullStm();
-                                        textAreaRows.length > 0 ? (inputProps.rows = textAreaRows) : nullStm();
-                                        maxStringLength.length > 0 ? (inputProps.maxlength = maxStringLength) : nullStm();
-                                        return inputProps;
-                                    })(), [defaultValue])
+                                    regularInputDom
                                 ];
 
                             if (isSet(endingSpan))
@@ -661,7 +665,7 @@ class DomMaker {
                     type: 'checkbox',
                     id: checkboxID,
                     name: checkboxID,
-                    class: this.forceCheckbox === 'single' ? 'single-choice-checkbox' : '',
+                    class: checkboxType === 'single' ? 'single-choice-checkbox' : '',
                     autocomplete: 'off'
                 }),
                 $_$('label', {
@@ -1069,7 +1073,7 @@ class SummaryGenerator {
             id = $ckbxElt.attr('id');
             if ($ckbxElt.prop('checked')) {
                 if (eltExists($cbkxWrapper)) {
-                    const $wrapperSpan = $($(cbkxWrapper).children('span'));
+                    const $wrapperSpan = $cbkxWrapper.children('span');
                     title = $wrapperSpan.children('span.input-group-addon').text();
                     val = $wrapperSpan.children('input').val();
                 } else {
@@ -1173,6 +1177,7 @@ class SQLSchemaGenerator {
             primaryKey: true
         };
     }
+
     constructor(tableName) {
         this.mainTableName = tableName;
         this.tables = [{
@@ -1207,7 +1212,8 @@ class SQLSchemaGenerator {
             } else {
                 dest.fields.push({
                     name: next._fieldID,
-                    sqlType: next._sql_signal
+                    sqlType: next._sql_signal,
+                    value: next._value
                 });
             }
         }
@@ -1256,9 +1262,10 @@ class SQLSchemaGenerator {
             sqlGen.visitFormaNode(forma, key, sqlGen.tables[0]);
         })
 
-        return mapJoin(sqlGen.tables, (td) => {
-            return SQLSchemaGenerator.stringify(td);
-        }, '\n');
+        return JSON.stringify(sqlGen.tables, null ,2);
+        // return mapJoin(sqlGen.tables, (td) => {
+        //     return SQLSchemaGenerator.stringify(td);
+        // }, '\n');
     }
 }
 
