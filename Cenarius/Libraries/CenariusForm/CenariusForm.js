@@ -119,7 +119,7 @@ class FormGenerator {
     }
 
     getNextID(key) {
-        const id = key + '_f' + this.fieldID;
+        const id = identifierize(key + '_f' + this.fieldID);
         this.fieldID++;
         return id;
     }
@@ -261,15 +261,14 @@ class FormGenerator {
         if (isSet(summaryBreakStyle))
             sogProps.summaryBreakStyle = summaryBreakStyle;
 
-        node._fieldID = fieldID;
-        node._sql_signal = 'subobject';
-
         let headingDoms = [name];
         if (node.hasOwnProperty('_help_text'))
             headingDoms.push($_$('div', {
                 class: 'alert alert-info',
                 style: ''
             }, [node._help_text]))
+
+        node._fieldID = fieldID;
 
         return DomMaker.genPanel(headingDoms, bodyDoms,
             nCols, sogProps, {
@@ -362,6 +361,10 @@ class FormGenerator {
                     class: 'input-group'
                 }, needCheckbox ?
                 DomMaker.genCheckboxWrapper(checkboxID, this.forceCheckbox, inputDoms) : inputDoms)]);
+            node._value = $(selectDom).val();
+            $(selectDom).change(function() {
+                node._value = $(this).val()
+            })
         } else {
             const choiceTypeIcon =
                 $_$('span', {
@@ -370,7 +373,8 @@ class FormGenerator {
                 });
 
             let ceProps = {
-                name: isMultiChoice ? 'cenarius-multi-choice-group' : 'cenarius-single-choice-group'
+                name: isMultiChoice ? 'cenarius-multi-choice-group' : 'cenarius-single-choice-group',
+                id: fieldID
             };
             if (isSet(excludeFromSummary))
                 ceProps.excludeFromSummary = excludeFromSummary;
@@ -391,7 +395,7 @@ class FormGenerator {
         }
 
         node._fieldID = fieldID;
-        node._sql_signal = SQLTypeTable.string;
+        node._sql_signal = isMultiChoice ? 'multi_enum' : 'enum';
 
         return enumDoms;
     };
@@ -429,7 +433,7 @@ class FormGenerator {
             (node.hasOwnProperty('_textarea_rows') ? node._textarea_rows : '5') : '';
 
         const fieldStyle = textAlignment;
-        const fieldID = this.getNextID(key);
+        const fieldID = isPositiveInt(key) ? this.getNextID(name) : this.getNextID(key);
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
         const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
         const needCheckbox = this.forceCheckbox !== 'none' || forceCheckbox;
@@ -471,6 +475,17 @@ class FormGenerator {
 
                             if (defaultValue === true) ckbxProps.checked = true;
                             const ckbxInputDom = $_$('input', ckbxProps);
+
+                            const dataBindingNode = this.forceCheckbox === 'single' ? nodeParent : node;
+                            dataBindingNode._value = $(ckbxInputDom).is(':checked');
+                            $(ckbxInputDom).change(function() {
+                                dataBindingNode._value = $(this).is(':checked')
+                            });
+                            if(this.forceCheckbox === 'single'){
+                                console.log('hoii');
+                                console.log(nodeParent);
+                            }
+
                             const ckbxDoms =
                                 [
                                     ckbxInputDom,
@@ -487,14 +502,13 @@ class FormGenerator {
                                         class: 'btn btn-default cenarius-ckbx-lbl'
                                     }, [name])
                                 ];
-
                             return ckbxDoms;
                         }
                     case 'text':
                     case 'number':
                     case 'date':
                         {
-                            let regularInputProps = {
+                            const regularInputProps = {
                                 class: 'form-control',
                                 style: fieldStyle,
                                 id: fieldID,
@@ -512,9 +526,13 @@ class FormGenerator {
 
                             const regularInputDom =
                                 $_$(inputTag, regularInputProps, [defaultValue]);
+
+                            const dataBindingNode = this.forceCheckbox === 'single' ? nodeParent : node;
+                            dataBindingNode._value = $(regularInputDom).val();
                             $(regularInputDom).change(function() {
-                                node._value = $(this).val()
-                            })
+                                dataBindingNode._value = $(this).val()
+                            });
+
                             let regularFieldDoms =
                                 [
                                     $_$('span', {
@@ -569,11 +587,8 @@ class FormGenerator {
                     inputDoms)
             ]);
 
-        // Forced checkbox fields are just multi-choice or complex selections
-        if (this.forceCheckbox === 'none') {
-            node._fieldID = fieldID;
-            node._sql_signal = SQLTypeTable[type];
-        }
+        node._fieldID = fieldID;
+        node._sql_signal = SQLTypeTable[type];
 
         return inputGroupDom;
     };
@@ -593,7 +608,7 @@ class FormGenerator {
     }
 
     visitFormaNode(node, key) {
-        let formGenSelf = this;
+        const formGenSelf = this;
         let next = node[key];
 
         // Extract flags
@@ -1170,7 +1185,7 @@ class SummaryGenerator {
 class SQLSchemaGenerator {
     static genIDColumn(tableName) {
         return {
-            name: tableName + '_id',
+            name: 'id',
             sqlType: 'integer',
             notNull: true,
             autoIncrement: true,
@@ -1179,10 +1194,10 @@ class SQLSchemaGenerator {
     }
 
     constructor(tableName) {
-        this.mainTableName = tableName;
+        this.mainTableName = identifierize(tableName);
         this.tables = [{
             tableName: tableName,
-            fields: [SQLSchemaGenerator.genIDColumn(tableName)]
+            fields: [SQLSchemaGenerator.genIDColumn()]
         }];
     }
 
@@ -1192,42 +1207,53 @@ class SQLSchemaGenerator {
         const type = next._type;
         const parentTableName = dest.tableName;
 
-        if (next.hasOwnProperty('_sql_signal')) {
-            if (next._sql_signal === 'subobject') {
-                const soTableName = parentTableName +
-                    '.' + next._fieldID.replace(/_subobject_f[0-9]*$/, '');
-                const soTable = {
-                    tableName: soTableName,
-                    fields: [
-                        SQLSchemaGenerator.genIDColumn(soTableName), {
-                            name: parentTableName + '_ref',
-                            sqlType: 'integer',
-                            notNull: true,
-                            foreignRef: parentTableName
-                        }
-                    ]
-                }
-                this.tables.push(soTable);
-                dest = this.tables.last();
-            } else {
-                dest.fields.push({
-                    name: next._fieldID,
-                    sqlType: next._sql_signal,
-                    value: next._value
-                });
-            }
-        }
+        // console.log('sql gen: name=' + next._fieldID + ', type=' + type + ', signal=' + next._sql_signal);
 
+        let sqlType = next._sql_signal;
         switch (type) {
-            case 'object':
             case 'subobject':
+                {
+                    const soTableName = parentTableName +
+                        '.' + identifierize(next._fieldID.replace(/_subobject_f[0-9]*$/, ''));
+                    const soTable = {
+                        tableName: soTableName,
+                        fields: [
+                            SQLSchemaGenerator.genIDColumn(), {
+                                name: parentTableName + '_ref',
+                                sqlType: 'integer',
+                                notNull: true,
+                                foreignRef: parentTableName
+                            }
+                        ]
+                    }
+                    this.tables.push(soTable);
+                    dest = this.tables.last();
+                }
+            case 'object':
                 {
                     _.each(Object.keys(next._properties), function(childKey) {
                         sqlGenSelf.visitFormaNode(next._properties, childKey, dest);
                     })
                     break;
                 }
+            case 'enum':
+                {
+                    if (sqlType === 'multi_enum') {
+                        _.each(Object.keys(next._enum_multi), function(childKey) {
+                            sqlGenSelf.visitFormaNode(next._enum_multi, childKey, dest);
+                        });
+                        break;
+                    }
+                    sqlType = 'string';
+                }
             default:
+                {
+                    dest.fields.push({
+                        name: next._fieldID,
+                        sqlType: sqlType,
+                        value: next._value
+                    });
+                }
         }
     }
 
@@ -1247,7 +1273,7 @@ class SQLSchemaGenerator {
                     (fd.primaryKey === true ? ' PRIMARY KEY' : '') +
                     (typeof fd.foreignRef === 'string' ?
                         (' FOREIGN KEY REFERENCES ' + bracket(fd.foreignRef) + '(' +
-                            bracket(fd.foreignRef + '_id') + ')') : '')
+                            bracket('id') + ')') : '')
                 return fdStr;
             }, ', \n') +
             '\n);';
@@ -1262,7 +1288,7 @@ class SQLSchemaGenerator {
             sqlGen.visitFormaNode(forma, key, sqlGen.tables[0]);
         })
 
-        return JSON.stringify(sqlGen.tables, null ,2);
+        return JSON.stringify(sqlGen.tables, null, 2);
         // return mapJoin(sqlGen.tables, (td) => {
         //     return SQLSchemaGenerator.stringify(td);
         // }, '\n');
@@ -1569,10 +1595,7 @@ function titleize(str) {
 }
 
 function identifierize(str) {
-    const res = mapJoin(str.replaceAll('_', ' ').match(/\w+/g), (w) => {
-        return w.charAt(0).toUpperCase() + w.substring(1);
-    }, '');
-    return res;
+    return str.replaceAll(/[^a-zA-Z\d]+/, '_').toLowerCase().replace(/^[0-9]/, '_$&');
 }
 
 String.prototype.replaceAll = function(search, replacement) {
@@ -1628,6 +1651,11 @@ function selectText(elt) {
 function copyToClipboard(elt) {
     selectText(elt);
     return document.execCommand('copy');
+}
+
+function isPositiveInt(str) {
+    const n = Math.floor(Number(str));
+    return String(n) === str && n >= 0;
 }
 
 function isInt(value) {
