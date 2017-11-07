@@ -76,13 +76,9 @@ const SQLTypeTable = {
     date: 'date'
 }
 
-function domReady() {
-    // Spawn minimum number of instances in
-    // each suboject tab array using their template
-    $('ul[name=subobject-tabheaders]').sortByDepth().each(function(index) {
-        spawnMinimumSubobjectInstances($(this));
-    });
+const formCtrlUpdateEvents = 'keyup change focus';
 
+function domReady() {
     // Fix button stuck in focus when alert shows up
     $('.btn').click(function(event) {
         $(this).blur();
@@ -118,27 +114,19 @@ function domReady() {
     });
 
     // Set initial state for checkboxes
-    $('.form-control').trigger('change');
+    updateAllWCkbxs();
 }
 
 function main(global, $) {
     $.fn.cenarius = function(headingText, options) {
         const myForma = options.forma;
-        const myFG = new FormGenerator();
 
-        const formaDoms =
-            _.map(Object.keys(myForma),
-                function(key) {
-                    return myFG.visitFormaNode(myForma, key);
-                }
-            );
+        const myFG = new FormGenerator(myForma);
+        const formaDoms = myFG.genDoms();
 
         const contentDoms = DomMaker.genContent(headingText, formaDoms);
-
-        const ctrlDoms = DomMaker.genCtrlPanel(myForma);
-
+        const ctrlDoms = DomMaker.genCtrlPanel(myFG);
         const summaryModalDoms = DomMaker.genSummaryModal();
-
         const sqlModalDoms = DomMaker.genSQLModal();
 
         const finalDom =
@@ -157,50 +145,102 @@ function main(global, $) {
 };
 
 class FormGenerator {
-    constructor() {
+    constructor(forma) {
         this.fieldID = 0;
+        this.forma = forma;
+        this.data = {};
         this.resetDefaultType();
         this.resetDefaultNCols();
         this.unsetForceCheckbox();
     }
 
-    resetDefaultType() {
-        console.log('resetDefaultType()');
-        this.setDefaultType(config.defaultType);
+    genDoms() {
+        const sgSelf = this;
+        return _.map(Object.keys(this.forma),
+            function(key) {
+                return sgSelf.visitFormaNode(sgSelf.forma, key, sgSelf.data);
+            }
+        );
     }
 
-    setDefaultType(type) {
-        console.log('setDefaultType(' + type + ')');
-        this.currentDefaultType = type;
-    }
+    visitFormaNode(fNode, key, dNode) {
+        const formGenSelf = this;
 
-    resetDefaultNCols() {
-        console.log('resetDefaultNCols()');
-        this.setDefaultNCols(12);
-    }
+        // Convert strings into a proper fNode
+        const fNext =
+            typeof fNode[key] === 'string' ?
+            (fNode[key] = {
+                _title: fNode[key],
+                _type: 'string'
+            }) :
+            fNode[key];
 
-    setDefaultNCols(nCols) {
-        console.log('setDefaultNCols(' + nCols + ')');
-        this.currentDefaultNCols = nCols;
-    }
+        // Extract flags
+        const name =
+            fNext.hasOwnProperty('_title') ? fNext._title :
+            getNameFromKey(key);
 
-    unsetForceCheckbox() {
-        console.log('unsetForceCheckbox()');
-        this.forceCheckbox = 'none';
-    }
+        const hasProps = fNext.hasOwnProperty('_properties');
+        const type =
+            (fNext.hasOwnProperty('_type') ?
+                fNext._type :
+                (fNext.hasOwnProperty('_enum') || fNext.hasOwnProperty('_enum_multi') ?
+                    'enum' :
+                    (hasProps ?
+                        'object' :
+                        formGenSelf.currentDefaultType)));
+        fNext._type = type;
 
-    setForceCheckbox(isMultiChoice) {
-        console.log('setForceCheckbox()');
-        this.forceCheckbox = isMultiChoice ? 'multi' : 'single';
-    }
+        // console.log('key: ' + key + ', name: ' + name + ', type: ' + type);
+        // console.log('content: ');
+        // console.log(fNext);
 
-    getNextID(key) {
-        const id = identifierize(key + '_f' + this.fieldID);
-        this.fieldID++;
-        return id;
+        const children =
+            hasProps ? fNext._properties :
+            fNext.hasOwnProperty('_enum') ? fNext._enum :
+            fNext.hasOwnProperty('_enum_multi') ? fNext._enum_multi : {};
+
+        const defaultType =
+            fNext.hasOwnProperty('_default_type') ? fNext._default_type :
+            (type === 'enum' ? 'boolean' : 'string');
+
+        const defaultNCols =
+            fNext.hasOwnProperty('_default_cols') ? fNext._default_cols :
+            '';
+
+        function sandwich(_dNode = dNode) {
+            return _.map(Object.keys(children),
+                (nextKey) => {
+                    formGenSelf.setDefaultType(defaultType);
+                    formGenSelf.setDefaultNCols(defaultNCols);
+
+                    const resDom = formGenSelf.visitFormaNode(children, nextKey, _dNode);
+
+                    formGenSelf.resetDefaultType();
+                    formGenSelf.resetDefaultNCols();
+
+                    return resDom;
+                }
+            );
+        };
+
+        switch (type) {
+            case 'object':
+                return formGenSelf.genObj(fNext, key, name, sandwich, dNode);
+            case 'subobject':
+                return formGenSelf.genSubobj(fNext, key, name, sandwich, dNode);
+            case 'enum':
+                return formGenSelf.genEnum(fNext, key, name, sandwich, dNode);
+            case 'space':
+                return formGenSelf.genSpace(fNext);
+            default:
+                return formGenSelf.genField(fNext, type, key, name, dNode);
+        }
     }
 
     genEitherGroup(fieldID, bodyDoms) {
+        console.log('genEitherGroup()');
+
         // Generate sandwich doms and separate them
         const pages = [];
         $(bodyDoms).children().each(function() {
@@ -241,68 +281,136 @@ class FormGenerator {
         return egDom;
     }
 
-    genObj(node, key, name, sandwich) {
+    genObj(fNode, key, name, sandwich, dNode) {
         console.log('genObj()');
 
         //Not a field so do not increment this.fieldID
         const fieldID = key + '_grouping';
 
         const headingDoms = [name];
-        if (node.hasOwnProperty('_help_text'))
+        if (fNode.hasOwnProperty('_help_text'))
             headingDoms.push($_$('div', {
                 class: 'alert alert-info'
-            }, [node._help_text]))
+            }, [fNode._help_text]))
 
+        const sandwichDoms = sandwich(dNode);
         const bodyDoms =
-            node._grouping === 'either' ?
-            [this.genEitherGroup(fieldID, sandwich())] :
-            sandwich();
+            fNode._grouping === 'either' ?
+            [this.genEitherGroup(fieldID, sandwichDoms)] :
+            sandwichDoms;
 
         const nCols =
-            node.hasOwnProperty('_cols') ?
-            node._cols : config.nCols.object;
+            fNode.hasOwnProperty('_cols') ?
+            fNode._cols : config.nCols.object;
 
         return DomMaker.genPanel(
             headingDoms,
             bodyDoms,
             nCols, {
                 name: 'cenarius-object-group',
-                excludeFromSummary: node._exclude_from_summary,
-                summaryBreakStyle: node._summary_break_style
+                excludeFromSummary: fNode._exclude_from_summary,
+                summaryBreakStyle: fNode._summary_break_style
             }, {
-                class: node._html_class
+                class: fNode._html_class
             }
         );
     };
 
-    genSubobj(node, key, name, sandwich) {
+    genSubobj(fNode, key, name, sandwich, dNode) {
+        const fgSelf = this;
         console.log('genSubobj()');
 
         //Not a field so do not increment this.fieldID
         const fieldID = key + '_subobject';
-        node._fieldID = fieldID;
+        fNode._fieldID = fieldID;
 
-        const panelHeadingFunc = (headingDoms = []) => {
-            const delTabBtn =
-                $_$('button', {
-                    type: 'button',
-                    class: 'btn btn-default btn-md cenarius-del-tab-btn',
-                    name: 'del_tab_btn'
-                }, [$_$('span', {
-                    class: 'glyphicon glyphicon-remove'
-                })]);
-            $(delTabBtn).on('click', delTabBtnOnClick);
+        const soDNode = {
+            _type: fNode._type,
+            _instances: {}
+        };
+        dNode[fieldID] = soDNode;
 
-            const newTabBtn =
-                $_$('button', {
-                    type: 'button',
-                    class: 'btn btn-default btn-md cenarius-new-tab-btn',
-                    name: 'new_tab_btn'
-                }, [$_$('span', {
+        const soTabHeaderDom =
+            $_$('ul', {
+                class: 'nav nav-tabs',
+                name: 'subobject-tabheaders',
+                id: fieldID + '_tabs'
+            });
+        const soTabContentDom =
+            $_$('div', {
+                class: 'tab-content col-md-12',
+                name: 'subobject-tabcontent'
+            });
+
+        const fidBeforeSubobj = this.fieldID;
+        const makeSubobj = () => {
+            const keys = _.map(Object.keys(soDNode._instances), (k) => {
+                return Number(k);
+            });
+            const idx = String(
+                keys.length > 0 ?
+                (keys.reduce((a, b) => {
+                    return Math.max(a, b)
+                }) + 1) : 1
+            );
+            const soID = fieldID + '-so-instance-' + idx;
+
+            soDNode._instances[idx] = {};
+
+            const innerFieldID = fgSelf.fieldID;
+            fgSelf.fieldID = fidBeforeSubobj;
+            $(soTabHeaderDom).append(
+                DomMaker.genTabRef(
+                    soID,
+                    '#' + idx));
+            $(soTabContentDom).append(
+                DomMaker.genTabPane(
+                    soID,
+                    sandwich(soDNode._instances[idx])));
+            fgSelf.fieldID = innerFieldID;
+
+            $(soTabHeaderDom).children().removeClass('active')
+            $(soTabHeaderDom).children(':last-child').addClass('active');
+            $(soTabContentDom).children().removeClass('active');
+            $(soTabContentDom).children(':last-child').addClass('active in');
+
+            updateAllWCkbxs();
+        }
+
+        // Generate initial minimum number of subobj
+        for (let i = 0; i < config.minSubobjectInstance; i++) {
+            makeSubobj();
+        }
+
+        const bodyDoms = [soTabHeaderDom, soTabContentDom];
+
+        const delSubobj = () => {
+
+        }
+        const delTabBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-default btn-md cenarius-del-tab-btn',
+                name: 'del_tab_btn'
+            }, [$_$('span', {
+                class: 'glyphicon glyphicon-remove'
+            })]);
+        $(delTabBtn).on('click', delSubobj);
+
+        const newTabBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-default btn-md cenarius-new-tab-btn',
+                name: 'new_tab_btn'
+            }, [
+                $_$('span', {
                     class: 'glyphicon glyphicon-plus'
-                })]);
-            $(newTabBtn).on('click', newTabBtnOnClick);
+                })
+            ]);
+        $(newTabBtn).on('click', makeSubobj);
 
+        // Prepare panel heading 
+        const panelHeadingFunc = (headingDoms = []) => {
             headingDoms.push(
                 $_$('div', {
                     style: 'float: right;'
@@ -316,82 +424,77 @@ class FormGenerator {
         };
 
         const headingDoms = [name];
-        if (node.hasOwnProperty('_help_text'))
+        if (fNode.hasOwnProperty('_help_text'))
             headingDoms.push($_$('div', {
                 class: 'alert alert-info',
                 style: ''
-            }, [node._help_text]));
-
-        const bodyDoms =
-            [
-                $_$('ul', {
-                    class: 'nav nav-tabs',
-                    name: 'subobject-tabheaders',
-                    id: fieldID + '_tabs'
-                }),
-
-                $_$('div', {
-                    class: 'tab-content col-md-12',
-                    name: 'subobject-tabcontent'
-                }, [DomMaker.genTabPane(fieldID + '_template', sandwich(), {
-                    'excludeFromSummary': true
-                })])
-            ];
+            }, [fNode._help_text]));
 
         const nCols =
-            node.hasOwnProperty('_cols') ?
-            node._cols : config.nCols.subobject;
+            fNode.hasOwnProperty('_cols') ?
+            fNode._cols : config.nCols.subobject;
 
         return DomMaker.genPanel(
             headingDoms,
             bodyDoms,
             nCols, {
                 name: 'cenarius-subobject-group',
-                excludeFromSummary: node._exclude_from_summary,
-                summaryBreakStyle: node._summary_break_style
+                excludeFromSummary: fNode._exclude_from_summary,
+                summaryBreakStyle: fNode._summary_break_style
             }, {
-                class: node._html_class
+                class: fNode._html_class
             }, panelHeadingFunc);
     };
 
-    genEnum(nodeParent, node, key, name, sandwich) {
+    genEnum(fNode, key, name, sandwich, dNode) {
         console.log('genEnum()');
 
         const fieldID = this.getNextID(key);
-        node._fieldID = fieldID;
+        fNode._fieldID = fieldID;
 
         let enumData;
         let simpleEnum = true;
+        let sqlSignal;
 
-        const isMultiChoice = node.hasOwnProperty('_enum_multi');
+        const isMultiChoice = fNode.hasOwnProperty('_enum_multi');
         if (isMultiChoice) {
-            enumData = node._enum_multi;
+            enumData = fNode._enum_multi;
             simpleEnum = false;
-            node._sql_signal = 'multi_enum';
+            sqlSignal = 'multi_enum';
         } else {
-            enumData = node._enum;
+            enumData = fNode._enum;
             _.each(enumData, (item) => {
                 const itemType = typeof item;
-                simpleEnum &= (itemType !== 'object');
-                if (!simpleEnum)
-                    console.log('enum is complex because of: ' + itemType);
+                const isComplex = itemType === 'object' &&
+                    (item.hasOwnProperty('_type') && item._type !== 'string');
+
+                simpleEnum &= !isComplex;
+                if (isComplex) {
+                    console.log('enum is complex because of item:');
+                    console.log(item);
+                }
             });
-            node._sql_signal = 'enum';
+            sqlSignal = 'enum';
         }
 
+        fNode._sql_signal = sqlSignal;
+        dNode[fieldID] = {
+            _type: fNode._type
+        };
+
         const extraHtmlClass =
-            node.hasOwnProperty('_html_class') ?
-            node._html_class : '';
-        const nCols = node.hasOwnProperty('_cols') ? node._cols :
+            fNode.hasOwnProperty('_html_class') ?
+            fNode._html_class : '';
+        const nCols = fNode.hasOwnProperty('_cols') ? fNode._cols :
             this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
             simpleEnum ? config.nCols.enum :
             config.nCols.complexEnum;
 
         const needCheckbox =
-            this.forceCheckbox !== 'none' || (node._force_checkbox === true);
+            this.forceCheckbox !== 'none' || (fNode._force_checkbox === true);
 
         // Default value
-        const defaultValue = node.hasOwnProperty('_default_value') ? node._default_value : 0;
+        const defaultValue = fNode.hasOwnProperty('_default_value') ? fNode._default_value : 0;
 
         return (() => {
             if (simpleEnum) {
@@ -401,15 +504,19 @@ class FormGenerator {
                 if (needCheckbox)
                     selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
 
+                // Convert string items in array to objects
+                // that contain useful attributes
                 _.each(Object.keys(enumData), (enumKey) => {
-                    const item = String(enumData[enumKey]);
-                    selectOptions.push($_$('option', {}, [item]));
-
-                    enumData[enumKey] = {
-                        name: item,
-                        _fieldID: identifierize(fieldID + '_equals_' + item),
-                        _sql_signal: 'bit'
-                    };
+                    let item = enumData[enumKey];
+                    if (typeof item !== 'object') {
+                        item = (
+                            enumData[enumKey] = {
+                                _name: item,
+                                _fieldID: identifierize(fieldID + '_equals_' + item),
+                                _sql_signal: 'bit'
+                            });
+                    }
+                    selectOptions.push($_$('option', {}, [item._name]));
                 })
 
                 const selectDom = $_$('select', {
@@ -464,9 +571,9 @@ class FormGenerator {
                 return $_$('div', {
                     name: 'cenarius-input-group',
                     class: 'col-md-' + nCols + ' ' + extraHtmlClass,
-                    excludeFromSummary: node._exclude_from_summary,
-                    summaryBreakStyle: node._summary_break_style,
-                    titleInSummary: node._title_in_summary
+                    excludeFromSummary: fNode._exclude_from_summary,
+                    summaryBreakStyle: fNode._summary_break_style,
+                    titleInSummary: fNode._title_in_summary
                 }, [
                     $_$('div', {
                         class: 'input-group'
@@ -483,15 +590,15 @@ class FormGenerator {
                 this.setForceCheckbox(isMultiChoice);
                 const dom =
                     DomMaker.genPanel([name, choiceTypeIcon],
-                        sandwich(),
+                        sandwich(dNode),
                         nCols, {
                             name: (isMultiChoice ?
                                 'cenarius-multi-choice-group' :
                                 'cenarius-single-choice-group'),
                             id: fieldID,
-                            excludeFromSummary: node._exclude_from_summary,
-                            summaryBreakStyle: node._summary_break_style,
-                            titleInSummary: node._title_in_summary
+                            excludeFromSummary: fNode._exclude_from_summary,
+                            summaryBreakStyle: fNode._summary_break_style,
+                            titleInSummary: fNode._title_in_summary
                         }, {
                             class: extraHtmlClass
                         }
@@ -502,13 +609,16 @@ class FormGenerator {
         })();
     };
 
-    genField(nodeParent, node, type, key, name) {
+    genField(fNode, type, key, name, dNode) {
         console.log('genField()');
 
         const fieldID = isPositiveInt(key) ?
             this.getNextID(name) : this.getNextID(key);
-        node._fieldID = fieldID;
-        node._sql_signal = SQLTypeTable[type];
+        fNode._fieldID = fieldID;
+        fNode._sql_signal = SQLTypeTable[type];
+        dNode[fieldID] = {
+            _type: fNode._type
+        };
 
         // Type related flags
         const htmlInputType = HtmlInputTypeTable[type];
@@ -517,8 +627,8 @@ class FormGenerator {
 
         // Value related flags
         let defaultValue = '';
-        if (node.hasOwnProperty('_default_value')) {
-            defaultValue = node._default_value;
+        if (fNode.hasOwnProperty('_default_value')) {
+            defaultValue = fNode._default_value;
         } else {
             if (htmlInputType === 'number') {
                 defaultValue = '0';
@@ -529,32 +639,33 @@ class FormGenerator {
 
         // Number flags
         const numStep = type === 'integer' ? 1 :
-            (node.hasOwnProperty('_number_step') ?
-                node._number_step : config.defaultNumberStep);
-        const numMin = node.hasOwnProperty('_min') ?
-            node._min : '';
-        const numMax = node.hasOwnProperty('_max') ?
-            node._max : '';
+            (fNode.hasOwnProperty('_number_step') ?
+                fNode._number_step : config.defaultNumberStep);
+        const numMin = fNode.hasOwnProperty('_min') ?
+            fNode._min : '';
+        const numMax = fNode.hasOwnProperty('_max') ?
+            fNode._max : '';
 
         // String flags
-        let maxStringLength = isInt(node._max_string_length) ?
-            node._max_string_length : config.maxLength[type];
+        const maxStringLength =
+            isInt(fNode._max_string_length) ?
+            fNode._max_string_length : config.maxLength[type];
 
         const textAlignment = isTextArea ?
             '' : 'text-align: right; ';
         const textAreaRows = isTextArea ?
-            (node.hasOwnProperty('_textarea_rows') ?
-                node._textarea_rows : '5') : '';
+            (fNode.hasOwnProperty('_textarea_rows') ?
+                fNode._textarea_rows : '5') : '';
 
         const fieldStyle = textAlignment;
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
         const needCheckbox =
-            this.forceCheckbox !== 'none' || node._force_checkbox === true;
+            this.forceCheckbox !== 'none' || fNode._force_checkbox === true;
         const endingSpan = (() => {
-            if (node.hasOwnProperty('_ending')) {
+            if (fNode.hasOwnProperty('_ending')) {
                 return $_$('span', {
                     class: 'input-group-addon cenarius-input-tag'
-                }, [node._ending]);
+                }, [fNode._ending]);
             } else if (type === 'big_string') {
                 return $_$('span', {
                     class: 'input-group-addon cenarius-input-tag',
@@ -591,9 +702,9 @@ class FormGenerator {
                             if (defaultValue === true) ckbxProps.checked = true;
                             const ckbxInputDom = $_$('input', ckbxProps);
 
-                            node._value = $(ckbxInputDom).is(':checked');
+                            fNode._value = $(ckbxInputDom).is(':checked');
                             $(ckbxInputDom).change(function() {
-                                node._value = $(this).is(':checked')
+                                fNode._value = $(this).is(':checked')
                             });
 
                             const ckbxDoms =
@@ -638,9 +749,9 @@ class FormGenerator {
                                 $_$(inputTag, regularInputProps, [defaultValue]);
                             $(regularInputDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
 
-                            node._value = $(regularInputDom).val();
+                            fNode._value = $(regularInputDom).val();
                             $(regularInputDom).change(function() {
-                                node._value = $(this).val()
+                                fNode._value = $(this).val()
                             });
 
                             const regularFieldDoms =
@@ -682,17 +793,17 @@ class FormGenerator {
                 }
             })();
 
-        const nCols = node.hasOwnProperty('_cols') ? node._cols :
+        const nCols = fNode.hasOwnProperty('_cols') ? fNode._cols :
             this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
             config.nCols.input;
-        const extraHtmlClass = node.hasOwnProperty('_html_class') ?
-            node._html_class : '';
+        const extraHtmlClass = fNode.hasOwnProperty('_html_class') ?
+            fNode._html_class : '';
         return $_$('div', {
             name: 'cenarius-input-group',
             class: 'col-md-' + nCols + ' ' + extraHtmlClass,
-            excludeFromSummary: node._exclude_from_summary,
-            summaryBreakStyle: node._summary_break_style,
-            titleInSummary: node._title_in_summary
+            excludeFromSummary: fNode._exclude_from_summary,
+            summaryBreakStyle: fNode._summary_break_style,
+            titleInSummary: fNode._title_in_summary
         }, [
             $_$('div', {
                     class: 'input-group',
@@ -702,12 +813,12 @@ class FormGenerator {
         ]);
     };
 
-    genSpace(node) {
-        const nCols = node.hasOwnProperty('_cols') ? node._cols :
+    genSpace(fNode) {
+        const nCols = fNode.hasOwnProperty('_cols') ? fNode._cols :
             this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
             config.nCols.input;
-        const extraHtmlClass = node.hasOwnProperty('_html_class') ?
-            node._html_class : '';
+        const extraHtmlClass = fNode.hasOwnProperty('_html_class') ?
+            fNode._html_class : '';
 
         return $_$('div', {
             class: 'col-md-offset-' + nCols + ' ' + extraHtmlClass,
@@ -716,75 +827,40 @@ class FormGenerator {
         });
     }
 
-    visitFormaNode(node, key) {
-        const formGenSelf = this;
-        const next =
-            typeof node[key] === 'string' ?
-            (node[key] = {
-                _title: node[key]
-            }) :
-            node[key];
+    resetDefaultType() {
+        console.log('resetDefaultType()');
+        this.setDefaultType(config.defaultType);
+    }
 
-        // Extract flags
-        const name =
-            next.hasOwnProperty('_title') ? next._title :
-            getNameFromKey(key);
+    setDefaultType(type) {
+        console.log('setDefaultType(' + type + ')');
+        this.currentDefaultType = type;
+    }
 
-        const hasProps = next.hasOwnProperty('_properties');
-        const type =
-            (next.hasOwnProperty('_type') ?
-                next._type :
-                (next.hasOwnProperty('_enum') || next.hasOwnProperty('_enum_multi') ?
-                    'enum' :
-                    (hasProps ?
-                        'object' :
-                        formGenSelf.currentDefaultType)));
-        next._type = type;
+    resetDefaultNCols() {
+        console.log('resetDefaultNCols()');
+        this.setDefaultNCols(12);
+    }
 
-        // console.log('key: ' + key + ', name: ' + name + ', type: ' + type);
-        // console.log('content: ');
-        // console.log(next);
+    setDefaultNCols(nCols) {
+        console.log('setDefaultNCols(' + nCols + ')');
+        this.currentDefaultNCols = nCols;
+    }
 
-        const children = hasProps ? next._properties :
-            next.hasOwnProperty('_enum') ? next._enum :
-            next.hasOwnProperty('_enum_multi') ? next._enum_multi : {};
+    unsetForceCheckbox() {
+        console.log('unsetForceCheckbox()');
+        this.forceCheckbox = 'none';
+    }
 
-        const defaultType =
-            next.hasOwnProperty('_default_type') ? next._default_type :
-            (type === 'enum' ? 'boolean' : 'string');
+    setForceCheckbox(isMultiChoice) {
+        console.log('setForceCheckbox()');
+        this.forceCheckbox = isMultiChoice ? 'multi' : 'single';
+    }
 
-        const defaultNCols =
-            next.hasOwnProperty('_default_cols') ? next._default_cols :
-            '';
-
-        function sandwich() {
-            return _.map(Object.keys(children),
-                (nextKey) => {
-                    formGenSelf.setDefaultType(defaultType);
-                    formGenSelf.setDefaultNCols(defaultNCols);
-
-                    const resDom = formGenSelf.visitFormaNode(children, nextKey);
-
-                    formGenSelf.resetDefaultType();
-                    formGenSelf.resetDefaultNCols();
-
-                    return resDom;
-                }
-            );
-        };
-
-        switch (type) {
-            case 'object':
-                return formGenSelf.genObj(next, key, name, sandwich);
-            case 'subobject':
-                return formGenSelf.genSubobj(next, key, name, sandwich);
-            case 'enum':
-                return formGenSelf.genEnum(node, next, key, name, sandwich);
-            case 'space':
-                return formGenSelf.genSpace(next);
-            default:
-                return formGenSelf.genField(node, next, type, key, name);
-        }
+    getNextID(key) {
+        const id = identifierize(key + '_f' + this.fieldID);
+        this.fieldID++;
+        return id;
     }
 };
 
@@ -848,7 +924,7 @@ class DomMaker {
         ]);
     };
 
-    static genCtrlPanel(forma) {
+    static genCtrlPanel(formGen) {
         const resetFieldsBtn =
             $_$('button', {
                 type: 'button',
@@ -879,7 +955,7 @@ class DomMaker {
             const $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
             const summaryHtml =
                 SummaryGenerator.gen(
-                    forma,
+                    formGen.forma,
                     $(this).parent().siblings('div[name=cenarius-content]')
                     .children('form[name=cenarius-form]')
                 );
@@ -901,7 +977,7 @@ class DomMaker {
             const tableName = prompt('New table name: ', 'new_test_table');
             const $sql = $('#sql_modal .modal-dialog .modal-content .modal-body');
             if (tableName !== null && tableName.length > 0) {
-                $sql.html($_$('pre', {}, [SQLSchemaGenerator.gen(forma, tableName)]));
+                $sql.html($_$('pre', {}, [SQLSchemaGenerator.gen(formGen, tableName)]));
             } else {
                 e.stopPropagation();
             }
@@ -1463,22 +1539,20 @@ class SQLSchemaGenerator {
         return str;
     }
 
-    static gen(forma, tableName) {
+    static gen(formGen, tableName) {
         const sqlGen = new SQLSchemaGenerator(tableName);
 
-        _.each(Object.keys(forma), function(key) {
-            sqlGen.visitFormaNode(forma, key, sqlGen.tables[0]);
+        _.each(Object.keys(formGen.forma), function(key) {
+            sqlGen.visitFormaNode(formGen.forma, key, sqlGen.tables[0]);
         })
 
-        // return JSON.stringify(forma, null, 2);
-        return JSON.stringify(sqlGen.tables, null, 2);
+        return JSON.stringify(formGen.data, null, 2);
+        // return JSON.stringify(sqlGen.tables, null, 2);
         // return mapJoin(sqlGen.tables, (td) => {
         //     return SQLSchemaGenerator.stringify(td);
         // }, '\n');
     }
 }
-
-const formCtrlUpdateEvents = 'keyup change focus';
 
 function formCtrlUpdateCkbx(e) {
     const $this = $(this);
@@ -1489,6 +1563,11 @@ function formCtrlUpdateCkbx(e) {
     } else if ($this.is('select')) {
         setCheckbox(ckbx, $this.val() !== config.defaultEnumOptionText);
     }
+}
+
+
+function updateAllWCkbxs() {
+    $('.form-control').trigger('change');
 }
 
 function copyBtnOnClick(e) {
@@ -1536,10 +1615,7 @@ function resetAllFields() {
     $('select').val(config.defaultEnumOptionText).change();
 
     $('ul[name=subobject-tabheaders]').each(function() {
-        while ($(this).children().length > 0)
-            delSubobjectInstance(this);
-
-        spawnMinimumSubobjectInstances(this);
+        console.warn('Unimplemented: reset fields to reset subobj instances')
     })
 }
 
@@ -1550,128 +1626,11 @@ function setCheckbox(ckbx, val) {
         $ckbx.trigger('click');
 }
 
-function addSubobjectInstance(tabHeaders) {
-    let $tabHeaders = $(tabHeaders);
-    const tabID = $tabHeaders.prop('id');
-    const templateID = tabID.replace('_tabs', '_template');
-    let $tabContent = ($tabHeaders.siblings('div[name=subobject-tabcontent]'));
-    const template = $tabContent.children('#' + templateID);
-
-    // Clone template
-    const clone = template.clone(true);
-    let cloneIndex = 0;
-    template.parent().children().each(function() {
-        let idStr = $(this).prop('id');
-
-        // Remove everything before template token
-        const idStrTmplIdx = idStr.lastIndexOf('_template_');
-        if (idStrTmplIdx > 0)
-            idStr = idStr.substring(idStrTmplIdx + '_template_'.length);
-
-        // Remove everything after the stat of the instance token
-        const idStrInstIdx = idStr.indexOf('_instance-');
-        if (idStrInstIdx > 0)
-            idStr = idStr.substring(0, idStrInstIdx);
-
-        const id = parseInt(idStr, 10);
-        if (!isNaN(id))
-            cloneIndex = id > cloneIndex ? id : cloneIndex;
-    });
-    cloneIndex += 1;
-
-    // Fix cloned element IDs
-    const cloneID = tabID.replace('_tabs', '_template_' + cloneIndex);
-
-    function fixCloneField(
-        node,
-        fieldName,
-        valGenFunc = (node, oldVal, toAppend) => {
-            return oldVal + toAppend;
-        }) {
-        const fieldVal = node.attr(fieldName);
-        if (typeof fieldVal !== 'undefined' && fieldVal !== false) {
-            const fieldVal = node.prop(fieldName);
-            if (isSet(fieldVal)) {
-                // console.log('Fix ' + fieldName + '}' + fieldVal + 'n-> ' + valGenFunc(node, fieldVal, '::instance-'' + cloneIndex));
-                node.prop(fieldName, valGenFunc(node, fieldVal, '_instance-' + cloneIndex));
-            }
-        }
-    }
-
-    descendAll(clone, function(node) {
-        fixCloneField(node, 'id');
-        fixCloneField(node, 'name');
-        fixCloneField(node, 'for');
-        fixCloneField(node, 'href');
-    });
-
-    // Remove excludeFromSummary attr (template is never included in summary)
-    $(clone).removeAttr('excludeFromSummary');
-
-    clone.prop('id', cloneID);
-    $tabContent.append(clone);
-
-    // De-select the rest
-    $tabHeaders.children().removeClass('active in');
-    $tabContent.children().removeClass('active in');
-
-    $tabHeaders.append(DomMaker.genTabRef(cloneID, '#' + cloneIndex, {
-        class: 'active'
-    }));
-    $('#' + cloneID).addClass('active in');
-}
-
-function delSubobjectInstance(tabHeaders) {
-    let $tabHeaders = $(tabHeaders);
-    let $tabContent = $($tabHeaders.siblings('div[name=subobject-tabcontent]'));
-    const lastActiveLi = $tabHeaders.children('li.active');
-    const lastActiveTabcontent = $tabContent.children('div.active');
-    const lastActiveIndex = lastActiveLi.index();
-
-    lastActiveLi.remove();
-    lastActiveTabcontent.remove();
-
-    // Set new active tab
-    const newActiveIndex = lastActiveIndex >= $tabHeaders.children().length ?
-        (lastActiveIndex - 1) : lastActiveIndex;
-    $tabHeaders.children().eq(newActiveIndex).addClass('active in');
-    $tabContent.children().eq(newActiveIndex + 1).addClass('active in');
-}
-
-function spawnMinimumSubobjectInstances(
-    tabHeaders,
-    tabContent = $(tabHeaders).siblings('div.tab-content')) {
-    while (tabContent.children().length - 1 < config.minSubobjectInstance) {
-        addSubobjectInstance(tabHeaders);
-    }
-}
-
-function delTabBtnOnClick() {
-    if (confirm('Confirm delete?')) {
-        let tabHeaders = $(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]');
-        delSubobjectInstance(tabHeaders);
-        spawnMinimumSubobjectInstances(tabHeaders);
-    }
-}
-
-function newTabBtnOnClick() {
-    addSubobjectInstance($(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]'));
-}
-
 
 function mapJoin(obj, func, sep = '') {
     return _.map(obj, func).join(sep);
 }
 
-//Returns true if it is a DOM node
-function isNode(o) {
-    return (
-        typeof Node === "object" ? o instanceof Node :
-        o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName === "string"
-    );
-}
-
-//Returns true if it is a DOM element    
 function isElement(o) {
     return (
         typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
@@ -1734,19 +1693,20 @@ function titleize(str) {
     });
 }
 
-String.prototype.replaceAll = function(search, replacement) {
-    return this.replace(new RegExp(search, 'g'), replacement);
-};
-
 function identifierize(str) {
     return str.replaceAll(/[^a-zA-Z\d]+/, '_').toLowerCase().replace(/^[0-9]/, '_$&');
 }
+
+String.prototype.replaceAll = function(search, replacement) {
+    return this.replace(new RegExp(search, 'g'), replacement);
+};
 
 Array.prototype.last = function() {
     return this[this.length - 1];
 };
 
 function descendAll(node, func) {
+    //Depth first
     node.children().each(function() {
         descendAll($(this), func);
     });
