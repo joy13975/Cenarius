@@ -21,6 +21,7 @@ Excel -> (Intermediate JSON Forma) -> Web Form + SQL DB Schema + Data Binding
 [ ] New field: precise date-time (now only date)<br>
 [ ] New field: file upload<br>
 [ ] Either-group should clear input whenever switched<br>
+[ ] Somehow deal with Chinese characters when identifierizing field titles<br>
 ## Low priority TODOs:
 [ ] Section folding button<br>
 [ ] Field validation<br>

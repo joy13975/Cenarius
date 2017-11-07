@@ -271,7 +271,7 @@
                     "_default_cols": 3,
                     "_enum": [
                         {
-                            "_title": "0. 不用做biopsy",
+                            "_title": "0. No need biopsy",
                             "_default_value": true
                         },
                         "1. Aspiration cytology",
@@ -279,7 +279,7 @@
                         "3. Open biopsy",
                         "4. Mammography",
                         "5. MRI", {
-                            "_title": "6. 其它",
+                            "_title": "6. Other",
                             "_type": "string",
                             "_cols": 6
                         }
