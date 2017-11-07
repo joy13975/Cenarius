@@ -2,10 +2,11 @@
         A library that reads Cenarius-flavoured JSON and produces:
             1. The web form as described
             2. The SQL table schema 
+            3. JSON object for DB updates
             
         Author: Joy Yeh
         Inspired by Joshfire's JsonForms
-        */
+*/
 'use strict';
 
 var config = {
@@ -56,9 +57,6 @@ var config = {
     }
 };
 
-const _space = '&nbsp;';
-const nullStm = () => {};
-
 const HtmlInputTypeTable = {
     float: 'number',
     integer: 'number',
@@ -79,8 +77,8 @@ const SQLTypeTable = {
 }
 
 function domReady() {
-
-    // Spawn one instance of each suboject using their template
+    // Spawn minimum number of instances in
+    // each suboject tab array using their template
     $('ul[name=subobject-tabheaders]').sortByDepth().each(function(index) {
         spawnMinimumSubobjectInstances($(this));
     });
@@ -88,31 +86,6 @@ function domReady() {
     // Fix button stuck in focus when alert shows up
     $('.btn').click(function(event) {
         $(this).blur();
-    });
-
-    $('#submit_btn').click(function() {
-        const formData = $('form[name=cenarius-form]').serializeArray();
-        const str = JSON.stringify(formData);
-        alert(str);
-    });
-
-    $('#copy_summary_btn').click(function(e) {
-        e.stopPropagation();
-        const res = copyToClipboard($(this).parent().siblings('.modal-body')
-            .children('p')[0]);
-        if (res)
-            showSnackbar('Copied to clipboard.');
-        else
-            showSnackbar('Browser does not support copy function.');
-    });
-
-    $('#copy_sql_btn').click(function(e) {
-        e.stopPropagation();
-        const res = copyToClipboard($(this).parent().siblings('.modal-body').children('pre')[0]);
-        if (res)
-            showSnackbar('Copied to clipboard.');
-        else
-            showSnackbar('Browser does not support copy function.');
     });
 
     // Textarea auto resize
@@ -129,17 +102,6 @@ function domReady() {
         let counterSpan = $(this).siblings('span[name=textarea-counter]');
         const oldCounter = $(counterSpan).html();
         $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
-    });
-
-    $('.form-control').on('keyup change focus', function() {
-        let $this = $(this);
-        let ckbx = $($this.parent().parent().siblings('input[type=checkbox]'));
-
-        if ($this.is('input')) {
-            setCheckbox(ckbx, $this.val().length > 0);
-        } else if ($this.is('select')) {
-            setCheckbox(ckbx, $this.val() !== config.defaultEnumOptionText);
-        }
     });
 
     $('input[type=checkbox].single-choice-checkbox').change(function() {
@@ -329,7 +291,7 @@ class FormGenerator {
                 }, [$_$('span', {
                     class: 'glyphicon glyphicon-remove'
                 })]);
-            $(delTabBtn).on('click', delTabBtnClicked);
+            $(delTabBtn).on('click', delTabBtnOnClick);
 
             const newTabBtn =
                 $_$('button', {
@@ -339,7 +301,7 @@ class FormGenerator {
                 }, [$_$('span', {
                     class: 'glyphicon glyphicon-plus'
                 })]);
-            $(newTabBtn).on('click', newTabBtnClicked);
+            $(newTabBtn).on('click', newTabBtnOnClick);
 
             headingDoms.push(
                 $_$('div', {
@@ -457,6 +419,7 @@ class FormGenerator {
                     'data-live-search': true,
                     defaultValue: defaultValue
                 }, selectOptions);
+                $(selectDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
 
                 // The value of "true" is required - "undefined" only works sometimes
                 $($(selectDom).children()[defaultValue]).attr('selected', true);
@@ -673,6 +636,7 @@ class FormGenerator {
 
                             const regularInputDom =
                                 $_$(inputTag, regularInputProps, [defaultValue]);
+                            $(regularInputDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
 
                             node._value = $(regularInputDom).val();
                             $(regularInputDom).change(function() {
@@ -955,6 +919,29 @@ class DomMaker {
     };
 
     static genSummaryModal() {
+        const submitBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-primary',
+                id: 'submit_btn',
+                'data-dismiss': 'modal'
+            }, ['Submit']);
+        $(submitBtn).on('click', function() {
+            const formData = $('form[name=cenarius-form]').serializeArray();
+            const str = JSON.stringify(formData);
+            alert(str);
+        });
+
+        const copySummaryBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-success',
+                id: 'copy_summary_btn',
+                'data-dismiss': 'modal'
+            }, ['Copy']);
+
+        $(copySummaryBtn).on('click', copyBtnOnClick);
+
         return $_$('div', {
             class: 'modal fade',
             id: 'summary_modal',
@@ -993,18 +980,8 @@ class DomMaker {
                             'data-dismiss': 'modal',
                             style: 'float: left'
                         }, ['Close']),
-                        $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-success',
-                            id: 'copy_summary_btn',
-                            'data-dismiss': 'modal'
-                        }, ['Copy']),
-                        $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-primary',
-                            id: 'submit_btn',
-                            'data-dismiss': 'modal'
-                        }, ['Submit'])
+                        copySummaryBtn,
+                        submitBtn
                     ])
                 ])
             ])
@@ -1012,6 +989,16 @@ class DomMaker {
     };
 
     static genSQLModal() {
+        const copySqlBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-success',
+                id: 'copy_sql_btn',
+                'data-dismiss': 'modal',
+                style: 'float:right'
+            }, ['Copy']);
+        $(copySqlBtn).on('click', copyBtnOnClick);
+
         return $_$('div', {
             class: 'modal fade',
             id: 'sql_modal',
@@ -1035,13 +1022,7 @@ class DomMaker {
                         $_$('h4', {
                             class: 'modal-title'
                         }, ['SQL Schema']),
-                        $_$('button', {
-                            type: 'button',
-                            class: 'btn btn-success',
-                            id: 'copy_sql_btn',
-                            'data-dismiss': 'modal',
-                            style: 'float:right'
-                        }, ['Copy'])
+                        copySqlBtn
                     ]),
                     $_$('div', {
                         class: 'modal-body'
@@ -1497,6 +1478,27 @@ class SQLSchemaGenerator {
     }
 }
 
+const formCtrlUpdateEvents = 'keyup change focus';
+
+function formCtrlUpdateCkbx(e) {
+    const $this = $(this);
+    const ckbx = $($this.parent().parent().siblings('input[type=checkbox]'));
+
+    if ($this.is('input')) {
+        setCheckbox(ckbx, $this.val().length > 0);
+    } else if ($this.is('select')) {
+        setCheckbox(ckbx, $this.val() !== config.defaultEnumOptionText);
+    }
+}
+
+function copyBtnOnClick(e) {
+    e.stopPropagation();
+    const res = copyToClipboard($(this).parent().siblings('.modal-body')[0]);
+    if (res)
+        showSnackbar('Copied to clipboard.');
+    else
+        showSnackbar('Browser does not support copy function.');
+}
 
 function showSnackbar(text, timeout = 3000) {
     let sb = document.createElement('div');
@@ -1644,7 +1646,7 @@ function spawnMinimumSubobjectInstances(
     }
 }
 
-function delTabBtnClicked() {
+function delTabBtnOnClick() {
     if (confirm('Confirm delete?')) {
         let tabHeaders = $(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]');
         delSubobjectInstance(tabHeaders);
@@ -1652,7 +1654,7 @@ function delTabBtnClicked() {
     }
 }
 
-function newTabBtnClicked() {
+function newTabBtnOnClick() {
     addSubobjectInstance($(this).parent().parent().siblings('.panel-body').children('ul[name=subobject-tabheaders]'));
 }
 
