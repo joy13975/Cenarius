@@ -357,7 +357,6 @@ class FormGenerator {
 
             soDNode._instances[idx] = {};
 
-            const innerFieldID = fgSelf.fieldID;
             fgSelf.fieldID = fidBeforeSubobj;
             $(soTabHeaderDom).append(
                 DomMaker.genTabRef(
@@ -367,7 +366,6 @@ class FormGenerator {
                 DomMaker.genTabPane(
                     soID,
                     sandwich(soDNode._instances[idx])));
-            fgSelf.fieldID = innerFieldID;
 
             $(soTabHeaderDom).children().removeClass('active')
             $(soTabHeaderDom).children(':last-child').addClass('active');
@@ -378,14 +376,40 @@ class FormGenerator {
         }
 
         // Generate initial minimum number of subobj
-        for (let i = 0; i < config.minSubobjectInstance; i++) {
-            makeSubobj();
+        const genMinSOI = () => {
+            const curr = $(soTabHeaderDom).children().length;
+            for (let i = curr; i < config.minSubobjectInstance; i++)
+                makeSubobj();
         }
+        genMinSOI();
 
         const bodyDoms = [soTabHeaderDom, soTabContentDom];
 
         const delSubobj = () => {
+            // Find active tab
+            const activeHeader = $(soTabHeaderDom).children('.active')[0];
+            const activeContent = $(soTabContentDom).children('.active')[0];
 
+            // Active a different tab (try next the try prev)
+            const nextHeader = $(activeHeader).next('li.cenarius-tab-ref');
+            const prevHeader = $(activeHeader).prev('li.cenarius-tab-ref');
+            if (nextHeader.length > 0) {
+                const nextContent = $(activeContent).next('div.cenarius-tab-pane');
+                nextHeader.addClass('active');
+                nextContent.addClass('active in');
+            } else if (prevHeader.length > 0) {
+                const prevContent = $(activeContent).prev('div.cenarius-tab-pane');
+                prevHeader.addClass('active');
+                prevContent.addClass('active in');
+            } // If both conditions fail then there are no instances left
+
+            // Remove UI and data
+            const activeIdx = $(activeHeader).text().replace('#', '');
+            delete soDNode._instances[activeIdx];
+            activeHeader.remove();
+            activeContent.remove();
+
+            genMinSOI();
         }
         const delTabBtn =
             $_$('button', {
@@ -1139,7 +1163,7 @@ class DomMaker {
     static genTabPane(id, contentDoms, attr = {}) {
         return $_$('div', mergeStrProps({
             id: id,
-            class: 'tab-pane'
+            class: 'tab-pane cenarius-tab-pane'
         }, attr), contentDoms);
     }
 
