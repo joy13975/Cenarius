@@ -170,21 +170,21 @@ div[name=cenarius-ctrl-panel] {
 	z-index: 10;
 }
 
-button[name=reset_btn]{ 
+button.reset-btn{ 
 	float: left;
 	position: relative;
 	top: 25%;
 	margin-left: 20px;
 }
 
-button[name=summarize_btn]{ 
+button.summarize-btn{ 
 	float: right;
 	position: relative;
 	top: 25%;
 	margin-right: 20px;
 }
 
-button[name=sql_btn]{ 
+button.sql-btn{ 
 	float: right;
 	position: relative;
 	top: 25%;

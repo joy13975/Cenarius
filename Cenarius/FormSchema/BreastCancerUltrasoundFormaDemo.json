@@ -239,7 +239,7 @@
             "_properties": {
                 "us_category": {
                     "_title": "US Category 分類",
-                    "_cols": 12,
+                    "_cols": 4,
                     "_enum": [
                         "0. Category 0",
                         "1. Category 1",
@@ -254,7 +254,7 @@
                 },
                 "combined_mammogram_and_us_final_category": {
                     "_title": "Combined Mammogram And US Final Category",
-                    "_cols": 12,
+                    "_cols": 8,
                     "_enum": [
                         "0.Category 0",
                         "1.Category 1",

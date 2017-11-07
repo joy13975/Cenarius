@@ -55,9 +55,9 @@ var config = {
         label: ''
     }
 };
+
 const _space = '&nbsp;';
 const nullStm = () => {};
-let myForma = '';
 
 const HtmlInputTypeTable = {
     float: 'number',
@@ -77,6 +77,122 @@ const SQLTypeTable = {
     boolean: 'bit',
     date: 'date'
 }
+
+function domReady() {
+
+    // Spawn one instance of each suboject using their template
+    $('ul[name=subobject-tabheaders]').sortByDepth().each(function(index) {
+        spawnMinimumSubobjectInstances($(this));
+    });
+
+    // Fix button stuck in focus when alert shows up
+    $('.btn').click(function(event) {
+        $(this).blur();
+    });
+
+    $('#submit_btn').click(function() {
+        const formData = $('form[name=cenarius-form]').serializeArray();
+        const str = JSON.stringify(formData);
+        alert(str);
+    });
+
+    $('#copy_summary_btn').click(function(e) {
+        e.stopPropagation();
+        const res = copyToClipboard($(this).parent().siblings('.modal-body')
+            .children('p')[0]);
+        if (res)
+            showSnackbar('Copied to clipboard.');
+        else
+            showSnackbar('Browser does not support copy function.');
+    });
+
+    $('#copy_sql_btn').click(function(e) {
+        e.stopPropagation();
+        const res = copyToClipboard($(this).parent().siblings('.modal-body').children('pre')[0]);
+        if (res)
+            showSnackbar('Copied to clipboard.');
+        else
+            showSnackbar('Browser does not support copy function.');
+    });
+
+    // Textarea auto resize
+    // Credits to https://stackoverflow.com/questions/454202/creating-a-textarea-with-auto-resize
+    $('textarea').each(function() {
+        this.setAttribute('style', 'height:' + (this.scrollHeight) + 'px;overflow-y:hidden;');
+    }).on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    $('textarea').keyup(function() {
+        const valLen = $(this).val().length;
+        let counterSpan = $(this).siblings('span[name=textarea-counter]');
+        const oldCounter = $(counterSpan).html();
+        $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
+    });
+
+    $('.form-control').on('keyup change focus', function() {
+        let $this = $(this);
+        let ckbx = $($this.parent().parent().siblings('input[type=checkbox]'));
+
+        if ($this.is('input')) {
+            setCheckbox(ckbx, $this.val().length > 0);
+        } else if ($this.is('select')) {
+            setCheckbox(ckbx, $this.val() !== config.defaultEnumOptionText);
+        }
+    });
+
+    $('input[type=checkbox].single-choice-checkbox').change(function() {
+        const $currentCkbx = $(this);
+        if ($currentCkbx.prop('checked')) {
+            $currentCkbx.parent().parent().siblings().each(function() {
+                const $otherCkbx = $(this);
+                $otherCkbx.find('input[type=checkbox]').each(function() {
+                    if ($otherCkbx.prop('checked'))
+                        $otherCkbx.trigger('click');
+                });
+            });
+        }
+    });
+
+    // Set initial state for checkboxes
+    $('.form-control').trigger('change');
+}
+
+function main(global, $) {
+    $.fn.cenarius = function(headingText, options) {
+        const myForma = options.forma;
+        const myFG = new FormGenerator();
+
+        const formaDoms =
+            _.map(Object.keys(myForma),
+                function(key) {
+                    return myFG.visitFormaNode(myForma, key);
+                }
+            );
+
+        const contentDoms = DomMaker.genContent(headingText, formaDoms);
+
+        const ctrlDoms = DomMaker.genCtrlPanel(myForma);
+
+        const summaryModalDoms = DomMaker.genSummaryModal();
+
+        const sqlModalDoms = DomMaker.genSQLModal();
+
+        const finalDom =
+            $_$('div', {
+                id: 'bootstrap-overrides'
+            }, [contentDoms, ctrlDoms, summaryModalDoms, sqlModalDoms]);
+
+        this.replaceWith(finalDom);
+    }
+
+    $.fn.sortByDepth = function() {
+        return $(this).sort(function(a, b) {
+            return $(b).parents().length - $(a).parents().length;
+        });
+    };
+};
 
 class FormGenerator {
     constructor() {
@@ -205,25 +321,32 @@ class FormGenerator {
         node._fieldID = fieldID;
 
         const panelHeadingFunc = (headingDoms = []) => {
+            const delTabBtn =
+                $_$('button', {
+                    type: 'button',
+                    class: 'btn btn-default btn-md cenarius-del-tab-btn',
+                    name: 'del_tab_btn'
+                }, [$_$('span', {
+                    class: 'glyphicon glyphicon-remove'
+                })]);
+            $(delTabBtn).on('click', delTabBtnClicked);
+
+            const newTabBtn =
+                $_$('button', {
+                    type: 'button',
+                    class: 'btn btn-default btn-md cenarius-new-tab-btn',
+                    name: 'new_tab_btn'
+                }, [$_$('span', {
+                    class: 'glyphicon glyphicon-plus'
+                })]);
+            $(newTabBtn).on('click', newTabBtnClicked);
+
             headingDoms.push(
                 $_$('div', {
                     style: 'float: right;'
                 }, [
-                    $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-default btn-md cenarius-del-tab-btn',
-                        name: 'del_tab_btn'
-                    }, [$_$('span', {
-                        class: 'glyphicon glyphicon-remove'
-                    })]),
-
-                    $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-default btn-md cenarius-new-tab-btn',
-                        name: 'new_tab_btn'
-                    }, [$_$('span', {
-                        class: 'glyphicon glyphicon-plus'
-                    })])
+                    delTabBtn,
+                    newTabBtn
                 ])
             );
 
@@ -272,14 +395,17 @@ class FormGenerator {
     genEnum(nodeParent, node, key, name, sandwich) {
         console.log('genEnum()');
 
-        const isMultiChoice = node.hasOwnProperty('_enum_multi');
+        const fieldID = this.getNextID(key);
+        node._fieldID = fieldID;
 
         let enumData;
         let simpleEnum = true;
 
+        const isMultiChoice = node.hasOwnProperty('_enum_multi');
         if (isMultiChoice) {
             enumData = node._enum_multi;
             simpleEnum = false;
+            node._sql_signal = 'multi_enum';
         } else {
             enumData = node._enum;
             _.each(enumData, (item) => {
@@ -288,8 +414,8 @@ class FormGenerator {
                 if (!simpleEnum)
                     console.log('enum is complex because of: ' + itemType);
             });
+            node._sql_signal = 'enum';
         }
-
 
         const extraHtmlClass =
             node.hasOwnProperty('_html_class') ?
@@ -299,69 +425,80 @@ class FormGenerator {
             simpleEnum ? config.nCols.enum :
             config.nCols.complexEnum;
 
-        const fieldID = this.getNextID(key);
-        const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
-        const needCheckbox = this.forceCheckbox !== 'none' || forceCheckbox;
-        const checkboxID = fieldID + '_ckbx';
+        const needCheckbox =
+            this.forceCheckbox !== 'none' || (node._force_checkbox === true);
 
         // Default value
         const defaultValue = node.hasOwnProperty('_default_value') ? node._default_value : 0;
 
-        let enumDoms = [];
-        if (simpleEnum) {
-            let selectOptions = [];
-            if (needCheckbox)
-                selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
+        return (() => {
+            if (simpleEnum) {
+                const selectOptions = [];
 
-            _.each(Object.keys(enumData), (enumKey) => {
-                const item = String(enumData[enumKey]);
-                selectOptions.push($_$('option', {}, [item]));
+                // Prepend null option if checkbox will be added
+                if (needCheckbox)
+                    selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
 
-                enumData[enumKey] = {
-                    name: item,
-                    _fieldID: identifierize(fieldID + '_equals_' + item),
-                    _sql_signal: 'bit'
-                };
-            })
+                _.each(Object.keys(enumData), (enumKey) => {
+                    const item = String(enumData[enumKey]);
+                    selectOptions.push($_$('option', {}, [item]));
 
-            const selectDom = $_$('select', {
-                class: 'selectpicker form-control',
-                id: fieldID,
-                name: fieldID,
-                'data-live-search': true,
-                defaultValue: defaultValue
-            }, selectOptions);
+                    enumData[enumKey] = {
+                        name: item,
+                        _fieldID: identifierize(fieldID + '_equals_' + item),
+                        _sql_signal: 'bit'
+                    };
+                })
 
-            // The value of "true" is required - "undefined" only works sometimes
-            $($(selectDom).children()[defaultValue]).attr('selected', true);
+                const selectDom = $_$('select', {
+                    class: 'selectpicker form-control',
+                    id: fieldID,
+                    name: fieldID,
+                    'data-live-search': true,
+                    defaultValue: defaultValue
+                }, selectOptions);
 
-            const inputName = name + config.autoLabelColon + config.autoLabelSpace;
-            const inputDoms =
-                [$_$('span', {
-                        class: 'input-group-addon cenarius-input-tag'
-                    }, [$_$('b', {}, [inputName])]),
-                    selectDom
-                ];
+                // The value of "true" is required - "undefined" only works sometimes
+                $($(selectDom).children()[defaultValue]).attr('selected', true);
 
-            const ckbxWrappedDoms =
-                DomMaker.genCheckboxWrapper(checkboxID,
-                    this.forceCheckbox,
-                    inputDoms,
-                    function() {
-                        if (!$(this).is(':checked')) {
-                            const $mySelectDom = $($(this).siblings('span').children('span')
-                                .children('select'));
-                            $($mySelectDom.children()).removeAttr('selected');
+                const inputName = name + config.autoLabelColon + config.autoLabelSpace;
+                const inputDoms =
+                    [
+                        $_$('span', {
+                            class: 'input-group-addon cenarius-input-tag'
+                        }, [$_$('b', {}, [inputName])]),
+                        selectDom
+                    ];
 
-                            // Unticking ckeckbox should lead to '--' being selected
-                            // Not the default value (which is from reset-fields)
-                            $($mySelectDom.children()[0]).attr('selected', true);
-                            $mySelectDom.trigger('change');
-                        }
-                    });
+                const ckbxWrappedDoms =
+                    DomMaker.genCheckboxWrapper(
+                        fieldID,
+                        this.forceCheckbox,
+                        inputDoms,
+                        function() {
+                            if (!$(this).is(':checked')) {
+                                const $mySelectDom =
+                                    $($(this).siblings('span')
+                                        .children('span').children('select'));
+                                $($mySelectDom.children()).removeAttr('selected');
 
-            enumDoms =
-                $_$('div', {
+                                // Unticking ckeckbox should lead to '--' being selected
+                                // Not the default value (which is from reset-fields)
+                                $($mySelectDom.children()[0]).attr('selected', true);
+                                $mySelectDom.trigger('change');
+                            }
+                        });
+
+                // Initial value is set by trigger in domReady()
+                $(selectDom).change(function() {
+                    _.map(Object.keys(enumData), (enumKey) => {
+                        enumData[enumKey]._value = needCheckbox　 ?
+                            (enumKey == this.selectedIndex - 1) :
+                            (enumKey == this.selectedIndex);
+                    })
+                });
+
+                return $_$('div', {
                     name: 'cenarius-input-group',
                     class: 'col-md-' + nCols + ' ' + extraHtmlClass,
                     excludeFromSummary: node._exclude_from_summary,
@@ -372,62 +509,50 @@ class FormGenerator {
                         class: 'input-group'
                     }, needCheckbox ? ckbxWrappedDoms : inputDoms)
                 ]);
+            } else {
+                const choiceTypeIcon =
+                    $_$('span', {
+                        class: 'pull-right glyphicon glyphicon-tag' +
+                            (isMultiChoice ? 's' : ''),
+                        name: 'choice-type-icon'
+                    });
 
-            // Initial value is set by trigger in domReady()
-            $(selectDom).change(function() {
-                _.map(Object.keys(enumData), (enumKey) => {
-                    enumData[enumKey]._value = needCheckbox　 ?
-                        (enumKey == this.selectedIndex - 1) :
-                        (enumKey == this.selectedIndex);
-                })
-            });
-        } else {
-            const choiceTypeIcon =
-                $_$('span', {
-                    class: 'pull-right glyphicon glyphicon-tag' + (isMultiChoice ? 's' : ''),
-                    name: 'choice-type-icon'
-                });
-
-            this.setForceCheckbox(isMultiChoice);
-            enumDoms =
-                DomMaker.genPanel([name, choiceTypeIcon],
-                    sandwich(),
-                    nCols, {
-                        name: isMultiChoice ? 'cenarius-multi-choice-group' : 'cenarius-single-choice-group',
-                        id: fieldID,
-                        excludeFromSummary: node._exclude_from_summary,
-                        summaryBreakStyle: node._summary_break_style,
-                        titleInSummary: node._title_in_summary
-                    }, {
-                        class: extraHtmlClass
-                    }
-                );
-            this.unsetForceCheckbox();
-        }
-
-        node._fieldID = fieldID;
-        node._sql_signal = isMultiChoice ? 'multi_enum' : 'enum';
-
-        return enumDoms;
+                this.setForceCheckbox(isMultiChoice);
+                const dom =
+                    DomMaker.genPanel([name, choiceTypeIcon],
+                        sandwich(),
+                        nCols, {
+                            name: (isMultiChoice ?
+                                'cenarius-multi-choice-group' :
+                                'cenarius-single-choice-group'),
+                            id: fieldID,
+                            excludeFromSummary: node._exclude_from_summary,
+                            summaryBreakStyle: node._summary_break_style,
+                            titleInSummary: node._title_in_summary
+                        }, {
+                            class: extraHtmlClass
+                        }
+                    );
+                this.unsetForceCheckbox();
+                return dom;
+            }
+        })();
     };
 
     genField(nodeParent, node, type, key, name) {
         console.log('genField()');
 
+        const fieldID = isPositiveInt(key) ?
+            this.getNextID(name) : this.getNextID(key);
+        node._fieldID = fieldID;
+        node._sql_signal = SQLTypeTable[type];
+
+        // Type related flags
         const htmlInputType = HtmlInputTypeTable[type];
         const isTextArea = type === 'big_string';
         const inputTag = isTextArea ? 'textarea' : 'input';
 
-        const numStep = type === 'integer' ? 1 :
-            (node.hasOwnProperty('_number_step') ?
-                node._number_step : config.defaultNumberStep);
-        const numMin = node.hasOwnProperty('_min') ? node._min : '';
-        const numMax = node.hasOwnProperty('_max') ? node._max : '';
-
-        let maxStringLength = isInt(node._max_string_length) ?
-            node._max_string_length : config.maxLength[type];
-
-        // Default value
+        // Value related flags
         let defaultValue = '';
         if (node.hasOwnProperty('_default_value')) {
             defaultValue = node._default_value;
@@ -439,27 +564,43 @@ class FormGenerator {
             }
         }
 
-        const textAlignment = isTextArea ? '' : 'text-align: right; ';
+        // Number flags
+        const numStep = type === 'integer' ? 1 :
+            (node.hasOwnProperty('_number_step') ?
+                node._number_step : config.defaultNumberStep);
+        const numMin = node.hasOwnProperty('_min') ?
+            node._min : '';
+        const numMax = node.hasOwnProperty('_max') ?
+            node._max : '';
+
+        // String flags
+        let maxStringLength = isInt(node._max_string_length) ?
+            node._max_string_length : config.maxLength[type];
+
+        const textAlignment = isTextArea ?
+            '' : 'text-align: right; ';
         const textAreaRows = isTextArea ?
-            (node.hasOwnProperty('_textarea_rows') ? node._textarea_rows : '5') : '';
+            (node.hasOwnProperty('_textarea_rows') ?
+                node._textarea_rows : '5') : '';
 
         const fieldStyle = textAlignment;
-        const fieldID = isPositiveInt(key) ? this.getNextID(name) : this.getNextID(key);
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
-        const forceCheckbox = node.hasOwnProperty('_force_checkbox') && node._force_checkbox;
-        const needCheckbox = this.forceCheckbox !== 'none' || forceCheckbox;
-        let endingSpan = node.hasOwnProperty('_ending') ?
-            $_$('span', {
-                class: 'input-group-addon cenarius-input-tag'
-            }, [node._ending]) : undefined;
-        const checkboxID = fieldID + '_ckbx';
-
-        if (!isSet(endingSpan) && type === 'big_string') {
-            endingSpan = $_$('span', {
-                class: 'input-group-addon cenarius-input-tag',
-                name: 'textarea-counter'
-            }, [defaultValue.length + '<br>------<br>' + maxStringLength]);
-        }
+        const needCheckbox =
+            this.forceCheckbox !== 'none' || node._force_checkbox === true;
+        const endingSpan = (() => {
+            if (node.hasOwnProperty('_ending')) {
+                return $_$('span', {
+                    class: 'input-group-addon cenarius-input-tag'
+                }, [node._ending]);
+            } else if (type === 'big_string') {
+                return $_$('span', {
+                    class: 'input-group-addon cenarius-input-tag',
+                    name: 'textarea-counter'
+                }, [defaultValue.length + '<br>------<br>' + maxStringLength]);
+            } else {
+                return undefined;
+            }
+        })();
 
         // Generate the field html which might include an input addon and an ending
         const inputDoms =
@@ -552,7 +693,8 @@ class FormGenerator {
                             if (needCheckbox) {
                                 // This should only happen in complex lists
                                 const ckbxWrappedDoms =
-                                    DomMaker.genCheckboxWrapper(fieldID + '_ckbx',
+                                    DomMaker.genCheckboxWrapper(
+                                        fieldID,
                                         this.forceCheckbox,
                                         regularFieldDoms,
                                         function() {
@@ -581,34 +723,19 @@ class FormGenerator {
             config.nCols.input;
         const extraHtmlClass = node.hasOwnProperty('_html_class') ?
             node._html_class : '';
-        const excludeFromSummary = node.hasOwnProperty('_exclude_from_summary') ? node._exclude_from_summary : undefined;
-        const summaryBreakStyle = node.hasOwnProperty('_summary_break_style') ? node._summary_break_style : undefined;
-        const titleInSummary = node.hasOwnProperty('_title_in_summary') ? node._title_in_summary : undefined;
-
-        let igProps = {
+        return $_$('div', {
             name: 'cenarius-input-group',
-            class: 'col-md-' + nCols + ' ' + extraHtmlClass
-        };
-        if (isSet(excludeFromSummary))
-            igProps.excludeFromSummary = true;
-        if (isSet(summaryBreakStyle))
-            igProps.summaryBreakStyle = summaryBreakStyle;
-        if (isSet(titleInSummary))
-            igProps.titleInSummary = titleInSummary;
-
-        const inputGroupDom =
-            $_$('div', igProps, [
-                $_$('div', {
-                        class: 'input-group',
-                        style: 'width: 100% !important'
-                    },
-                    inputDoms)
-            ]);
-
-        node._fieldID = fieldID;
-        node._sql_signal = SQLTypeTable[type];
-
-        return inputGroupDom;
+            class: 'col-md-' + nCols + ' ' + extraHtmlClass,
+            excludeFromSummary: node._exclude_from_summary,
+            summaryBreakStyle: node._summary_break_style,
+            titleInSummary: node._title_in_summary
+        }, [
+            $_$('div', {
+                    class: 'input-group',
+                    style: 'width: 100% !important'
+                },
+                inputDoms)
+        ]);
     };
 
     genSpace(node) {
@@ -699,10 +826,11 @@ class FormGenerator {
 
 class DomMaker {
     static genCheckboxWrapper(
-        checkboxID,
+        fieldID,
         checkboxType,
         fieldDoms,
         ckbxDomOnChange = () => {}) {
+        const checkboxID = fieldID + '_wckbx';
         const ckbxDom =
             $_$('input', {
                 type: 'checkbox',
@@ -713,186 +841,225 @@ class DomMaker {
             });
         $(ckbxDom).change(ckbxDomOnChange);
 
-        const doms =
-            [
-                ckbxDom,
-                $_$('label', {
-                    for: checkboxID, // Do not allow manual toggle
-                    readonly: true,
-                    class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
-                }, [
-                    $_$('span', {
-                        class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
-                    })
-                ]),
+        return [
+            ckbxDom,
+            $_$('label', {
+                for: checkboxID, // Do not allow manual toggle
+                readonly: true,
+                class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
+            }, [
                 $_$('span', {
-                    style: 'width:100%; display: table-cell',
-                    class: 'cenarius-checkbox-wrapper'
-                }, [
-                    $_$('span', {
-                        style: 'width:100%; min-height: 34px; display: table'
-                    }, fieldDoms)
-                ])
-            ];
-        return doms;
+                    class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
+                })
+            ]),
+            $_$('span', {
+                style: 'width:100%; display: table-cell',
+                class: 'cenarius-checkbox-wrapper'
+            }, [
+                $_$('span', {
+                    style: 'width:100%; min-height: 34px; display: table'
+                }, fieldDoms)
+            ])
+        ];
     };
 
     static genContent(headingText, formaDoms) {
-        const html =
+        return $_$('div', {
+            class: 'container',
+            name: 'cenarius-content'
+        }, [
             $_$('div', {
-                class: 'container',
-                name: 'cenarius-content'
+                class: 'row',
+                name: 'cenarius-header',
+            }, [$_$('h1', {}, [headingText])]),
+            $_$('form', {
+                class: 'row',
+                name: 'cenarius-form',
+                action: '/Home/Test1',
+                method: 'post'
             }, [$_$('div', {
-                    class: 'row',
-                    name: 'cenarius-header',
-                }, [$_$('h1', {}, [headingText])]),
-                $_$('form', {
-                    class: 'row',
-                    name: 'cenarius-form',
-                    action: '/Home/Test1',
-                    method: 'post'
-                }, [$_$('div', {
-                    class: 'col-md-12',
-                    style: 'padding-bottom: 10px'
-                }, formaDoms)])
-            ]);
-        return html;
+                class: 'col-md-12',
+                style: 'padding-bottom: 10px'
+            }, formaDoms)])
+        ]);
     };
 
-    static genCtrlPanel() {
-        const html =
-            $_$('div', {
-                class: 'container',
-                name: 'cenarius-ctrl-panel',
-                style: 'padding: 0'
+    static genCtrlPanel(forma) {
+        const resetFieldsBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-danger btn-lg reset-btn',
             }, [
-                $_$('button', {
-                    type: 'button',
-                    class: 'btn btn-danger btn-lg',
-                    name: 'reset_btn'
-                }, [
-                    $_$('span', {
-                        class: 'glyphicon glyphicon-trash'
-                    }), [' Reset Fields']
-                ]),
-                $_$('button', {
-                    type: 'button',
-                    class: 'btn btn-success btn-lg',
-                    name: 'summarize_btn',
-                    'data-toggle': 'modal',
-                    'data-target': '#summary_modal'
-                }, [
-                    $_$('span', {
-                        class: 'glyphicon glyphicon-book'
-                    }), [' Summarize']
-                ]),
-                $_$('button', {
-                    type: 'button',
-                    class: 'btn btn-primary btn-lg',
-                    name: 'sql_btn',
-                    'data-toggle': 'modal',
-                    'data-target': '#sql_modal'
-                }, [
-                    $_$('span', {
-                        class: 'glyphicon glyphicon-cloud-upload'
-                    }), [' Get SQL']
-                ])
+                $_$('span', {
+                    class: 'glyphicon glyphicon-trash'
+                }), [' Reset Fields']
             ]);
+        $(resetFieldsBtn).on('click', function(e) {
+            if (confirm('Are you sure you want to reset (clear) all fields?')) {
+                resetAllFields();
+            }
+        })
 
-        return html;
+        const genSumBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-success btn-lg summarize-btn',
+                'data-toggle': 'modal',
+                'data-target': '#summary_modal'
+            }, [
+                $_$('span', {
+                    class: 'glyphicon glyphicon-book'
+                }), [' Summarize']
+            ]);
+        $(genSumBtn).on('click', function(e) {
+            const $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
+            const summaryHtml =
+                SummaryGenerator.gen(
+                    forma,
+                    $(this).parent().siblings('div[name=cenarius-content]')
+                    .children('form[name=cenarius-form]')
+                );
+            $summary.html(summaryHtml);
+        })
+
+        const genSQLBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-primary btn-lg sql-btn',
+                'data-toggle': 'modal',
+                'data-target': '#sql_modal'
+            }, [
+                $_$('span', {
+                    class: 'glyphicon glyphicon-cloud-upload'
+                }), [' Get SQL']
+            ]);
+        $(genSQLBtn).on('click', function(e) {
+            const tableName = prompt('New table name: ', 'new_test_table');
+            const $sql = $('#sql_modal .modal-dialog .modal-content .modal-body');
+            if (tableName !== null && tableName.length > 0) {
+                $sql.html($_$('pre', {}, [SQLSchemaGenerator.gen(forma, tableName)]));
+            } else {
+                e.stopPropagation();
+            }
+        })
+
+        return $_$('div', {
+            class: 'container',
+            name: 'cenarius-ctrl-panel',
+            style: 'padding: 0'
+        }, [
+            resetFieldsBtn,
+            genSumBtn,
+            genSQLBtn
+        ]);
     };
 
     static genSummaryModal() {
-        const html =
+        return $_$('div', {
+            class: 'modal fade',
+            id: 'summary_modal',
+            role: 'dialog',
+            tabindex: -1
+        }, [
             $_$('div', {
-                class: 'modal fade',
-                id: 'summary_modal',
-                role: 'dialog',
-                tabindex: -1
-            }, [$_$('div', {
                 class: 'modal-dialog modal-lg'
-            }, [$_$('div', {
-                class: 'modal-content'
-            }, [$_$('div', {
-                    class: 'modal-header'
-                }, [$_$('button', {
-                        type: 'button',
-                        class: 'close',
-                        'data-dismiss': 'modal'
-                    }, ['&times;']),
-                    $_$('h4', {
-                        class: 'modal-title'
-                    }, ['Form Summary'])
-                ]),
+            }, [
                 $_$('div', {
-                    class: 'modal-body'
-                }, [$_$('p', {}, ['//Summary Placeholder//'])]),
-                $_$('div', {
-                    class: 'modal-footer'
-                }, [$_$('button', {
-                        type: 'button',
-                        class: 'btn btn-default',
-                        'data-dismiss': 'modal',
-                        style: 'float: left'
-                    }, ['Close']),
-                    $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-success',
-                        id: 'copy_summary_btn',
-                        'data-dismiss': 'modal'
-                    }, ['Copy']),
-                    $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-primary',
-                        id: 'submit_btn',
-                        'data-dismiss': 'modal'
-                    }, ['Submit'])
+                    class: 'modal-content'
+                }, [
+                    $_$('div', {
+                        class: 'modal-header'
+                    }, [
+                        $_$('button', {
+                            type: 'button',
+                            class: 'close',
+                            'data-dismiss': 'modal'
+                        }, ['&times;']),
+                        $_$('h4', {
+                            class: 'modal-title'
+                        }, ['Form Summary'])
+                    ]),
+                    $_$('div', {
+                        class: 'modal-body'
+                    }, [
+                        $_$('p', {}, ['//Summary Placeholder//'])
+                    ]),
+                    $_$('div', {
+                        class: 'modal-footer'
+                    }, [
+                        $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-default',
+                            'data-dismiss': 'modal',
+                            style: 'float: left'
+                        }, ['Close']),
+                        $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-success',
+                            id: 'copy_summary_btn',
+                            'data-dismiss': 'modal'
+                        }, ['Copy']),
+                        $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-primary',
+                            id: 'submit_btn',
+                            'data-dismiss': 'modal'
+                        }, ['Submit'])
+                    ])
                 ])
-            ])])]);
-        return html;
+            ])
+        ]);
     };
 
     static genSQLModal() {
-        const html =
+        return $_$('div', {
+            class: 'modal fade',
+            id: 'sql_modal',
+            role: 'dialog',
+            tabindex: -1
+        }, [
             $_$('div', {
-                class: 'modal fade',
-                id: 'sql_modal',
-                role: 'dialog',
-                tabindex: -1
-            }, [$_$('div', {
                 class: 'modal-dialog modal-lg'
-            }, [$_$('div', {
-                class: 'modal-content'
-            }, [$_$('div', {
-                    class: 'modal-header'
-                }, [$_$('button', {
-                        type: 'button',
-                        class: 'close',
-                        'data-dismiss': 'modal'
-                    }, ['&times;']),
-                    $_$('h4', {
-                        class: 'modal-title'
-                    }, ['SQL Schema']),
-                    $_$('button', {
-                        type: 'button',
-                        class: 'btn btn-success',
-                        id: 'copy_sql_btn',
-                        'data-dismiss': 'modal',
-                        style: 'float:right'
-                    }, ['Copy'])
-                ]),
+            }, [
                 $_$('div', {
-                    class: 'modal-body'
-                }, [$_$('p', {}, ['//SQL Placeholder//'])]),
-                $_$('div', {
-                    class: 'modal-footer'
-                }, [$_$('button', {
-                    type: 'button',
-                    class: 'btn btn-default',
-                    'data-dismiss': 'modal'
-                }, ['Close'])])
-            ])])]);
-        return html;
+                    class: 'modal-content'
+                }, [
+                    $_$('div', {
+                        class: 'modal-header'
+                    }, [
+                        $_$('button', {
+                            type: 'button',
+                            class: 'close',
+                            'data-dismiss': 'modal'
+                        }, ['&times;']),
+                        $_$('h4', {
+                            class: 'modal-title'
+                        }, ['SQL Schema']),
+                        $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-success',
+                            id: 'copy_sql_btn',
+                            'data-dismiss': 'modal',
+                            style: 'float:right'
+                        }, ['Copy'])
+                    ]),
+                    $_$('div', {
+                        class: 'modal-body'
+                    }, [
+                        $_$('p', {}, ['//SQL Placeholder//'])
+                    ]),
+                    $_$('div', {
+                        class: 'modal-footer'
+                    }, [
+                        $_$('button', {
+                            type: 'button',
+                            class: 'btn btn-default',
+                            'data-dismiss': 'modal'
+                        }, ['Close'])
+                    ])
+                ])
+            ])
+        ]);
     };
 
     static genTabRef(
@@ -900,27 +1067,23 @@ class DomMaker {
         tabTitle,
         liAttr = {},
         titleAttr = {}) {
-        const tabRefDom =
-            $_$('li', mergeStrProps({
-                class: 'cenarius-tab-ref'
-            }, liAttr), [
-                $_$('a', mergeStrProps({
-                    'data-toggle': 'tab',
-                    href: '#' + hrefLink
-                }, titleAttr), [
-                    $_$('b', {}, [tabTitle])
-                ])
-            ]);
-        return tabRefDom;
+        return $_$('li', mergeStrProps({
+            class: 'cenarius-tab-ref'
+        }, liAttr), [
+            $_$('a', mergeStrProps({
+                'data-toggle': 'tab',
+                href: '#' + hrefLink
+            }, titleAttr), [
+                $_$('b', {}, [tabTitle])
+            ])
+        ]);
     };
 
     static genTabPane(id, contentDoms, attr = {}) {
-        const tabPaneDom =
-            $_$('div', mergeStrProps({
-                id: id,
-                class: 'tab-pane'
-            }, attr), contentDoms);
-        return tabPaneDom;
+        return $_$('div', mergeStrProps({
+            id: id,
+            class: 'tab-pane'
+        }, attr), contentDoms);
     }
 
     static genPanelHeading(contentDoms, styleStr = '') {
@@ -947,11 +1110,13 @@ class DomMaker {
         bodyFunc = this.genPanelBody) {
         return $_$('div', mergeStrProps({
             class: 'col-md-' + nCols
-        }, wrapperProps), [$_$('div', mergeStrProps({
-            class: 'panel panel-default clearfix ',
-        }, panelProps), [headingFunc(headingDoms),
-            bodyFunc(bodyDoms)
-        ])]);
+        }, wrapperProps), [
+            $_$('div', mergeStrProps({
+                class: 'panel panel-default clearfix ',
+            }, panelProps), [headingFunc(headingDoms),
+                bodyFunc(bodyDoms)
+            ])
+        ]);
     };
 }
 
@@ -1157,7 +1322,7 @@ class SummaryGenerator {
 
     visitDomNode(dom) {
         const $dom = $(dom);
-        const skip = $dom.attr('excludeFromSummary');
+        const skip = $dom.attr('excludeFromSummary') === 'true';
 
         const domName = $dom.attr('name');
         const breakStyle = $dom.attr('summaryBreakStyle');
@@ -1209,7 +1374,7 @@ class SummaryGenerator {
             return res;
     };
 
-    static gen(cenariusForm) {
+    static gen(forma, cenariusForm) {
         let mySG = new SummaryGenerator();
 
         const mainCol = $(cenariusForm).children()[0];
@@ -1332,41 +1497,6 @@ class SQLSchemaGenerator {
     }
 }
 
-function main(global, $) {
-    $.fn.cenarius = function(headingText, options) {
-        myForma = options.forma;
-        const myFG = new FormGenerator();
-
-        const formaDoms =
-            _.map(Object.keys(myForma),
-                function(key) {
-                    return myFG.visitFormaNode(myForma, key);
-                }
-            );
-
-        const contentDoms = DomMaker.genContent(headingText, formaDoms);
-
-        const ctrlDoms = DomMaker.genCtrlPanel();
-
-        const summaryModalDoms = DomMaker.genSummaryModal();
-
-        const sqlModalDoms = DomMaker.genSQLModal();
-
-        const finalDom =
-            $_$('div', {
-                id: 'bootstrap-overrides'
-            }, [contentDoms, ctrlDoms, summaryModalDoms, sqlModalDoms]);
-
-        this.replaceWith(finalDom);
-    }
-
-    $.fn.sortByDepth = function() {
-        return $(this).sort(function(a, b) {
-            return $(b).parents().length - $(a).parents().length;
-        });
-    };
-};
-
 
 function showSnackbar(text, timeout = 3000) {
     let sb = document.createElement('div');
@@ -1475,14 +1605,6 @@ function addSubobjectInstance(tabHeaders) {
 
     // Remove excludeFromSummary attr (template is never included in summary)
     $(clone).removeAttr('excludeFromSummary');
-
-    let cloneSONewBtns = $(clone).find('button[name^=new_tab_btn]');
-    cloneSONewBtns.unbind('click');
-    cloneSONewBtns.click(newTabBtnClicked);
-
-    let cloneSODelBtns = $(clone).find('button[name^=del_tab_btn]');
-    cloneSODelBtns.unbind('click');
-    cloneSODelBtns.click(delTabBtnClicked);
 
     clone.prop('id', cloneID);
     $tabContent.append(clone);
@@ -1686,111 +1808,5 @@ function isSet(value) {
 main(window, ((typeof jQuery !== 'undefined') ? jQuery : {
     fn: {}
 }));
-
-function domReady() {
-    $('button[name^=del_tab_btn]').click(delTabBtnClicked);
-
-    $('button[name^=new_tab_btn]').click(newTabBtnClicked);
-
-    // Spawn one instance of each suboject using their template
-    $('ul[name=subobject-tabheaders]').sortByDepth().each(function(index) {
-        spawnMinimumSubobjectInstances($(this));
-    });
-
-    // Fix button stuck in focus when alert shows up
-    $('.btn').click(function(event) {
-        $(this).blur();
-    });
-
-    $('button[name=reset_btn]').click(function() {
-        if (confirm('Are you sure you want to reset (clear) all fields?')) {
-            resetAllFields();
-        }
-    });
-
-    $('button[name=summarize_btn]').click(function() {
-        let $summary = $('#summary_modal .modal-dialog .modal-content .modal-body');
-        const summaryHtml = SummaryGenerator.gen($(this).parent().siblings('div[name=cenarius-content]').children('form[name=cenarius-form]'));
-        $summary.html(summaryHtml);
-    });
-
-    $('button[name=sql_btn]').click(function(e) {
-        let $sql = $('#sql_modal .modal-dialog .modal-content .modal-body');
-        const tableName = prompt('New table name: ', 'new_test_table');
-        if (tableName !== null && tableName.length > 0) {
-            $sql.html($_$('pre', {}, [SQLSchemaGenerator.gen(myForma, tableName)]));
-        } else {
-            e.stopPropagation();
-        }
-    });
-
-    $('#submit_btn').click(function() {
-        const formData = $('form[name=cenarius-form]').serializeArray();
-        const str = JSON.stringify(formData);
-        alert(str);
-    });
-
-    $('#copy_summary_btn').click(function(e) {
-        e.stopPropagation();
-        const res = copyToClipboard($(this).parent().siblings('.modal-body')
-            .children('p')[0]);
-        if (res)
-            showSnackbar('Copied to clipboard.');
-        else
-            showSnackbar('Browser does not support copy function.');
-    });
-
-    $('#copy_sql_btn').click(function(e) {
-        e.stopPropagation();
-        const res = copyToClipboard($(this).parent().siblings('.modal-body').children('pre')[0]);
-        if (res)
-            showSnackbar('Copied to clipboard.');
-        else
-            showSnackbar('Browser does not support copy function.');
-    });
-
-    // Textarea auto resize
-    // Credits to https://stackoverflow.com/questions/454202/creating-a-textarea-with-auto-resize
-    $('textarea').each(function() {
-        this.setAttribute('style', 'height:' + (this.scrollHeight) + 'px;overflow-y:hidden;');
-    }).on('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
-
-    $('textarea').keyup(function() {
-        const valLen = $(this).val().length;
-        let counterSpan = $(this).siblings('span[name=textarea-counter]');
-        const oldCounter = $(counterSpan).html();
-        $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
-    });
-
-    $('.form-control').on('keyup change focus', function() {
-        let $this = $(this);
-        let ckbx = $($this.parent().parent().siblings('input[type=checkbox]'));
-
-        if ($this.is('input')) {
-            setCheckbox(ckbx, $this.val().length > 0);
-        } else if ($this.is('select')) {
-            setCheckbox(ckbx, $this.val() !== config.defaultEnumOptionText);
-        }
-    });
-
-    $('input[type=checkbox].single-choice-checkbox').change(function() {
-        const $currentCkbx = $(this);
-        if ($currentCkbx.prop('checked')) {
-            $currentCkbx.parent().parent().siblings().each(function() {
-                const $otherCkbx = $(this);
-                $otherCkbx.find('input[type=checkbox]').each(function() {
-                    if ($otherCkbx.prop('checked'))
-                        $otherCkbx.trigger('click');
-                });
-            });
-        }
-    });
-
-    // Set initial state for checkboxes
-    $('.form-control').trigger('change');
-}
 
 $(domReady);
