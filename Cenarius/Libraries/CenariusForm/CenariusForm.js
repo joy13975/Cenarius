@@ -164,14 +164,14 @@ class FormGenerator {
     }
 
     visitFormaNode(fNode, key, dNode) {
-        const formGenSelf = this;
+        const fgSelf = this;
 
         // Convert strings into a proper fNode
         const fNext =
-            typeof fNode[key] === 'string' ?
+            typeof(fNode[key]) !== 'object' ?
             (fNode[key] = {
                 _title: fNode[key],
-                _type: 'string'
+                _type: inferFNodeType(fNode[key])
             }) :
             fNode[key];
 
@@ -180,15 +180,7 @@ class FormGenerator {
             fNext.hasOwnProperty('_title') ? fNext._title :
             getNameFromKey(key);
 
-        const hasProps = fNext.hasOwnProperty('_properties');
-        const type =
-            (fNext.hasOwnProperty('_type') ?
-                fNext._type :
-                (fNext.hasOwnProperty('_enum') || fNext.hasOwnProperty('_enum_multi') ?
-                    'enum' :
-                    (hasProps ?
-                        'object' :
-                        formGenSelf.currentDefaultType)));
+        const type = inferFNodeType(fNext, fgSelf.currentDefaultType);
         fNext._type = type;
 
         // console.log('key: ' + key + ', name: ' + name + ', type: ' + type);
@@ -196,7 +188,7 @@ class FormGenerator {
         // console.log(fNext);
 
         const children =
-            hasProps ? fNext._properties :
+            fNext.hasOwnProperty('_properties') ? fNext._properties :
             fNext.hasOwnProperty('_enum') ? fNext._enum :
             fNext.hasOwnProperty('_enum_multi') ? fNext._enum_multi : {};
 
@@ -211,13 +203,13 @@ class FormGenerator {
         function sandwich(_dNode = dNode) {
             return _.map(Object.keys(children),
                 (nextKey) => {
-                    formGenSelf.setDefaultType(defaultType);
-                    formGenSelf.setDefaultNCols(defaultNCols);
+                    fgSelf.setDefaultType(defaultType);
+                    fgSelf.setDefaultNCols(defaultNCols);
 
-                    const resDom = formGenSelf.visitFormaNode(children, nextKey, _dNode);
+                    const resDom = fgSelf.visitFormaNode(children, nextKey, _dNode);
 
-                    formGenSelf.resetDefaultType();
-                    formGenSelf.resetDefaultNCols();
+                    fgSelf.resetDefaultType();
+                    fgSelf.resetDefaultNCols();
 
                     return resDom;
                 }
@@ -226,15 +218,15 @@ class FormGenerator {
 
         switch (type) {
             case 'object':
-                return formGenSelf.genObj(fNext, key, name, sandwich, dNode);
+                return fgSelf.genObj(fNext, key, name, sandwich, dNode);
             case 'subobject':
-                return formGenSelf.genSubobj(fNext, key, name, sandwich, dNode);
+                return fgSelf.genSubobj(fNext, key, name, sandwich, dNode);
             case 'enum':
-                return formGenSelf.genEnum(fNext, key, name, sandwich, dNode);
+                return fgSelf.genEnum(fNext, key, name, sandwich, dNode);
             case 'space':
-                return formGenSelf.genSpace(fNext);
+                return fgSelf.genSpace(fNext);
             default:
-                return formGenSelf.genField(fNext, type, key, name, dNode);
+                return fgSelf.genField(fNext, type, key, name, dNode);
         }
     }
 
@@ -282,7 +274,7 @@ class FormGenerator {
     }
 
     genObj(fNode, key, name, sandwich, dNode) {
-        console.log('genObj()');
+        console.log('genObj(' + key + ')');
 
         //Not a field so do not increment this.fieldID
         const fieldID = key + '_grouping';
@@ -317,8 +309,8 @@ class FormGenerator {
     };
 
     genSubobj(fNode, key, name, sandwich, dNode) {
+        console.log('genSubobj(' + key + ')');
         const fgSelf = this;
-        console.log('genSubobj()');
 
         //Not a field so do not increment this.fieldID
         const fieldID = key + '_subobject';
@@ -471,7 +463,7 @@ class FormGenerator {
     };
 
     genEnum(fNode, key, name, sandwich, dNode) {
-        console.log('genEnum()');
+        console.log('genEnum(' + key + ')');
 
         const fieldID = this.getNextID(key);
         fNode._fieldID = fieldID;
@@ -488,12 +480,9 @@ class FormGenerator {
         } else {
             enumData = fNode._enum;
             _.each(enumData, (item) => {
-                const itemType = typeof item;
-                const isComplex = itemType === 'object' &&
-                    (item.hasOwnProperty('_type') && item._type !== 'string');
-
-                simpleEnum &= !isComplex;
-                if (isComplex) {
+                const isSimpleItem = isRawType(inferFNodeType(item));
+                simpleEnum &= isSimpleItem;
+                if (!isSimpleItem) {
                     console.log('enum is complex because of item:');
                     console.log(item);
                 }
@@ -634,7 +623,7 @@ class FormGenerator {
     };
 
     genField(fNode, type, key, name, dNode) {
-        console.log('genField()');
+        console.log('genField(' + type + ', ' + key + ', \"' + name + '\")');
 
         const fieldID = isPositiveInt(key) ?
             this.getNextID(name) : this.getNextID(key);
@@ -852,32 +841,26 @@ class FormGenerator {
     }
 
     resetDefaultType() {
-        console.log('resetDefaultType()');
         this.setDefaultType(config.defaultType);
     }
 
     setDefaultType(type) {
-        console.log('setDefaultType(' + type + ')');
         this.currentDefaultType = type;
     }
 
     resetDefaultNCols() {
-        console.log('resetDefaultNCols()');
         this.setDefaultNCols(12);
     }
 
     setDefaultNCols(nCols) {
-        console.log('setDefaultNCols(' + nCols + ')');
         this.currentDefaultNCols = nCols;
     }
 
     unsetForceCheckbox() {
-        console.log('unsetForceCheckbox()');
         this.forceCheckbox = 'none';
     }
 
     setForceCheckbox(isMultiChoice) {
-        console.log('setForceCheckbox()');
         this.forceCheckbox = isMultiChoice ? 'multi' : 'single';
     }
 
@@ -1578,6 +1561,37 @@ class SQLSchemaGenerator {
     }
 }
 
+
+function isRawType(fNodeType) {
+    return fNodeType === 'string' ||
+        fNodeType === 'number' ||
+        fNodeType === 'boolean';
+}
+
+function inferFNodeType(fNode, defaultType) {
+    const objType = typeof fNode;
+    if (objType === 'object') {
+        if (fNode.hasOwnProperty('_type'))
+            return fNode._type;
+
+        if (fNode.hasOwnProperty('_enum') || fNode.hasOwnProperty('_enum_multi'))
+            return 'enum';
+
+        if (fNode.hasOwnProperty('_properties'))
+            return 'object';
+
+        return defaultType;
+    } else {
+        // This should be a raw type 
+        if (!isRawType(objType)) {
+            console.error('Invalid fNode type: ' + objType);
+            console.error(fNode);
+            return 'invalid';
+        }
+        return objType;
+    }
+}
+
 function formCtrlUpdateCkbx(e) {
     const $this = $(this);
     const ckbx = $($this.parent().parent().siblings('input[type=checkbox]'));
@@ -1588,7 +1602,6 @@ function formCtrlUpdateCkbx(e) {
         setCheckbox(ckbx, $this.val() !== config.defaultEnumOptionText);
     }
 }
-
 
 function updateAllWCkbxs() {
     $('.form-control').trigger('change');
