@@ -1,4 +1,7 @@
 {
+    "formi": {
+        "table_name": "breat_cancer_ultrasound"
+    },
     "forma": {
         "basic_info": {
             "_title": "基本資料",
@@ -268,9 +271,8 @@
                     ]
                 },
                 "biopsy_and_other_evaluation_suggestion": {
-                    "_default_cols": 3,
-                    "_enum": [
-                        {
+                    "_cols": 12,
+                    "_enum": [{
                             "_title": "0. No need biopsy",
                             "_default_value": true
                         },
@@ -309,6 +311,7 @@
             "_properties": {
                 "side": {
                     "_title": "左右側",
+                    "_cols": 4,
                     "_enum": [
                         "L (左)",
                         "R (右)"
@@ -316,23 +319,29 @@
                 },
                 "position": {
                     "_title": "方位",
+                    "_cols": 4,
                     "_ending": "o'clock",
                     "_type": "integer",
-                    "_default_value": 2
+                    "_default_value": 2,
+                    "_min": 0,
+                    "_max": 24
                 },
                 "distance": {
                     "_title": "距離乳頭距離",
+                    "_cols": 4,
                     "_type": "float",
                     "_ending": "cm",
                     "_default_value": 3.5
                 },
                 "max_diameter": {
                     "_title": "最大徑",
+                    "_cols": 4,
                     "_type": "float",
                     "_ending": "mm",
                     "_default_value": 5
                 },
                 "shape": {
+                    "_cols": 4,
                     "_enum": [
                         "1. Oval",
                         "2. Round",
@@ -340,12 +349,14 @@
                     ]
                 },
                 "orientation": {
+                    "_cols": 4,
                     "_enum": [
                         "1. Parallel",
                         "2. Not parallel"
                     ]
                 },
                 "margin": {
+                    "_cols": 6,
                     "_enum": [
                         "1.Circumscribed",
                         "2.Indistinct",
@@ -355,7 +366,7 @@
                     ]
                 },
                 "echo_pattern": {
-                    "_cols": 12,
+                    "_cols": 6,
                     "_enum": [
                         "1. Anechoic",
                         "2. Hyperechoic",
@@ -378,13 +389,17 @@
                     "_summary_break_style": "before",
                     "_enum_multi": [
                         "1. Architectural distortion",
-                        "2. Duct Changes ",
-                        "3. Skin changes/Skin Thickening", {
+                        "2. Duct Changes ", {
+                            "_title": "3. Skin changes/Skin Thickening"
+                        }, {
                             "_title": "4. Skin changes/Skin Retraction",
-                            "_cols": 8,
-                            "_default_value": true
+                            "_default_value": true,
+                            "_cols": 6
                         },
-                        "5. Edema"
+                        {
+                            "_title": "5. Edema",
+                            "_cols": 6
+                        }
                     ]
                 },
                 "vascularity": {
@@ -414,22 +429,25 @@
                     "_enum_multi": [
                         "1. Clustered microcysts",
                         "2. Complicated cysts",
-                        "3. Mass in or on skin",
-                        "4. Foreign body",
-                        "5. Simple cyst", {
+                        "3. Mass in or on skin", {
+                            "_title": "4. Foreign body",
+                            "_cols": 6
+                        }, {
+                            "_title": "5. Simple cyst",
+                            "_cols": 6
+                        }, {
                             "_title": "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)",
                             "_cols": 12,
                             "_default_value": true
                         }, {
                             "_title": "7. VascularAbnormalities/Mondor Disease",
-                            "_cols": 8
+                            "_cols": 6
                         }, {
                             "_title": "8. Postsurgical Fluid Collection",
-                            "_cols": 8
+                            "_cols": 6
                         },
                         "9. Fat Necrosis", {
-                            "_title": "10. Lymph nodes – intramammary",
-                            "_cols": 8
+                            "_title": "10. Lymph nodes – intramammary"
                         },
                         "11. Lymph nodes – axillary"
                     ]

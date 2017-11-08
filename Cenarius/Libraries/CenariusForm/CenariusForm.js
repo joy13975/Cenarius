@@ -119,15 +119,13 @@ function domReady() {
 
 function main(global, $) {
     $.fn.cenarius = function(headingText, options) {
-        const myForma = options.forma;
-
-        const myFG = new FormGenerator(myForma);
+        const myFG = new FormGenerator(options.forma, options.formi);
         const formaDoms = myFG.genDoms();
 
         const contentDoms = DomMaker.genContent(headingText, formaDoms);
         const ctrlDoms = DomMaker.genCtrlPanel(myFG);
         const summaryModalDoms = DomMaker.genSummaryModal();
-        const sqlModalDoms = DomMaker.genSQLModal();
+        const sqlModalDoms = DomMaker.genDebugModal();
 
         const finalDom =
             $_$('div', {
@@ -137,18 +135,25 @@ function main(global, $) {
         this.replaceWith(finalDom);
     }
 
-    $.fn.sortByDepth = function() {
-        return $(this).sort(function(a, b) {
-            return $(b).parents().length - $(a).parents().length;
-        });
+    $.fn.sortByDepth = function(deepestFirst = true) {
+        if (deepestFirst)
+            return $(this).sort(function(a, b) {
+                return $(b).parents().length - $(a).parents().length;
+            });
+        else
+            return $(this).sort(function(a, b) {
+                return $(a).parents().length - $(b).parents().length;
+            });
     };
 };
 
 class FormGenerator {
-    constructor(forma) {
+    constructor(forma, formi) {
         this.fieldID = 0;
         this.forma = forma;
+        this.formi = formi;
         this.data = {};
+        this.soMethods = {};
         this.resetDefaultType();
         this.resetDefaultNCols();
         this.unsetForceCheckbox();
@@ -167,11 +172,12 @@ class FormGenerator {
         const fgSelf = this;
 
         // Convert strings into a proper fNode
+        const inferredType = inferFNodeType(fNode[key], fgSelf.currentDefaultType);
         const fNext =
             typeof(fNode[key]) !== 'object' ?
             (fNode[key] = {
                 _title: fNode[key],
-                _type: inferFNodeType(fNode[key])
+                _type: inferredType
             }) :
             fNode[key];
 
@@ -180,12 +186,12 @@ class FormGenerator {
             fNext.hasOwnProperty('_title') ? fNext._title :
             getNameFromKey(key);
 
-        const type = inferFNodeType(fNext, fgSelf.currentDefaultType);
-        fNext._type = type;
+        fNext._type = inferredType;
 
-        // console.log('key: ' + key + ', name: ' + name + ', type: ' + type);
+        // console.log('key: ' + key + ', name: ' + name + ', inferredType: ' + inferredType);
+        // console.log('defaultType: ' + this.currentDefaultType);
         // console.log('content: ');
-        // console.log(fNext);
+        // console.log(JSON.stringify(fNext, null, 2));
 
         const children =
             fNext.hasOwnProperty('_properties') ? fNext._properties :
@@ -194,7 +200,7 @@ class FormGenerator {
 
         const defaultType =
             fNext.hasOwnProperty('_default_type') ? fNext._default_type :
-            (type === 'enum' ? 'boolean' : 'string');
+            (inferredType === 'enum' ? 'boolean' : 'string');
 
         const defaultNCols =
             fNext.hasOwnProperty('_default_cols') ? fNext._default_cols :
@@ -216,7 +222,7 @@ class FormGenerator {
             );
         };
 
-        switch (type) {
+        switch (inferredType) {
             case 'object':
                 return fgSelf.genObj(fNext, key, name, sandwich, dNode);
             case 'subobject':
@@ -226,7 +232,7 @@ class FormGenerator {
             case 'space':
                 return fgSelf.genSpace(fNext);
             default:
-                return fgSelf.genField(fNext, type, key, name, dNode);
+                return fgSelf.genField(fNext, inferredType, key, name, dNode);
         }
     }
 
@@ -312,8 +318,8 @@ class FormGenerator {
         console.log('genSubobj(' + key + ')');
         const fgSelf = this;
 
-        //Not a field so do not increment this.fieldID
-        const fieldID = key + '_subobject';
+        // Increase field ID to avoid duplicate SO names
+        const fieldID = this.getNextID(key);
         fNode._fieldID = fieldID;
 
         const soDNode = {
@@ -334,8 +340,8 @@ class FormGenerator {
                 name: 'subobject-tabcontent'
             });
 
-        const fidBeforeSubobj = this.fieldID;
-        const makeSubobj = () => {
+        const fidBeforeSandwich = this.fieldID;
+        const makeSOI = () => {
             const keys = _.map(Object.keys(soDNode._instances), (k) => {
                 return Number(k);
             });
@@ -349,7 +355,7 @@ class FormGenerator {
 
             soDNode._instances[idx] = {};
 
-            fgSelf.fieldID = fidBeforeSubobj;
+            fgSelf.fieldID = fidBeforeSandwich;
             $(soTabHeaderDom).append(
                 DomMaker.genTabRef(
                     soID,
@@ -366,18 +372,27 @@ class FormGenerator {
 
             updateAllWCkbxs();
         }
+        const newTabBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-default btn-md cenarius-new-tab-btn',
+                name: 'new_tab_btn'
+            }, [
+                $_$('span', {
+                    class: 'glyphicon glyphicon-plus'
+                })
+            ]);
+        $(newTabBtn).on('click', makeSOI);
 
         // Generate initial minimum number of subobj
         const genMinSOI = () => {
             const curr = $(soTabHeaderDom).children().length;
             for (let i = curr; i < config.minSubobjectInstance; i++)
-                makeSubobj();
+                makeSOI();
         }
         genMinSOI();
 
-        const bodyDoms = [soTabHeaderDom, soTabContentDom];
-
-        const delSubobj = () => {
+        const delSOI = () => {
             // Find active tab
             const activeHeader = $(soTabHeaderDom).children('.active')[0];
             const activeContent = $(soTabContentDom).children('.active')[0];
@@ -411,19 +426,21 @@ class FormGenerator {
             }, [$_$('span', {
                 class: 'glyphicon glyphicon-remove'
             })]);
-        $(delTabBtn).on('click', delSubobj);
+        $(delTabBtn).on('click', delSOI);
 
-        const newTabBtn =
-            $_$('button', {
-                type: 'button',
-                class: 'btn btn-default btn-md cenarius-new-tab-btn',
-                name: 'new_tab_btn'
-            }, [
-                $_$('span', {
-                    class: 'glyphicon glyphicon-plus'
-                })
-            ]);
-        $(newTabBtn).on('click', makeSubobj);
+        // Generate initial minimum number of subobj
+        const clearSOI = () => {
+            const curr = $(soTabHeaderDom).children().length;
+            for (let i = 0; i < curr; i++)
+                delSOI();
+        }
+
+        this.soMethods[fieldID] = {
+            makeSOI: makeSOI,
+            delSOI: delSOI,
+            genMinSOI: genMinSOI,
+            clearSOI: clearSOI
+        };
 
         // Prepare panel heading 
         const panelHeadingFunc = (headingDoms = []) => {
@@ -451,8 +468,7 @@ class FormGenerator {
             fNode._cols : config.nCols.subobject;
 
         return DomMaker.genPanel(
-            headingDoms,
-            bodyDoms,
+            headingDoms, [soTabHeaderDom, soTabContentDom],
             nCols, {
                 name: 'cenarius-subobject-group',
                 excludeFromSummary: fNode._exclude_from_summary,
@@ -470,30 +486,24 @@ class FormGenerator {
 
         let enumData;
         let simpleEnum = true;
-        let sqlSignal;
 
+        // Determine whether enum is a complex one
         const isMultiChoice = fNode.hasOwnProperty('_enum_multi');
         if (isMultiChoice) {
             enumData = fNode._enum_multi;
             simpleEnum = false;
-            sqlSignal = 'multi_enum';
         } else {
             enumData = fNode._enum;
             _.each(enumData, (item) => {
-                const isSimpleItem = isRawType(inferFNodeType(item));
+                const itemType = inferFNodeType(item);
+                const isSimpleItem = isRawType(itemType);
                 simpleEnum &= isSimpleItem;
                 if (!isSimpleItem) {
-                    console.log('enum is complex because of item:');
+                    console.log('enum is complex because of item (' + itemType + '):');
                     console.log(item);
                 }
             });
-            sqlSignal = 'enum';
         }
-
-        fNode._sql_signal = sqlSignal;
-        dNode[fieldID] = {
-            _type: fNode._type
-        };
 
         const extraHtmlClass =
             fNode.hasOwnProperty('_html_class') ?
@@ -524,12 +534,18 @@ class FormGenerator {
                     if (typeof item !== 'object') {
                         item = (
                             enumData[enumKey] = {
-                                _name: item,
-                                _fieldID: identifierize(fieldID + '_equals_' + item),
-                                _sql_signal: 'bit'
+                                _title: item
                             });
                     }
-                    selectOptions.push($_$('option', {}, [item._name]));
+                    item._fieldID =
+                        identifierize(fieldID + '_equals_' + item._title);
+                    item._type = 'boolean';
+
+                    dNode[item._fieldID] = {
+                        _type: 'bit'
+                    };
+
+                    selectOptions.push($_$('option', {}, [item._title]));
                 })
 
                 const selectDom = $_$('select', {
@@ -542,7 +558,9 @@ class FormGenerator {
                 $(selectDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
 
                 // The value of "true" is required - "undefined" only works sometimes
-                $($(selectDom).children()[defaultValue]).attr('selected', true);
+                const $defaultOption = $($(selectDom).children()[defaultValue]);
+                $defaultOption.attr('selected', true);
+                $defaultOption.attr('defaultOption', '');
 
                 const inputName = name + config.autoLabelColon + config.autoLabelSpace;
                 const inputDoms =
@@ -575,7 +593,7 @@ class FormGenerator {
                 // Initial value is set by trigger in domReady()
                 $(selectDom).change(function() {
                     _.map(Object.keys(enumData), (enumKey) => {
-                        enumData[enumKey]._value = needCheckbox　 ?
+                        dNode[enumData[enumKey]._fieldID]._value = needCheckbox　 ?
                             (enumKey == this.selectedIndex - 1) :
                             (enumKey == this.selectedIndex);
                     })
@@ -628,8 +646,7 @@ class FormGenerator {
         const fieldID = isPositiveInt(key) ?
             this.getNextID(name) : this.getNextID(key);
         fNode._fieldID = fieldID;
-        fNode._sql_signal = SQLTypeTable[type];
-        dNode[fieldID] = {
+        const myDNode = {
             _type: fNode._type
         };
 
@@ -715,9 +732,9 @@ class FormGenerator {
                             if (defaultValue === true) ckbxProps.checked = true;
                             const ckbxInputDom = $_$('input', ckbxProps);
 
-                            fNode._value = $(ckbxInputDom).is(':checked');
+                            myDNode._value = $(ckbxInputDom).is(':checked');
                             $(ckbxInputDom).change(function() {
-                                fNode._value = $(this).is(':checked')
+                                myDNode._value = $(this).is(':checked')
                             });
 
                             const ckbxDoms =
@@ -762,9 +779,9 @@ class FormGenerator {
                                 $_$(inputTag, regularInputProps, [defaultValue]);
                             $(regularInputDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
 
-                            fNode._value = $(regularInputDom).val();
+                            myDNode._value = $(regularInputDom).val();
                             $(regularInputDom).change(function() {
-                                fNode._value = $(this).val()
+                                myDNode._value = $(this).val()
                             });
 
                             const regularFieldDoms =
@@ -811,6 +828,9 @@ class FormGenerator {
             config.nCols.input;
         const extraHtmlClass = fNode.hasOwnProperty('_html_class') ?
             fNode._html_class : '';
+
+        dNode[fieldID] = myDNode;
+
         return $_$('div', {
             name: 'cenarius-input-group',
             class: 'col-md-' + nCols + ' ' + extraHtmlClass,
@@ -841,10 +861,12 @@ class FormGenerator {
     }
 
     resetDefaultType() {
+        // console.log('resetDefaultType()');
         this.setDefaultType(config.defaultType);
     }
 
     setDefaultType(type) {
+        // console.log('setDefaultType(' + type + ')');
         this.currentDefaultType = type;
     }
 
@@ -858,10 +880,12 @@ class FormGenerator {
 
     unsetForceCheckbox() {
         this.forceCheckbox = 'none';
+        // console.log('setForceCheckbox(' + this.forceCheckbox + ')');
     }
 
     setForceCheckbox(isMultiChoice) {
         this.forceCheckbox = isMultiChoice ? 'multi' : 'single';
+        // console.log('setForceCheckbox(' + this.forceCheckbox + ')');
     }
 
     getNextID(key) {
@@ -943,7 +967,33 @@ class DomMaker {
             ]);
         $(resetFieldsBtn).on('click', function(e) {
             if (confirm('Are you sure you want to reset (clear) all fields?')) {
-                resetAllFields();
+                $('input').each(function() {
+                    const $this = $(this);
+
+                    if ($this.prop('type') === 'checkbox') {
+                        setCheckbox($this, false);
+                    } else {
+                        const defaultValue = $this.prop('defaultValue');
+                        $this.prop('value', defaultValue);
+                    }
+                })
+
+                $('textarea').each(function() {
+                    const $this = $(this);
+                    $this.prop('value', $this.prop('defaultValue'));
+                })
+
+                _.each($('select').children(), (sc) => {
+                    sc.removeAttribute('selected');
+                    if ($(sc).is('[defaultOption]'))
+                        $(sc).attr('selected', true);
+                });
+
+                _.each(Object.keys(formGen.soMethods), (somKey)=>{
+                    const som = formGen.soMethods[somKey];
+                    som.clearSOI();
+                    som.genMinSOI();
+                });
             }
         })
 
@@ -969,25 +1019,91 @@ class DomMaker {
             $summary.html(summaryHtml);
         })
 
-        const genSQLBtn =
+        const genDebugBtn =
             $_$('button', {
                 type: 'button',
-                class: 'btn btn-primary btn-lg sql-btn',
+                class: 'btn btn-primary btn-lg debug-btn',
                 'data-toggle': 'modal',
-                'data-target': '#sql_modal'
+                'data-target': '#debug_modal'
             }, [
                 $_$('span', {
-                    class: 'glyphicon glyphicon-cloud-upload'
-                }), [' Get SQL']
+                    class: 'glyphicon glyphicon-exclamation-sign'
+                }), [' Debug']
             ]);
-        $(genSQLBtn).on('click', function(e) {
-            const tableName = prompt('New table name: ', 'new_test_table');
-            const $sql = $('#sql_modal .modal-dialog .modal-content .modal-body');
-            if (tableName !== null && tableName.length > 0) {
-                $sql.html($_$('pre', {}, [SQLSchemaGenerator.gen(formGen, tableName)]));
-            } else {
-                e.stopPropagation();
-            }
+        $(genDebugBtn).on('click', function(e) {
+            const tableName = identifierize(String(formGen.formi['table_name']));
+
+            const diHeaderDom =
+                $_$('ul', {
+                    class: 'nav nav-tabs',
+                    name: 'debuginfo-tabheaders'
+                });
+            diHeaderDom.append(
+                DomMaker.genTabRef('di-schema', 'Schema', {
+                    class: 'active'
+                })
+            );
+            diHeaderDom.append(
+                DomMaker.genTabRef('di-tables', 'Tables')
+            );
+            diHeaderDom.append(
+                DomMaker.genTabRef('di-forma', 'Forma')
+            );
+            diHeaderDom.append(
+                DomMaker.genTabRef('di-data', 'Data')
+            );
+            const diContentDom =
+                $_$('div', {
+                    class: 'tab-content col-md-12',
+                    name: 'debuginfo-tabcontent'
+                });
+
+            const sqlGen = new SQLSchemaGenerator(formGen.forma, tableName);
+            diContentDom.append(
+                DomMaker.genTabPane('di-schema', [
+                    $_$('pre', {
+                        style: 'white-space: pre-wrap'
+                    }, [
+                        sqlGen.gen()
+                    ])
+                ], {
+                    class: 'active in'
+                })
+            );
+            diContentDom.append(
+                DomMaker.genTabPane('di-tables', [
+                    $_$('pre', {
+                        style: 'white-space: pre-wrap'
+                    }, [
+                        JSON.stringify(sqlGen.tables, null, 2)
+                    ])
+                ])
+            );
+            diContentDom.append(
+                DomMaker.genTabPane('di-forma', [
+                    $_$('pre', {
+                        style: 'white-space: pre-wrap'
+                    }, [
+                        JSON.stringify(formGen.forma, null, 2)
+                    ])
+                ])
+            );
+            diContentDom.append(
+                DomMaker.genTabPane('di-data', [
+                    $_$('pre', {
+                        style: 'white-space: pre-wrap'
+                    }, [
+                        JSON.stringify(formGen.data, null, 2)
+                    ])
+                ])
+            );
+
+            const $sql = $('#debug_modal .modal-dialog .modal-content .modal-body');
+
+            $sql.replaceWith($_$('div', {
+                class: 'modal-body',
+                style: 'display: inline-block'
+            }, [diHeaderDom, diContentDom]));
         })
 
         return $_$('div', {
@@ -997,7 +1113,7 @@ class DomMaker {
         }, [
             resetFieldsBtn,
             genSumBtn,
-            genSQLBtn
+            genDebugBtn
         ]);
     };
 
@@ -1015,15 +1131,22 @@ class DomMaker {
             alert(str);
         });
 
-        const copySummaryBtn =
+        const copyBtn =
             $_$('button', {
                 type: 'button',
                 class: 'btn btn-success',
-                id: 'copy_summary_btn',
                 'data-dismiss': 'modal'
             }, ['Copy']);
 
-        $(copySummaryBtn).on('click', copyBtnOnClick);
+        $(copyBtn).on('click',
+            function(e) {
+                e.stopPropagation();
+                const res = copyToClipboard($(this).parent().siblings('.modal-body')[0]);
+                if (res)
+                    showSnackbar('Copied to clipboard.');
+                else
+                    showSnackbar('Browser does not support copy function.');
+            });
 
         return $_$('div', {
             class: 'modal fade',
@@ -1063,7 +1186,7 @@ class DomMaker {
                             'data-dismiss': 'modal',
                             style: 'float: left'
                         }, ['Close']),
-                        copySummaryBtn,
+                        copyBtn,
                         submitBtn
                     ])
                 ])
@@ -1071,20 +1194,31 @@ class DomMaker {
         ]);
     };
 
-    static genSQLModal() {
-        const copySqlBtn =
+    static genDebugModal() {
+        const copyBtn =
             $_$('button', {
                 type: 'button',
                 class: 'btn btn-success',
-                id: 'copy_sql_btn',
                 'data-dismiss': 'modal',
                 style: 'float:right'
             }, ['Copy']);
-        $(copySqlBtn).on('click', copyBtnOnClick);
+        $(copyBtn).on('click',
+            function(e) {
+                e.stopPropagation();
+                const res = copyToClipboard($(this).parent()
+                    .siblings('.modal-body')
+                    .children('div[name=debuginfo-tabcontent]')
+                    .children('.active')
+                    .children('pre')[0]);
+                if (res)
+                    showSnackbar('Copied to clipboard.');
+                else
+                    showSnackbar('Browser does not support copy function.');
+            });
 
         return $_$('div', {
             class: 'modal fade',
-            id: 'sql_modal',
+            id: 'debug_modal',
             role: 'dialog',
             tabindex: -1
         }, [
@@ -1104,13 +1238,13 @@ class DomMaker {
                         }, ['&times;']),
                         $_$('h4', {
                             class: 'modal-title'
-                        }, ['SQL Schema']),
-                        copySqlBtn
+                        }, ['Debug Info']),
+                        copyBtn
                     ]),
                     $_$('div', {
                         class: 'modal-body'
                     }, [
-                        $_$('p', {}, ['//SQL Placeholder//'])
+                        $_$('p', {}, ['//Placeholder//'])
                     ]),
                     $_$('div', {
                         class: 'modal-footer'
@@ -1461,7 +1595,8 @@ class SQLSchemaGenerator {
         };
     }
 
-    constructor(tableName) {
+    constructor(forma, tableName) {
+        this.forma = forma;
         this.mainTableName = identifierize(tableName);
         this.tables = [{
             tableName: tableName,
@@ -1475,12 +1610,12 @@ class SQLSchemaGenerator {
         const type = next._type;
         const parentTableName = dest.tableName;
 
-        // console.log('sql gen: name=' + next._fieldID + ', type=' + type + ', signal=' + next._sql_signal);
+        // console.log('sql gen: name=' + next._fieldID + ', type=' + type);
         switch (type) {
             case 'subobject':
                 {
                     const soTableName = parentTableName +
-                        '.' + identifierize(next._fieldID.replace(/_subobject_f[0-9]*$/, ''));
+                        '.' + identifierize(next._fieldID);
                     const soTable = {
                         tableName: soTableName,
                         fields: [
@@ -1511,12 +1646,17 @@ class SQLSchemaGenerator {
                     });
                     break;
                 }
+            case undefined:
+                {
+                    console.error('Undefined type');
+                    console.error(JSON.stringify(next, null, 2));
+                    break;
+                }
             default:
                 {
                     dest.fields.push({
                         name: next._fieldID,
-                        sqlType: next._sql_signal,
-                        value: next._value
+                        sqlType: SQLTypeTable[next._type]
                     });
                 }
         }
@@ -1538,7 +1678,7 @@ class SQLSchemaGenerator {
                     (fd.primaryKey === true ? ' PRIMARY KEY' : '') +
                     (typeof fd.foreignRef === 'string' ?
                         (' FOREIGN KEY REFERENCES ' + bracket(fd.foreignRef) + '(' +
-                            bracket('id') + ')') : '')
+                            bracket('id') + ')') : '');
                 return fdStr;
             }, ', \n') +
             '\n);';
@@ -1546,20 +1686,18 @@ class SQLSchemaGenerator {
         return str;
     }
 
-    static gen(formGen, tableName) {
-        const sqlGen = new SQLSchemaGenerator(tableName);
-
-        _.each(Object.keys(formGen.forma), function(key) {
-            sqlGen.visitFormaNode(formGen.forma, key, sqlGen.tables[0]);
+    gen() {
+        const sqlgSelf = this;
+        _.each(Object.keys(sqlgSelf.forma), function(key) {
+            sqlgSelf.visitFormaNode(sqlgSelf.forma, key, sqlgSelf.tables[0]);
         })
 
-        return JSON.stringify(formGen.data, null, 2);
-        // return JSON.stringify(sqlGen.tables, null, 2);
-        // return mapJoin(sqlGen.tables, (td) => {
-        //     return SQLSchemaGenerator.stringify(td);
-        // }, '\n');
+        return mapJoin(this.tables, (td) => {
+            return SQLSchemaGenerator.stringify(td);
+        }, '\n');
     }
 }
+
 
 
 function isRawType(fNodeType) {
@@ -1568,7 +1706,7 @@ function isRawType(fNodeType) {
         fNodeType === 'boolean';
 }
 
-function inferFNodeType(fNode, defaultType) {
+function inferFNodeType(fNode, defaultType = 'string') {
     const objType = typeof fNode;
     if (objType === 'object') {
         if (fNode.hasOwnProperty('_type'))
@@ -1579,17 +1717,9 @@ function inferFNodeType(fNode, defaultType) {
 
         if (fNode.hasOwnProperty('_properties'))
             return 'object';
-
-        return defaultType;
-    } else {
-        // This should be a raw type 
-        if (!isRawType(objType)) {
-            console.error('Invalid fNode type: ' + objType);
-            console.error(fNode);
-            return 'invalid';
-        }
-        return objType;
     }
+
+    return defaultType;
 }
 
 function formCtrlUpdateCkbx(e) {
@@ -1605,15 +1735,6 @@ function formCtrlUpdateCkbx(e) {
 
 function updateAllWCkbxs() {
     $('.form-control').trigger('change');
-}
-
-function copyBtnOnClick(e) {
-    e.stopPropagation();
-    const res = copyToClipboard($(this).parent().siblings('.modal-body')[0]);
-    if (res)
-        showSnackbar('Copied to clipboard.');
-    else
-        showSnackbar('Browser does not support copy function.');
 }
 
 function showSnackbar(text, timeout = 3000) {
@@ -1632,36 +1753,13 @@ function showSnackbar(text, timeout = 3000) {
     }, timeout);
 }
 
-function resetAllFields() {
-    $('input').each(function() {
-        let $this = $(this);
-
-        if ($this.prop('type') === 'checkbox') {
-            setCheckbox($this, false);
-        } else {
-            const defaultValue = $this.prop('defaultValue');
-            $this.prop('value', defaultValue);
-        }
-    })
-
-    $('textarea').each(function() {
-        let $this = $(this);
-        $this.prop('value', $this.prop('defaultValue'));
-    })
-
-    $('select').val(config.defaultEnumOptionText).change();
-
-    $('ul[name=subobject-tabheaders]').each(function() {
-        console.warn('Unimplemented: reset fields to reset subobj instances')
-    })
-}
-
 function setCheckbox(ckbx, val) {
     const $ckbx = $(ckbx);
     const checked = $ckbx.prop('checked');
     if ((val && !checked) || (checked && !val))
         $ckbx.trigger('click');
 }
+
 
 
 function mapJoin(obj, func, sep = '') {
