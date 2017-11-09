@@ -87,7 +87,6 @@
                     "_title": "10. Exam for symptomatic patient",
                     "_cols": 12,
                     "_default_cols": 4,
-                    "_html_class": "tight",
                     "_enum_multi": [
                         "11. Pain",
                         "12. Palpable mass",
@@ -203,8 +202,10 @@
                 },
                 "30_f_u_for_previous_noted_benign_lesions": {
                     "_title": "30. F/U for previous noted benign lesions",
+                    "_cols": 6,
+                    "_default_cols": 12,
                     "_default_type": "boolean",
-                    "_properties": {
+                    "_enum_multi": {
                         "fibroadenoma": {
                             "_title": "31. Fibroadenoma",
                             "_default_value": true
@@ -217,7 +218,7 @@
                         },
                         "other": {
                             "_title": "34. Other",
-                            "_type": "string",
+                            "_require_input": "string",
                             "_force_checkbox": true,
                             "_default_value": "not sure"
                         }
@@ -225,7 +226,8 @@
                 },
                 "40_surgically_altered_breast": {
                     "_title": "40. Surgically altered breast",
-                    "_cols": 12,
+                    "_cols": 6,
+                    "_default_cols": 12,
                     "_enum_multi": [
                         "41. S/P biopsy/wide excision/BCS",
                         "42. S/P breast augmentation/Reconstruction"
@@ -233,7 +235,7 @@
                 },
                 "50_other_reasons_for_breast_sono_examination": {
                     "_title": "50. Other reasons for breast sono examination",
-                    "_cols": 12
+                    "_cols": 6
                 }
             }
         },
@@ -272,6 +274,7 @@
                 },
                 "biopsy_and_other_evaluation_suggestion": {
                     "_cols": 12,
+                    "_default_cols": 3,
                     "_enum": [{
                             "_title": "0. No need biopsy",
                             "_default_value": true
@@ -282,7 +285,7 @@
                         "4. Mammography",
                         "5. MRI", {
                             "_title": "6. Other",
-                            "_type": "string",
+                            "_require_input": "string",
                             "_cols": 6
                         }
                     ]

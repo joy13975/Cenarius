@@ -57,7 +57,7 @@ var config = {
     }
 };
 
-const HtmlInputTypeTable = {
+const HtmlInputTypeTable = Object.freeze({
     float: 'number',
     integer: 'number',
     big_string: 'text',
@@ -65,9 +65,9 @@ const HtmlInputTypeTable = {
     boolean: 'checkbox',
     date: 'date',
     label: 'label'
-}
+})
 
-const SQLTypeTable = {
+const SQLTypeTable = Object.freeze({
     float: 'float',
     integer: 'integer',
     big_string: 'nvarchar',
@@ -77,7 +77,7 @@ const SQLTypeTable = {
 
     // Any enum field references the enumOptions table using a FKey
     enum: 'int'
-}
+})
 
 const EnumMode = Object.freeze({
     None: 0,
@@ -114,10 +114,10 @@ function domReady() {
         const $currentCkbx = $(this);
         if ($currentCkbx.prop('checked')) {
             $currentCkbx.parent().parent().siblings().each(function() {
-                const $otherCkbx = $(this);
-                $otherCkbx.find('input[type=checkbox]').each(function() {
-                    if ($otherCkbx.prop('checked'))
-                        $otherCkbx.trigger('click');
+                const $otherField = $(this);
+                $otherField.children('div').children('input[type=checkbox]').each(function() {
+                    if ($(this).prop('checked'))
+                        $(this).trigger('click');
                 });
             });
         }
@@ -185,6 +185,9 @@ class FormGenerator {
 
         // Convert strings into a proper fNode
         const inferredType = inferFNodeType(fNode[key], fgSelf.currentDefaultType);
+        // console.log(JSON.stringify(fNode[key], null, 2));
+        // console.log('inferredType=' + inferredType);
+
         const fNext =
             typeof(fNode[key]) !== 'object' ?
             (fNode[key] = {
@@ -521,12 +524,13 @@ class FormGenerator {
         } else {
             enumData = fNode._enum;
             _.each(enumData, (item) => {
-                const itemType = inferFNodeType(item);
-                const isSimpleItem = isRawType(itemType);
-                simpleEnum &= isSimpleItem;
-                if (!isSimpleItem) {
-                    console.log('enum is complex because of item (' + itemType + '):');
-                    console.log(item);
+                const requiresInput =
+                    typeof item === 'object' &&
+                    item.hasOwnProperty('_require_input');
+                simpleEnum &= !requiresInput;
+                if (requiresInput) {
+                    console.log('enum is complex because item ' + item._title + ' requires input');
+                    // console.log(item);
                 }
             });
         }
@@ -552,20 +556,11 @@ class FormGenerator {
             if (needCheckbox)
                 selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
 
-            // Convert string items in array to objects
-            // that contain useful attributes
             _.each(Object.keys(enumData), (enumKey) => {
-                let item = enumData[enumKey];
-                if (typeof item !== 'object') {
-                    item = (enumData[enumKey] = {
-                        _title: String(item),
-                        _type: 'string'
-                    })
-                } else {
-                    item._type = inferFNodeType(item);
-                }
+                const item = enumData[enumKey];
+                const optionName = typeof item === 'object' ? item._title : String(item);
 
-                selectOptions.push($_$('option', {}, [item._title]));
+                selectOptions.push($_$('option', {}, [optionName]));
             })
 
             const selectDom = $_$('select', {
@@ -640,14 +635,18 @@ class FormGenerator {
                 });
 
             this.setEnumMode(isMultiChoice ? EnumMode.Multi : EnumMode.ComplexSingle);
-            const myDNode = (
-                dNode[fieldID] = {
-                    _type: 'enum'
-                });
+
+            let nextDNode = dNode;
+            if (!isMultiChoice) {
+                nextDNode = (
+                    dNode[fieldID] = {
+                        _type: 'string'
+                    });
+            }
 
             const dom =
                 DomMaker.genPanel([name, choiceTypeIcon],
-                    sandwich(myDNode, true),
+                    sandwich(nextDNode, true),
                     nCols, {
                         name: (isMultiChoice ?
                             'cenarius-multi-choice-group' :
@@ -671,9 +670,12 @@ class FormGenerator {
         const fieldID = isPositiveInt(key) ?
             this.getNextID(name) : this.getNextID(key);
         fNode._fieldID = fieldID;
-        const myDNode = {
-            _type: fNode._type
-        };
+
+        // Complex enums simply fill parent dNode._value
+        const myDNode =
+            (this.enumMode === EnumMode.ComplexSingle ? dNode : {
+                _type: fNode._type
+            });
 
         // Type related flags
         const htmlInputType = HtmlInputTypeTable[type];
@@ -715,7 +717,7 @@ class FormGenerator {
         const fieldStyle = textAlignment;
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
         const needCheckbox =
-            this.enumMode !== 'none' || fNode._force_checkbox === true;
+            this.enumMode !== EnumMode.None || fNode._force_checkbox === true;
         const endingSpan = (() => {
             if (fNode.hasOwnProperty('_ending')) {
                 return $_$('span', {
@@ -766,8 +768,18 @@ class FormGenerator {
                             const ckbxInputDom = $_$('input', ckbxProps);
 
                             myDNode._value = $(ckbxInputDom).is(':checked');
+
+                            // Value should be title of field if this 
+                            // checkbox is under a ComplexSingle enum
+                            // but only when checkbox is checked
+                            const fillNameVal = this.enumMode === EnumMode.ComplexSingle;
                             $(ckbxInputDom).change(function() {
-                                myDNode._value = $(this).is(':checked')
+                                if (fillNameVal) {
+                                    if ($(this).is(':checked'))
+                                        myDNode._value = name;
+                                } else {
+                                    myDNode._value = $(this).is(':checked');
+                                }
                             });
 
                             const ckbxDoms =
@@ -862,7 +874,9 @@ class FormGenerator {
         const extraHtmlClass = fNode.hasOwnProperty('_html_class') ?
             fNode._html_class : '';
 
-        dNode[fieldID] = myDNode;
+        // Complex enums simply fill parent dNode._value
+        if (this.enumMode !== EnumMode.ComplexSingle)
+            dNode[fieldID] = myDNode;
 
         return $_$('div', {
             name: 'cenarius-input-group',
@@ -898,7 +912,7 @@ class FormGenerator {
     }
 
     resetEnumMode() {
-        this.setEnumMode('none');
+        this.setEnumMode(EnumMode.None);
         // console.log('resetEnumMode(' + this.enumMode + ')');
     }
 
@@ -937,7 +951,7 @@ class SQLSchemaGenerator {
     visitFormaNode(node, key, dest) {
         const sqlGenSelf = this;
         const next = node[key];
-        const type = next._type;
+        const type = inferFNodeType(next);
         const parentTableName = dest.tableName;
 
         // console.log('sql gen: name=' + next._fieldID + ', type=' + type);
@@ -972,6 +986,15 @@ class SQLSchemaGenerator {
                     console.error('Undefined type');
                     console.error(JSON.stringify(next, null, 2));
                     break;
+                }
+            case 'enum':
+                {
+                    if (next.hasOwnProperty('_enum_multi')) {
+                        _.each(Object.keys(next._enum_multi), function(childKey) {
+                            sqlGenSelf.visitFormaNode(next._enum_multi, childKey, dest);
+                        })
+                        break;
+                    }
                 }
             default:
                 {
@@ -1032,7 +1055,7 @@ class DomMaker {
                 type: 'checkbox',
                 id: checkboxID,
                 name: checkboxID,
-                class: checkboxType === EnumMode.complexSingle ? 'single-choice-checkbox' : '',
+                class: checkboxType === EnumMode.ComplexSingle ? 'single-choice-checkbox' : '',
                 autocomplete: 'off'
             });
         $(ckbxDom).change(ckbxDomOnChange);
@@ -1755,6 +1778,9 @@ function inferFNodeType(fNode, defaultType = 'string') {
     if (objType === 'object') {
         if (fNode.hasOwnProperty('_type'))
             return fNode._type;
+
+        if (fNode.hasOwnProperty('_require_input'))
+            return fNode._require_input;
 
         if (fNode.hasOwnProperty('_enum') || fNode.hasOwnProperty('_enum_multi'))
             return 'enum';
