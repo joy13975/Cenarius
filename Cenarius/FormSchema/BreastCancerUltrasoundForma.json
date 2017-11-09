@@ -21,8 +21,7 @@
                             "_title": "今日檢查次數",
                             "_ending": "次",
                             "_type": "integer",
-                            "_min": 0,
-                            "_default_value": 1
+                            "_min": 0
                         }
                     }
                 },
@@ -69,7 +68,7 @@
         },
         "indications": {
             "_title": "檢查適應症",
-            "_default_type": "boolean",
+            "_default_children_type": "boolean",
             "_exclude_from_summary": true,
             "_properties": {
                 "00_asymptomatic_screening": {
@@ -80,11 +79,12 @@
                     "_title": "10. Exam for symptomatic patient",
                     "_cols": 12,
                     "_default_cols": 4,
-                    "_enum_multi": [
-                        "11. Pain",
-                        "12. Palpable mass",
-                        "13. Discharge"
-                    ]
+                    "_default_children_type": "boolean",
+                    "_properties": {
+                        "11. Pain": {},
+                        "12. Palpable mass": {},
+                        "13. Discharge": {}
+                    }
                 },
                 "20_screening_mammographic_category": {
                     "_title": "20. Screening Mammographic Category (0-5)",
@@ -101,22 +101,11 @@
                 "benign_lesions": {
                     "_title": "Benign Lesion(s)",
                     "_type": "subobject",
-                    "_default_type": "boolean",
+                    "_default_children_type": "boolean",
                     "_default_cols": 4,
                     "_properties": {
-                        "test_so_lv2": {
-                            "_type": "subobject",
-                            "_properties": {
-                                "fill_me": {
-                                    "_default_value": "よかった"
-                                },
-                                "fill_me2": {
-                                    "_type": "float"
-                                }
-                            }
-                        },
                         "location": {
-                            "_default_type": "boolean",
+                            "_default_children_type": "boolean",
                             "_cols": 8,
                             "_grouping": "either",
                             "_properties": {
@@ -192,35 +181,31 @@
                 },
                 "30_f_u_for_previous_noted_benign_lesions": {
                     "_title": "30. F/U for previous noted benign lesions",
-                    "_default_type": "boolean",
+                    "_cols": 6,
+                    "_default_cols": 12,
+                    "_default_children_type": "boolean",
                     "_properties": {
-                        "fibroadenoma": {
-                            "_title": "31. Fibroadenoma"
-                        },
-                        "fibrocystic_change": {
-                            "_title": "32. Fibrocystic change"
-                        },
-                        "cyst": {
-                            "_title": "33. Cyst"
-                        },
-                        "other": {
-                            "_title": "34. Other",
-                            "_type": "string",
+                        "31. Fibroadenoma": {},
+                        "32. Fibrocystic change": {},
+                        "33. Cyst": {},
+                        "34. Other": {
+                            "_require_input": "string",
                             "_force_checkbox": true
                         }
                     }
                 },
-                "40_surgically_altered_breast": {
-                    "_title": "40. Surgically altered breast",
-                    "_cols": 12,
-                    "_enum_multi": [
-                        "41. S/P biopsy/wide excision/BCS",
-                        "42. S/P breast augmentation/Reconstruction"
-                    ]
+                "40. Surgically altered breast": {
+                    "_cols": 6,
+                    "_default_cols": 12,
+                    "_default_children_type": "boolean",
+                    "_properties": {
+                        "41. S/P biopsy/wide excision/BCS": {},
+                        "42. S/P breast augmentation/Reconstruction": {}
+                    }
                 },
                 "50_other_reasons_for_breast_sono_examination": {
                     "_title": "50. Other reasons for breast sono examination",
-                    "_cols": 12
+                    "_cols": 6
                 }
             }
         },
@@ -259,8 +244,10 @@
                 },
                 "biopsy_and_other_evaluation_suggestion": {
                     "_cols": 12,
-                    "_enum": [
-                        "0. No need biopsy",
+                    "_default_cols": 3,
+                    "_enum": [{
+                            "_title": "0. No need biopsy"
+                        },
                         "1. Aspiration cytology",
                         "2. Core biopsy",
                         "3. Open biopsy",
@@ -369,18 +356,18 @@
                 "associated_features": {
                     "_default_cols": 4,
                     "_summary_break_style": "before",
-                    "_enum_multi": [
-                        "1. Architectural distortion",
-                        "2. Duct Changes ",
-                        "3. Skin changes/Skin Thickening", {
-                            "_title": "4. Skin changes/Skin Retraction",
+                    "_default_children_type": "boolean",
+                    "_properties": {
+                        "1. Architectural distortion": {},
+                        "2. Duct Changes ": {},
+                        "3. Skin changes/Skin Thickening": {},
+                        "4. Skin changes/Skin Retraction": {
                             "_cols": 6
                         },
-                        {
-                            "_title": "5. Edema",
+                        "5. Edema": {
                             "_cols": 6
                         }
-                    ]
+                    }
                 },
                 "vascularity": {
                     "_cols": 12,
@@ -393,41 +380,42 @@
                 },
                 "surrounding_change": {
                     "_default_cols": 4,
-                    "_enum_multi": [
-                        "1. Duct changes",
-                        "2. Cooper’s ligament changes",
-                        "3. Edema",
-                        "4. Architectural distortion",
-                        "5. Skin thickening",
-                        "6. Skin retraction/irregularity"
-                    ]
+                    "_default_children_type": "boolean",
+                    "_properties": {
+                        "1. Duct changes": {},
+                        "2. Cooper’s ligament changes": {},
+                        "3. Edema": {},
+                        "4. Architectural distortion": {},
+                        "5. Skin thickening": {},
+                        "6. Skin retraction/irregularity": {}
+                    }
                 },
                 "special_case": {
                     "_default_cols": 4,
-                    "_enum_multi": [
-                        "1. Clustered microcysts",
-                        "2. Complicated cysts",
-                        "3. Mass in or on skin", {
-                            "_title": "4. Foreign body",
+                    "_default_children_type": "boolean",
+                    "_properties": {
+                        "1. Clustered microcysts": {},
+                        "2. Complicated cysts": {},
+                        "3. Mass in or on skin": {},
+                        "4. Foreign body": {
                             "_cols": 6
-                        }, {
-                            "_title": "5. Simple cyst",
+                        },
+                        "5. Simple cyst": {
                             "_cols": 6
-                        }, {
-                            "_title": "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)",
+                        },
+                        "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)": {
                             "_cols": 12
-                        }, {
-                            "_title": "7. VascularAbnormalities/Mondor Disease",
-                            "_cols": 6
-                        }, {
-                            "_title": "8. Postsurgical Fluid Collection",
+                        },
+                        "7. VascularAbnormalities/Mondor Disease": {
                             "_cols": 6
                         },
-                        "9. Fat Necrosis", {
-                            "_title": "10. Lymph nodes – intramammary"
+                        "8. Postsurgical Fluid Collection": {
+                            "_cols": 6
                         },
-                        "11. Lymph nodes – axillary"
-                    ]
+                        "9. Fat Necrosis": {},
+                        "10. Lymph nodes – intramammary": {},
+                        "11. Lymph nodes – axillary": {}
+                    }
                 },
                 "calcifications": {
                     "_enum": [

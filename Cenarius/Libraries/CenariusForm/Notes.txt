@@ -1,0 +1,27 @@
+Cenarius Notes
+
+!!! -- ALL ENUMS ARE SINGLE CHOICE --  !!!
+For multi-choice enum, just use an "object" type with "_default_children_type": "boolean"
+
+EnumOptions table:
+	| id | enumFieldID | optionVal |
+
+Simple enum:
+	Store (~, fieldID+'::AllowNewValues', "false")
+
+Complex enum
+	Store (~, fieldID+'::AllowNewValues', "true")
+
+Both:
+	Store (~, fieldID, val) in an EnumOptions table
+
+
+
+
+When attempting to find foreign key (from main table) to EnumOptions:
+	Search by (fieldID) and (val)
+
+	If hit: simply reference id
+	If miss: check whether new value can be added
+		Insert new row for new option value if allowed
+		Error out if not
