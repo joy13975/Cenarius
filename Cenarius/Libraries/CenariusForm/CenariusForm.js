@@ -124,8 +124,7 @@ function main(global, $) {
         const myFG = new FormGenerator(options.forma, options.formi);
         const formaDoms = myFG.genDoms();
 
-        const tableName = identifierize(String(myFG.formi['table_name']));
-        const mySqlGen = new SQLSchemaGenerator(myFG.forma, myFG.enumOptions, tableName);
+        const mySqlGen = new SQLSchemaGenerator(myFG);
 
         const contentDoms = DomMaker.genContent(headingText, formaDoms);
         const ctrlDoms = DomMaker.genCtrlPanel(myFG, mySqlGen);
@@ -157,8 +156,8 @@ class FormGenerator {
         this.fieldIDCounter = 0;
         this.subobjIDCounter = 0;
         this.forma = forma; // Form + schema data
-        this.formi = formi; // Information about the forma
-        this.data = {};
+        this.mainTableName = identifierize(String(formi.table_name));
+        this.data = [];
         this.soMethods = {};
         this.enumOptions = [];
 
@@ -217,13 +216,13 @@ class FormGenerator {
             fNext.hasOwnProperty('default_cols') ? fNext.default_cols :
             '';
 
-        function sandwich(_dNode = dNode, noDescend = false) {
+        function sandwich(_dNode = dNode) {
             return _.map(Object.keys(children),
                 (nextKey) => {
                     fgSelf.setDefaultChildrenType(defaultChildrenType);
                     fgSelf.setDefaultNCols(defaultNCols);
 
-                    const resDom = fgSelf.visitFormaNode(children, nextKey, _dNode, noDescend);
+                    const resDom = fgSelf.visitFormaNode(children, nextKey, _dNode);
 
                     fgSelf.resetDefaultChildrenType();
                     fgSelf.resetDefaultNCols();
@@ -347,10 +346,11 @@ class FormGenerator {
         fNode.fieldID = fieldID;
 
         const soDNode = {
+            name: fieldID,
             type: fNode.type,
             instances: {}
         };
-        dNode[fieldID] = soDNode;
+        dNode.push(soDNode);
 
         const soTabHeaderDom =
             $_$('ul', {
@@ -377,7 +377,7 @@ class FormGenerator {
             );
             const soID = fieldID + '-so-instance-' + idx;
 
-            soDNode.instances[idx] = {};
+            soDNode.instances[idx] = [];
 
             fgSelf.fieldID = fidBeforeSandwich;
             $(soTabHeaderDom).append(
@@ -578,11 +578,6 @@ class FormGenerator {
             }, selectOptions);
             $(selectDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
 
-            // Create data node for containing the result string
-            dNode[fieldID] = {
-                type: 'enum'
-            };
-
             // The value of 'true' is required - 'undefined' only works sometimes
             const $defaultOption = $($(selectDom).children()[defaultValue]);
             $defaultOption.attr('selected', true);
@@ -616,9 +611,16 @@ class FormGenerator {
                         }
                     });
 
+            // Create data node for containing the result string
+            const myDNode = {
+                name: fieldID,
+                type: 'enum'
+            };
+            dNode.push(myDNode);
+
             // Initial value is set by trigger in domReady()
             $(selectDom).on('change', function() {
-                dNode[fieldID].value = $(this).val();
+                myDNode.value = $(this).val();
             });
 
             return $_$('div', {
@@ -637,9 +639,11 @@ class FormGenerator {
                     name: 'choice-type-icon'
                 });
 
-            const enumDNode = (dNode[fieldID] = {
+            const myDNode = {
+                name: fieldID,
                 type: 'enum'
-            });
+            };
+            dNode.push(myDNode);
 
             // Allow new values because some fields require input
             fgSelf.enumOptions.push({
@@ -650,7 +654,7 @@ class FormGenerator {
             this.setComplexEnumMode(fieldID);
             const dom =
                 DomMaker.genPanel([name, choiceTypeIcon],
-                    sandwich(enumDNode, ),
+                    sandwich(myDNode),
                     nCols, {
                         name: 'cenarius-single-choice-group',
                         id: fieldID,
@@ -673,6 +677,7 @@ class FormGenerator {
 
         // Complex enums simply fill parent dNode.value
         const myDNode = this.inComplexEnum ? dNode : {
+            name: fieldID,
             type: fNode.type
         };
 
@@ -895,7 +900,7 @@ class FormGenerator {
 
         // Complex enums simply fill parent dNode.value
         if (!this.inComplexEnum)
-            dNode[fieldID] = myDNode;
+            dNode.push(myDNode);
 
         return $_$('div', {
             name: 'cenarius-input-group',
@@ -962,25 +967,23 @@ class SQLSchemaGenerator {
         };
     }
 
-    constructor(forma, enumOptions, tableName) {
-        this.forma = forma;
-        this.enumOptions = enumOptions;
-        this.mainTableName = identifierize(tableName);
-        this.enumOptionsTableName = this.mainTableName + '.enum_options';
+    constructor(formGen) {
+        this.enumOptions = formGen.enumOptions;
+        this.enumOptionsTableName = formGen.mainTableName + '.enum_options';
         this.tables = [{
-            name: tableName,
+            name: formGen.mainTableName,
             columns: [SQLSchemaGenerator.genIDColumn()]
         }];
 
         const sqlgSelf = this;
 
         // Gen tables based on form schema 
-        _.each(Object.keys(sqlgSelf.forma), function(key) {
-            sqlgSelf.visitFormaNode(sqlgSelf.forma, key, sqlgSelf.tables[0]);
+        _.each(Object.keys(formGen.forma), function(key) {
+            sqlgSelf.visitFormaNode(formGen.forma, key, sqlgSelf.tables[0]);
         })
 
         // Create auxiliary EnumOptions table
-        sqlgSelf.genEnumOptionsTable();
+        this.genEnumOptionsTable();
     }
 
     visitFormaNode(node, key, dest) {
@@ -1166,37 +1169,40 @@ class DomMaker {
             }, [
                 $_$('span', {
                     class: 'glyphicon glyphicon-trash'
-                }), [' Reset Fields']
+                }), [' Clear Fields']
             ]);
         $(resetFieldsBtn).on('click', function(e) {
             if (confirm('Are you sure you want to reset (clear) all fields?')) {
-                $('input').each(function() {
-                    const $this = $(this);
-
-                    if ($this.prop('type') === 'checkbox') {
-                        setCheckbox($this, false);
-                    } else {
-                        const defaultValue = $this.prop('defaultValue');
-                        $this.prop('value', defaultValue);
-                    }
-                })
-
-                $('textarea').each(function() {
-                    const $this = $(this);
-                    $this.prop('value', $this.prop('defaultValue'));
-                })
-
-                _.each($('select').children(), (sc) => {
-                    sc.removeAttribute('selected');
-                    if ($(sc).is('[defaultOption]'))
-                        $(sc).attr('selected', true);
-                });
-
+                // Spawn new SOI first, then clear individual fields
                 _.each(Object.keys(formGen.soMethods), (somKey) => {
                     const som = formGen.soMethods[somKey];
                     som.clearSOI();
                     som.genMinSOI();
                 });
+
+                $('input').each(function() {
+                    const $this = $(this);
+                    const propType = $this.prop('type');
+                    if (propType === 'checkbox') {
+                        setCheckbox($this, false);
+                    } else if (propType === 'number') {
+                        $this.prop('value', 0);
+                    } else if (propType === 'date') {
+                        $this.prop('value', (new Date()).toISOString().slice(0, 10));
+                    } else {
+                        $this.prop('value', '');
+                    }
+                })
+
+                $('textarea').each(function() {
+                    const $this = $(this);
+                    $this.prop('value', '');
+                })
+
+                _.each($('select').children(), (sc) => {
+                    sc.removeAttribute('selected');
+                });
+                $($('select').children()[0]).attr('selected', true);
             }
         })
 
@@ -1333,8 +1339,10 @@ class DomMaker {
                 $('#bootstrap-overrides').append(loader);
 
                 postDataToServer(
-                    '/Home/Submit',
-                    formGen.data,
+                    '/Home/Submit', {
+                        mainTableName: formGen.mainTableName,
+                        data: formGen.data
+                    },
                     5000,
                     function() {
                         loader.remove();

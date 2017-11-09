@@ -388,32 +388,32 @@
                     }
                 },
                 "special_case": {
-                    "default_cols": 4,
+                    "default_cols": 6,
                     "summary_style": "no_break_before no_break_after_title no_break_after",
                     "default_children_type": "boolean",
                     "properties": {
                         "1. Clustered microcysts": {},
                         "2. Complicated cysts": {},
                         "3. Mass in or on skin": {},
-                        "4. Foreign body": {
-                            "cols": 6
-                        },
+                        "4. Foreign body": {},
                         "5. Simple cyst": {
-                            "cols": 6
+                            "cols": 4,
                         },
                         "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)": {
-                            "cols": 12,
+                            "cols": 8,
                             "default_value": true
                         },
-                        "7. VascularAbnormalities/Mondor Disease": {
-                            "cols": 6
+                        "7. VascularAbnormalities/Mondor Disease": {},
+                        "8. Postsurgical Fluid Collection": {},
+                        "9. Fat Necrosis": {
+                            "cols": 4
                         },
-                        "8. Postsurgical Fluid Collection": {
-                            "cols": 6
+                        "10. Lymph nodes – intramammary": {
+                            "cols": 4
                         },
-                        "9. Fat Necrosis": {},
-                        "10. Lymph nodes – intramammary": {},
-                        "11. Lymph nodes – axillary": {}
+                        "11. Lymph nodes – axillary": {
+                            "cols": 4
+                        }
                     }
                 },
                 "calcifications": {
