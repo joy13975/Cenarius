@@ -7,11 +7,24 @@ using System.Web.Mvc;
 using System.Web.Mvc.Ajax;
 using System.Web.Script.Serialization;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
+using Cenarius.Models;
+using System.Data.SqlClient;
+using System.Data;
 
 namespace Cenarius.Controllers
 {
+    [Filters.GlobalErrorHandler]
     public class HomeController : Controller
     {
+        public HomeController()
+        {
+        }
+
+        ~HomeController()
+        {
+        }
+
         public ActionResult Index()
         {
             var mvcName = typeof(Controller).Assembly.GetName();
@@ -29,10 +42,28 @@ namespace Cenarius.Controllers
             string formaPath = HttpContext.Server.MapPath(bcuPathHeader + "FormaDemo.json");
             string formaStr = System.IO.File.ReadAllText(formaPath);
             JObject forma = JObject.Parse(formaStr);
-            
+
             ViewData["Forma"] = forma.ToString(Newtonsoft.Json.Formatting.Indented);
 
             return View();
+        }
+
+        [HttpPost]
+        public ActionResult Submit(GenericJson obj)
+        {
+            Debug.WriteLine("Received submit request");
+
+            try
+            {
+                var modelData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(obj.PostData);
+
+            }
+            catch (Exception e)
+            {
+                return Json(new { success = false, msg = "Failed to commit data to DB:\n" + e.Message });
+            }
+
+            return Json(new { success = true, msg = "" });
         }
     }
 }

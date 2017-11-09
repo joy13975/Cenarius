@@ -90,18 +90,63 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Content\" />
-    <Folder Include="Libraries\" />
-    <Folder Include="Models\" />
-    <Folder Include="Scripts\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\BCUController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Filters\GlobalErrorHandlerAttribute.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Models\BCUModel.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BCUModel.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\BCUModel.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BCUModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\BCUModel.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BCUModel.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Models\breat_cancer_ultrasound.cs">
+      <DependentUpon>BCUModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\breat_cancer_ultrasound_benign_lesions_f16.cs">
+      <DependentUpon>BCUModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\breat_cancer_ultrasound_benign_lesions_f16_test_so_lv2_f17.cs">
+      <DependentUpon>BCUModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\breat_cancer_ultrasound_tumour_details_f43.cs">
+      <DependentUpon>BCUModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\GenericJson.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Models\BCUModel.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>BCUModel.edmx</DependentUpon>
+      <LastGenOutput>BCUModel.Context.cs</LastGenOutput>
+    </Content>
+    <Content Include="Models\BCUModel.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>BCUModel.edmx</DependentUpon>
+      <LastGenOutput>BCUModel.cs</LastGenOutput>
+    </Content>
+    <None Include="Scripts\jquery-1.10.2.intellisense.js" />
+    <Content Include="Scripts\jquery-1.10.2.js" />
+    <Content Include="Scripts\jquery-1.10.2.min.js" />
+    <None Include="Scripts\jquery.validate-vsdoc.js" />
+    <Content Include="Scripts\jquery.validate.js" />
+    <Content Include="Scripts\jquery.validate.min.js" />
+    <Content Include="Scripts\jquery.validate.unobtrusive.js" />
+    <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Views\Web.config" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
@@ -135,6 +180,19 @@
   <ItemGroup>
     <None Include="Libraries\fonts\glyphicons-halflings-regular.woff2" />
     <None Include="Libraries\CenariusForm\CenariusFormConfig.json" />
+    <EntityDeploy Include="Models\BCUModel.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>BCUModel.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <Content Include="Models\BCUModel.edmx.diagram">
+      <DependentUpon>BCUModel.edmx</DependentUpon>
+    </Content>
+    <Content Include="Views\BCU\Create.cshtml" />
+    <Content Include="Views\BCU\Delete.cshtml" />
+    <Content Include="Views\BCU\Details.cshtml" />
+    <Content Include="Views\BCU\Edit.cshtml" />
+    <Content Include="Views\BCU\Index.cshtml" />
+    <Content Include="Scripts\jquery-1.10.2.min.map" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

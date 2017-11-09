@@ -124,7 +124,7 @@ function main(global, $) {
 
         const contentDoms = DomMaker.genContent(headingText, formaDoms);
         const ctrlDoms = DomMaker.genCtrlPanel(myFG);
-        const summaryModalDoms = DomMaker.genSummaryModal();
+        const summaryModalDoms = DomMaker.genSummaryModal(myFG);
         const sqlModalDoms = DomMaker.genDebugModal();
 
         const finalDom =
@@ -557,7 +557,7 @@ class FormGenerator {
                 }, selectOptions);
                 $(selectDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
 
-                // The value of "true" is required - "undefined" only works sometimes
+                // The value of 'true' is required - 'undefined' only works sometimes
                 const $defaultOption = $($(selectDom).children()[defaultValue]);
                 $defaultOption.attr('selected', true);
                 $defaultOption.attr('defaultOption', '');
@@ -989,7 +989,7 @@ class DomMaker {
                         $(sc).attr('selected', true);
                 });
 
-                _.each(Object.keys(formGen.soMethods), (somKey)=>{
+                _.each(Object.keys(formGen.soMethods), (somKey) => {
                     const som = formGen.soMethods[somKey];
                     som.clearSOI();
                     som.genMinSOI();
@@ -1117,7 +1117,7 @@ class DomMaker {
         ]);
     };
 
-    static genSummaryModal() {
+    static genSummaryModal(formGen) {
         const submitBtn =
             $_$('button', {
                 type: 'button',
@@ -1125,10 +1125,43 @@ class DomMaker {
                 id: 'submit_btn',
                 'data-dismiss': 'modal'
             }, ['Submit']);
-        $(submitBtn).on('click', function() {
-            const formData = $('form[name=cenarius-form]').serializeArray();
-            const str = JSON.stringify(formData);
-            alert(str);
+        $(submitBtn).on('click', function(e) {
+            e.stopPropagation();
+
+            const loader = $_$('div', {
+                class: 'loader'
+            });
+            $('#bootstrap-overrides').append(loader);
+            
+            $.ajax({
+                url: '/home/submit',
+                type: 'POST',
+                data: JSON.stringify({
+                    PostData: JSON.stringify(formGen.data)
+                }),
+                processData: false,
+                dataType: 'json',
+                contentType: 'application/json',
+                timeout: 5000,
+                error: function(response, status) {
+                    if (status === 'timeout') {
+                        alert('Server timedout (5s)\nTry again in a minute');
+                    } else {
+                        alert('Error:\n' + response.error);
+                    }
+                },
+                success: function(response) {
+                    if (response.success === true) {
+                        showSnackbar('Submit OK!');
+                    } else {
+                        alert('Submit failed:\n' + response.msg);
+                    }
+                },
+                complete: function() {
+                    loader.remove();
+                }
+            });
+
         });
 
         const copyBtn =
@@ -1738,11 +1771,11 @@ function updateAllWCkbxs() {
 }
 
 function showSnackbar(text, timeout = 3000) {
-    let sb = document.createElement('div');
+    const sb = document.createElement('div');
     sb.setAttribute('class', 'snackbar show');
     sb.innerHTML = text;
 
-    let parent = $('#bootstrap-overrides');
+    const parent = $('#bootstrap-overrides');
     parent.append(sb);
 
     setTimeout(() => {
@@ -1768,8 +1801,8 @@ function mapJoin(obj, func, sep = '') {
 
 function isElement(o) {
     return (
-        typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
-        o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string"
+        typeof HTMLElement === 'object' ? o instanceof HTMLElement : //DOM2
+        o && typeof o === 'object' && o !== null && o.nodeType === 1 && typeof o.nodeName === 'string'
     );
 }
 

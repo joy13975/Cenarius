@@ -197,15 +197,6 @@ button.debug-btn{
 	font-size: 16px;
 }
 
-#bootstrap-overrides .tight {
-	padding: 0 !important;
-	margin: 0 !important;
-}
-
-#bootstrap-overrides .force-right {
-	float: right !important;
-}
-
 .snackbar {
     visibility: hidden; /* Hidden by default. Visible on click */
     min-width: 250px; /* Set a default minimum width */
@@ -219,6 +210,8 @@ button.debug-btn{
     z-index: 2000; /* Add a z-index if needed */
     left: 50%; /* Center the snackbar */
     top: 30px; /* 30px from the bottom */
+    max-width: 600px;
+    white-space: pre-wrap;
 }
 
 /* Show the snackbar when clicking on a button (class added with JavaScript) */
@@ -254,4 +247,22 @@ However, delay the fade out process for 2.5 seconds */
 
 .checkbox-displayer[readonly] {
 	pointer-events:none
+}
+
+.loader {
+	position: absolute;
+	top: calc(50vh - 60px);
+	left: calc(50vw - 60px);
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    z-index: 2000;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
