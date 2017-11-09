@@ -141,6 +141,7 @@ function main(global, $) {
 class FormGenerator {
     constructor(forma, formi) {
         this.fieldIDCounter = 0;
+        this.subobjIDCounter = 0;
         this.forma = forma; // Form + schema data
         this.formi = formi; // Information about the forma
         this.data = {};
@@ -329,7 +330,7 @@ class FormGenerator {
         const fgSelf = this;
 
         // Increase field ID to avoid duplicate SO names
-        const fieldID = this.getNextID(key);
+        const fieldID = this.getNextSubobjID(key);
         fNode._fieldID = fieldID;
 
         const soDNode = {
@@ -501,7 +502,7 @@ class FormGenerator {
         const fgSelf = this;
         console.log('genEnum(' + key + ')');
 
-        const fieldID = this.getNextID(key);
+        const fieldID = this.getNextFieldID(key);
         fNode._fieldID = fieldID;
 
         let enumData;
@@ -659,7 +660,7 @@ class FormGenerator {
         console.log('genField(' + type + ', ' + key + ', \"' + name + '\")');
 
         const fieldID = isPositiveInt(key) ?
-            this.getNextID(name) : this.getNextID(key);
+            this.getNextFieldID(name) : this.getNextFieldID(key);
         fNode._fieldID = fieldID;
 
         // Complex enums simply fill parent dNode._value
@@ -928,9 +929,15 @@ class FormGenerator {
         // console.log('setComplexEnumMode(' + this.inComplexEnum + ')');
     }
 
-    getNextID(key) {
+    getNextFieldID(key) {
         const id = identifierize(key + '_f' + this.fieldIDCounter);
         this.fieldIDCounter++;
+        return id;
+    }
+
+    getNextSubobjID(key) {
+        const id = identifierize(key + '_s' + this.subobjIDCounter);
+        this.subobjIDCounter++;
         return id;
     }
 }
