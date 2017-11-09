@@ -66,6 +66,17 @@ const SQLTypeTable = Object.freeze({
     enum: 'int'
 })
 
+const SummaryStyleTable = Object.freeze({
+    NoTitle: 'no_title',
+    Exclude: 'exclude',
+    BreakBefore: 'break_before',
+    NoBreakBefore: 'no_break_before',
+    BreakAfter: 'break_after',
+    NoBreakAfter: 'no_break_after',
+    BreakAftertitle: 'break_after_title',
+    NoBreakAfterTitle: 'no_break_after_title',
+})
+
 const NoneIdentifierCharRegexStr = Object.freeze(/[^a-zA-Z\d\u4e00-\u9eff]+/);
 const formCtrlUpdateEvents = Object.freeze('keyup change focus');
 
@@ -174,17 +185,17 @@ class FormGenerator {
         const fNext =
             typeof(fNode[key]) !== 'object' ?
             (fNode[key] = {
-                _title: fNode[key],
-                _type: inferredType
+                title: fNode[key],
+                type: inferredType
             }) :
             fNode[key];
 
         // Extract flags
         const name =
-            fNext.hasOwnProperty('_title') ? fNext._title :
+            fNext.hasOwnProperty('title') ? fNext.title :
             getNameFromKey(key);
 
-        fNext._type = inferredType;
+        fNext.type = inferredType;
 
         // console.log('key: ' + key + ', name: ' + name + ', inferredType: ' + inferredType);
         // console.log('defaultChildrenType: ' + this.currentDefaultChildrenType);
@@ -192,15 +203,15 @@ class FormGenerator {
         // console.log(JSON.stringify(fNext, null, 2));
 
         const children =
-            fNext.hasOwnProperty('_properties') ? fNext._properties :
-            fNext.hasOwnProperty('_enum') ? fNext._enum : {};
+            fNext.hasOwnProperty('properties') ? fNext.properties :
+            fNext.hasOwnProperty('enum') ? fNext.enum : {};
 
         const defaultChildrenType =
-            fNext.hasOwnProperty('_default_children_type') ? fNext._default_children_type :
+            fNext.hasOwnProperty('default_children_type') ? fNext.default_children_type :
             (inferredType === 'enum' ? 'boolean' : 'string');
 
         const defaultNCols =
-            fNext.hasOwnProperty('_default_cols') ? fNext._default_cols :
+            fNext.hasOwnProperty('default_cols') ? fNext.default_cols :
             '';
 
         function sandwich(_dNode = dNode, noDescend = false) {
@@ -297,30 +308,29 @@ class FormGenerator {
         const fieldID = key + '_grouping';
 
         const headingDoms = [name];
-        if (fNode.hasOwnProperty('_help_text'))
+        if (fNode.hasOwnProperty('help_text'))
             headingDoms.push($_$('div', {
                 class: 'alert alert-info'
-            }, [fNode._help_text]))
+            }, [fNode.help_text]))
 
         const sandwichDoms = sandwich(dNode);
         const bodyDoms =
-            fNode._grouping === 'either' ?
+            fNode.grouping === 'either' ?
             [this.genEitherGroup(fieldID, sandwichDoms)] :
             sandwichDoms;
 
         const nCols =
-            fNode.hasOwnProperty('_cols') ?
-            fNode._cols : config.nCols.object;
+            fNode.hasOwnProperty('cols') ?
+            fNode.cols : config.nCols.object;
 
         return DomMaker.genPanel(
             headingDoms,
             bodyDoms,
             nCols, {
                 name: 'cenarius-object-group',
-                excludeFromSummary: fNode._exclude_from_summary,
-                summaryBreakStyle: fNode._summary_break_style
+                summaryStyle: fNode.summary_style || ''
             }, {
-                class: fNode._html_class
+                class: fNode.html_class
             }
         );
     };
@@ -331,11 +341,11 @@ class FormGenerator {
 
         // Increase field ID to avoid duplicate SO names
         const fieldID = this.getNextSubobjID(key);
-        fNode._fieldID = fieldID;
+        fNode.fieldID = fieldID;
 
         const soDNode = {
-            _type: fNode._type,
-            _instances: {}
+            type: fNode.type,
+            instances: {}
         };
         dNode[fieldID] = soDNode;
 
@@ -353,7 +363,7 @@ class FormGenerator {
 
         const fidBeforeSandwich = this.fieldIDCounter;
         const makeSOI = () => {
-            const keys = _.map(Object.keys(soDNode._instances), (k) => {
+            const keys = _.map(Object.keys(soDNode.instances), (k) => {
                 return Number(k);
             });
             const idx = String(
@@ -364,7 +374,7 @@ class FormGenerator {
             );
             const soID = fieldID + '-so-instance-' + idx;
 
-            soDNode._instances[idx] = {};
+            soDNode.instances[idx] = {};
 
             fgSelf.fieldID = fidBeforeSandwich;
             $(soTabHeaderDom).append(
@@ -374,7 +384,7 @@ class FormGenerator {
             $(soTabContentDom).append(
                 DomMaker.genTabPane(
                     soID,
-                    sandwich(soDNode._instances[idx])));
+                    sandwich(soDNode.instances[idx])));
 
             $(soTabHeaderDom).children().removeClass('active')
             $(soTabHeaderDom).children(':last-child').addClass('active');
@@ -423,7 +433,7 @@ class FormGenerator {
 
             // Remove UI and data
             const activeIdx = $(activeHeader).text().replace('#', '');
-            delete soDNode._instances[activeIdx];
+            delete soDNode.instances[activeIdx];
             activeHeader.remove();
             activeContent.remove();
 
@@ -475,26 +485,25 @@ class FormGenerator {
             }, [addDelBtns])
         ];
 
-        if (fNode.hasOwnProperty('_help_text')) {
+        if (fNode.hasOwnProperty('help_text')) {
             headingDoms.push(
                 $_$('div', {
                     class: 'alert alert-info col-md-12',
                     style: ''
-                }, [fNode._help_text]));
+                }, [fNode.help_text]));
         }
 
         const nCols =
-            fNode.hasOwnProperty('_cols') ?
-            fNode._cols : config.nCols.subobject;
+            fNode.hasOwnProperty('cols') ?
+            fNode.cols : config.nCols.subobject;
 
         return DomMaker.genPanel(
             headingDoms, [soTabHeaderDom, soTabContentDom],
             nCols, {
                 name: 'cenarius-subobject-group',
-                excludeFromSummary: fNode._exclude_from_summary,
-                summaryBreakStyle: fNode._summary_break_style
+                summaryStyle: fNode.summary_style || ''
             }, {
-                class: fNode._html_class
+                class: fNode.html_class
             }, panelHeadingFunc);
     };
 
@@ -503,37 +512,37 @@ class FormGenerator {
         console.log('genEnum(' + key + ')');
 
         const fieldID = this.getNextFieldID(key);
-        fNode._fieldID = fieldID;
+        fNode.fieldID = fieldID;
 
         let enumData;
         let simpleEnum = true;
 
         // Determine whether enum is a complex one
-        enumData = fNode._enum;
+        enumData = fNode.enum;
         _.each(enumData, (item) => {
             const requiresInput =
                 typeof item === 'object' &&
-                item.hasOwnProperty('_require_input');
+                item.hasOwnProperty('require_input');
             simpleEnum &= !requiresInput;
             if (requiresInput) {
-                console.log('enum is complex because item ' + item._title + ' requires input');
+                console.log('enum is complex because item ' + item.title + ' requires input');
                 // console.log(item);
             }
         });
 
         const extraHtmlClass =
-            fNode.hasOwnProperty('_html_class') ?
-            fNode._html_class : '';
-        const nCols = fNode.hasOwnProperty('_cols') ? fNode._cols :
+            fNode.hasOwnProperty('html_class') ?
+            fNode.html_class : '';
+        const nCols = fNode.hasOwnProperty('cols') ? fNode.cols :
             this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
             simpleEnum ? config.nCols.enum :
             config.nCols.complexEnum;
 
         const needCheckbox =
-            this.inComplexEnum || (fNode._force_checkbox === true);
+            this.inComplexEnum || (fNode.force_checkbox === true);
 
         // Default value
-        const defaultValue = fNode.hasOwnProperty('_default_value') ? fNode._default_value : 0;
+        const defaultValue = fNode.hasOwnProperty('default_value') ? fNode.default_value : 0;
 
         if (simpleEnum) {
             const selectOptions = [];
@@ -548,7 +557,7 @@ class FormGenerator {
             });
             _.each(Object.keys(enumData), (enumKey) => {
                 const item = enumData[enumKey];
-                const optionName = typeof item === 'object' ? item._title : String(item);
+                const optionName = typeof item === 'object' ? item.title : String(item);
 
                 selectOptions.push($_$('option', {}, [optionName]));
                 fgSelf.enumOptions.push({
@@ -568,7 +577,7 @@ class FormGenerator {
 
             // Create data node for containing the result string
             dNode[fieldID] = {
-                _type: 'string'
+                type: 'string'
             };
 
             // The value of 'true' is required - 'undefined' only works sometimes
@@ -606,15 +615,13 @@ class FormGenerator {
 
             // Initial value is set by trigger in domReady()
             $(selectDom).on('change', function() {
-                dNode[fieldID]._value = $(this).val();
+                dNode[fieldID].value = $(this).val();
             });
 
             return $_$('div', {
                 name: 'cenarius-input-group',
                 class: 'col-md-' + nCols + ' ' + extraHtmlClass,
-                excludeFromSummary: fNode._exclude_from_summary,
-                summaryBreakStyle: fNode._summary_break_style,
-                titleInSummary: fNode._title_in_summary
+                summaryStyle: fNode.summary_style || ''
             }, [
                 $_$('div', {
                     class: 'input-group'
@@ -628,7 +635,7 @@ class FormGenerator {
                 });
 
             const enumDNode = (dNode[fieldID] = {
-                _type: 'string'
+                type: 'string'
             });
 
             // Allow new values because some fields require input
@@ -644,9 +651,7 @@ class FormGenerator {
                     nCols, {
                         name: 'cenarius-single-choice-group',
                         id: fieldID,
-                        excludeFromSummary: fNode._exclude_from_summary,
-                        summaryBreakStyle: fNode._summary_break_style,
-                        titleInSummary: fNode._title_in_summary
+                        summaryStyle: fNode.summary_style || ''
                     }, {
                         class: extraHtmlClass
                     }
@@ -661,11 +666,11 @@ class FormGenerator {
 
         const fieldID = isPositiveInt(key) ?
             this.getNextFieldID(name) : this.getNextFieldID(key);
-        fNode._fieldID = fieldID;
+        fNode.fieldID = fieldID;
 
-        // Complex enums simply fill parent dNode._value
+        // Complex enums simply fill parent dNode.value
         const myDNode = this.inComplexEnum ? dNode : {
-            _type: fNode._type
+            type: fNode.type
         };
 
         // Type related flags
@@ -675,8 +680,8 @@ class FormGenerator {
 
         // Value related flags
         let defaultValue = '';
-        if (fNode.hasOwnProperty('_default_value')) {
-            defaultValue = fNode._default_value;
+        if (fNode.hasOwnProperty('default_value')) {
+            defaultValue = fNode.default_value;
         } else {
             if (htmlInputType === 'number') {
                 defaultValue = '0';
@@ -687,33 +692,33 @@ class FormGenerator {
 
         // Number flags
         const numStep = type === 'integer' ? 1 :
-            (fNode.hasOwnProperty('_number_step') ?
-                fNode._number_step : config.defaultNumberStep);
-        const numMin = fNode.hasOwnProperty('_min') ?
-            fNode._min : '';
-        const numMax = fNode.hasOwnProperty('_max') ?
-            fNode._max : '';
+            (fNode.hasOwnProperty('number_step') ?
+                fNode.number_step : config.defaultNumberStep);
+        const numMin = fNode.hasOwnProperty('min') ?
+            fNode.min : '';
+        const numMax = fNode.hasOwnProperty('max') ?
+            fNode.max : '';
 
         // String flags
         const maxStringLength =
-            isInt(fNode._max_string_length) ?
-            fNode._max_string_length : config.maxLength[type];
+            isInt(fNode.max_string_length) ?
+            fNode.max_string_length : config.maxLength[type];
 
         const textAlignment = isTextArea ?
             '' : 'text-align: right; ';
         const textAreaRows = isTextArea ?
-            (fNode.hasOwnProperty('_textarea_rows') ?
-                fNode._textarea_rows : '5') : '';
+            (fNode.hasOwnProperty('textarea_rows') ?
+                fNode.textarea_rows : '5') : '';
 
         const fieldStyle = textAlignment;
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
         const needCheckbox =
-            this.inComplexEnum || fNode._force_checkbox === true;
+            this.inComplexEnum || fNode.force_checkbox === true;
         const endingSpan = (() => {
-            if (fNode.hasOwnProperty('_ending')) {
+            if (fNode.hasOwnProperty('ending')) {
                 return $_$('span', {
                     class: 'input-group-addon cenarius-input-tag'
-                }, [fNode._ending]);
+                }, [fNode.ending]);
             } else if (type === 'big_string') {
                 return $_$('span', {
                     class: 'input-group-addon cenarius-input-tag',
@@ -734,7 +739,7 @@ class FormGenerator {
                             return $_$('div', {
                                 class: 'col-md-offset-' + nCols + ' ' + extraHtmlClass,
                                 style: 'height: 46px !important',
-                                excludeFromSummary: true
+                                summaryStyle: 'exclude'
                             });
                         }
                     case 'label':
@@ -765,9 +770,9 @@ class FormGenerator {
                             $(ckbxInputDom).on('change', function() {
                                 if (freezeInComplexEnum) {
                                     if ($(this).is(':checked'))
-                                        myDNode._value = name;
+                                        myDNode.value = name;
                                 } else {
-                                    myDNode._value = $(this).is(':checked');
+                                    myDNode.value = $(this).is(':checked');
                                 }
                             });
 
@@ -830,7 +835,7 @@ class FormGenerator {
                                     if ($inputDomSelf.val().length == 0)
                                         return;
                                 }
-                                myDNode._value = $inputDomSelf.val();
+                                myDNode.value = $inputDomSelf.val();
                             });
 
                             const regularFieldDoms =
@@ -876,22 +881,20 @@ class FormGenerator {
                 }
             })();
 
-        const nCols = fNode.hasOwnProperty('_cols') ? fNode._cols :
+        const nCols = fNode.hasOwnProperty('cols') ? fNode.cols :
             this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
             config.nCols.input;
-        const extraHtmlClass = fNode.hasOwnProperty('_html_class') ?
-            fNode._html_class : '';
+        const extraHtmlClass = fNode.hasOwnProperty('html_class') ?
+            fNode.html_class : '';
 
-        // Complex enums simply fill parent dNode._value
+        // Complex enums simply fill parent dNode.value
         if (!this.inComplexEnum)
             dNode[fieldID] = myDNode;
 
         return $_$('div', {
             name: 'cenarius-input-group',
             class: 'col-md-' + nCols + ' ' + extraHtmlClass,
-            excludeFromSummary: fNode._exclude_from_summary,
-            summaryBreakStyle: fNode._summary_break_style,
-            titleInSummary: fNode._title_in_summary
+            summaryStyle: fNode.summary_style || '',
         }, [
             $_$('div', {
                     class: 'input-group',
@@ -969,12 +972,12 @@ class SQLSchemaGenerator {
         const type = inferFNodeType(next);
         const parentTableName = dest.tableName;
 
-        // console.log('sql gen: name=' + next._fieldID + ', type=' + type);
+        // console.log('sql gen: name=' + next.fieldID + ', type=' + type);
         switch (type) {
             case 'subobject':
                 {
                     const soTableName = parentTableName +
-                        '.' + identifierize(next._fieldID);
+                        '.' + identifierize(next.fieldID);
                     const soTable = {
                         tableName: soTableName,
                         fields: [
@@ -991,8 +994,8 @@ class SQLSchemaGenerator {
                 }
             case 'object':
                 {
-                    _.each(Object.keys(next._properties), function(childKey) {
-                        sqlGenSelf.visitFormaNode(next._properties, childKey, dest);
+                    _.each(Object.keys(next.properties), function(childKey) {
+                        sqlGenSelf.visitFormaNode(next.properties, childKey, dest);
                     })
                     break;
                 }
@@ -1005,12 +1008,12 @@ class SQLSchemaGenerator {
             default:
                 {
                     const newCol = {
-                        name: next._fieldID,
-                        sqlType: SQLTypeTable[next._type],
-                        _type: next._type
+                        name: next.fieldID,
+                        sqlType: SQLTypeTable[next.type],
+                        type: next.type
                     }
 
-                    if (next._type === 'enum')
+                    if (next.type === 'enum')
                         newCol.foreignRef = this.enumOptionsTableName;
 
                     dest.fields.push(newCol);
@@ -1529,29 +1532,44 @@ class SummaryGenerator {
         const name = this.getPlainText(panelHeading);
         const body = $(parent).children('.panel').children('.panel-body');
 
-        let str = name + '<br><br>';
+        const ssStr = $(parent).attr('summaryStyle') || '';
+        const noTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoTitle);
+        const noBreakAfterTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoBreakAfterTitle);
+        const noBreakAfter = ssStr.hasSummaryStyle(SummaryStyleTable.NoBreakAfter);
+
+        let str = noTitle ? '' :
+            (name + (noBreakAfterTitle ? '... ' : '<br>'));
 
         const subdoms = $(body).children();
         for (let i = 0; i < subdoms.length; i++) {
             str += sgSelf.visitDomNode(subdoms[i]);
         }
-        str += '<br>End of ' + name + '<br><br>';
+        str += noBreakAfter ? ' ' : '<br>';
 
         return str;
     };
 
     genSubobjectGroup(parent) {
         const sgSelf = this;
-        const panelHeading = $(parent).children('.panel').children('.panel-heading');
+        const panelHeading = $(parent).children('.panel').children('.panel-heading')
+            .children(':first-child');
         const name = this.getPlainText(panelHeading);
         const tabHeaders = $(parent).children('.panel')
             .children('.panel-body').children('ul[name=subobject-tabheaders]');
         const tabContent = $(parent).children('.panel')
             .children('.panel-body').children('div[name=subobject-tabcontent]');
 
-        let str = name + '(#)<br><br>';
+        const ssStr = $(parent).attr('summaryStyle') || '';
+        const noTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoTitle);
+        const noBreakAfterTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoBreakAfterTitle);
+        const noBreakAfter = ssStr.hasSummaryStyle(SummaryStyleTable.NoBreakAfter);
+
+        let str = (noTitle ? '' : name) +
+            '(#)' +
+            (noBreakAfterTitle ? '... ' : '<br>');
 
         str += mapJoin(tabHeaders.children(), function(tabHeader) {
+            console.log('child of: ' + name)
             const tabName = sgSelf.getPlainText($(tabHeader));
             let tabHref = $(tabHeader).children('a')[0].getAttribute('href');
             const tabID = tabHref.substring(tabHref.lastIndexOf('#'));
@@ -1561,10 +1579,35 @@ class SummaryGenerator {
                 return sgSelf.visitDomNode(tabBodyElt);
             });
 
-
             return tabName + ':<br>' + tabBodyStr + '<br><br>';
         }, '<br>');
-        str += 'End of ' + name + '<br><br>';
+
+        str += noBreakAfter ? ' ' : '<br>';
+
+        return str;
+    };
+
+    genEitherGroup(parent) {
+        const sgSelf = this;
+        const activeTab = $(parent).children('div[name=cenarius-either-group-tabcontent]')
+            .children('.tab-pane.active')
+        const activeTabRef = $(parent).children('ul[name=cenarius-either-group-tabheaders]')
+            .children('li.active');
+        const activeTabName = this.getPlainText(activeTabRef);
+
+        const ssStr = $(parent).attr('summaryStyle') || '';
+        const noTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoTitle);
+        const noBreakAfterTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoBreakAfterTitle);
+        const noBreakAfter = ssStr.hasSummaryStyle(SummaryStyleTable.NoBreakAfter);
+
+        let str = (noTitle ? activeTabName : '') +
+            (noBreakAfterTitle ? '' : '<Br>');
+
+        const tabContent = $(activeTab).children();
+        for (let i = 0; i < tabContent.length; i++) {
+            str += sgSelf.visitDomNode(tabContent[i]);
+        }
+        str += (noBreakAfter ? '' : '<br>');
 
         return str;
     };
@@ -1574,10 +1617,14 @@ class SummaryGenerator {
         const panelHeading = $(parent).children('.panel').children('.panel-heading');
         const ckbx = $(parent).children('.panel').children('.panel-body')
             .find('div[name=cenarius-input-group] > div.input-group > input[type=checkbox]:checked');
-        let includeTitle = $(parent).attr('titleInSummary');
-        if (!isSet(includeTitle))
-            includeTitle = true;
-        const title = includeTitle ? this.getPlainText(panelHeading) : '';
+
+        const ssStr = $(parent).attr('summaryStyle') || '';
+        const noTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoTitle);
+        const breakBefore = ssStr.hasSummaryStyle(SummaryStyleTable.BreakBefore);
+        const breakAfterTitle = ssStr.hasSummaryStyle(SummaryStyleTable.BreakAfterTitle);
+        const breakAfter = ssStr.hasSummaryStyle(SummaryStyleTable.BreakAfter);
+
+        const title = noTitle ? '' : (this.getPlainText(panelHeading) + ': ');
 
         let val = '';
         if (ckbx.length == 0) {
@@ -1594,27 +1641,11 @@ class SummaryGenerator {
             }
         }
 
-        return (includeTitle ? (title + ': ') : '') + val + '. ';
-    };
-
-    genEitherGroup(parent) {
-        const sgSelf = this;
-        const activeTab = $(parent).children('div[name=cenarius-either-group-tabcontent]')
-            .children('.tab-pane.active')
-        const activeTabRef = $(parent).children('ul[name=cenarius-either-group-tabheaders]')
-            .children('li.active');
-        const activeTabName = this.getPlainText(activeTabRef);
-
-
-        let str = activeTabName + ' {<br>';
-
-        const tabContent = $(activeTab).children();
-        for (let i = 0; i < tabContent.length; i++) {
-            str += sgSelf.visitDomNode(tabContent[i]);
-        }
-        str += '<br>eg}';
-
-        return str;
+        return (breakBefore ? '<br>' : '') +
+            title +
+            (breakAfterTitle ? '<br>' : '') +
+            val + '. ' +
+            (breakAfter ? '<br>' : '');
     };
 
     genInputGroup(parent) {
@@ -1626,9 +1657,12 @@ class SummaryGenerator {
         const $cbkxWrapper = $($body.children('.cenarius-checkbox-wrapper'));
         const $alertElt = $($body.children('div.alert'));
         const $textareaElt = $($body.children('textarea'));
-        let includeTitle = $(parent).attr('titleInSummary');
-        if (!isSet(includeTitle))
-            includeTitle = true;
+
+        const ssStr = $(parent).attr('summaryStyle') || '';
+        const noTitle = ssStr.hasSummaryStyle(SummaryStyleTable.NoTitle);
+        const breakBefore = ssStr.hasSummaryStyle(SummaryStyleTable.BreakBefore);
+        const breakAfterTitle = ssStr.hasSummaryStyle(SummaryStyleTable.BreakAfterTitle);
+        const breakAfter = ssStr.hasSummaryStyle(SummaryStyleTable.BreakAfter);
 
         const eltExists = (selRes) => {
             return selRes.length > 0;
@@ -1659,6 +1693,8 @@ class SummaryGenerator {
                     title = $body.children('.cenarius-ckbx-lbl').text();
                     val = 'yes';
                 }
+            } else {
+                return '';
             }
         } else if (eltExists($textareaElt)) {
             id = $ckbxElt.attr('id');
@@ -1677,19 +1713,28 @@ class SummaryGenerator {
         if (ending.length > 0)
             ending = ' ' + ending;
 
-        return (includeTitle ? (title + ': ') : '') + val + ending + (addPeriod ? '. ' : '');
+        return (breakBefore ? '<br>' : '') +
+            (noTitle ? '' : (title + ': ')) +
+            (breakAfterTitle ? '<br>' : '') +
+            val +
+            ending +
+            (addPeriod ? '. ' : '') +
+            (breakAfter ? '<br>' : '');
     };
 
     visitDomNode(dom) {
         const $dom = $(dom);
-        const skip = $dom.attr('excludeFromSummary') === 'true';
 
-        const domName = $dom.attr('name');
-        const breakStyle = $dom.attr('summaryBreakStyle');
-        const brBefore = breakStyle === 'before' ? '<br>' : '';
-        const brAfter = breakStyle === 'after' ? '<br>' : '';
+        const ssStr = $dom.attr('summaryStyle') || '';
+        const exclude = ssStr.hasSummaryStyle(SummaryStyleTable.Exclude);
+        const brBefore = ssStr.hasSummaryStyle(SummaryStyleTable.BreakBefore) ?
+            '<br>' : '';
+        const brAfter = ssStr.hasSummaryStyle(SummaryStyleTable.BreakAfter) ?
+            '<br>' : '';
 
         let res = '';
+
+        const domName = $dom.attr('name');
         switch (domName) {
             case 'cenarius-object-group':
                 {
@@ -1723,7 +1768,7 @@ class SummaryGenerator {
                 }
         }
 
-        if (isSet(skip) && skip)
+        if (exclude)
             return '';
         else
             return res;
@@ -1752,16 +1797,16 @@ function isRawType(fNodeType) {
 function inferFNodeType(fNode, defaultType = 'string') {
     const objType = typeof fNode;
     if (objType === 'object') {
-        if (fNode.hasOwnProperty('_type'))
-            return fNode._type;
+        if (fNode.hasOwnProperty('type'))
+            return fNode.type;
 
-        if (fNode.hasOwnProperty('_require_input'))
-            return fNode._require_input;
+        if (fNode.hasOwnProperty('require_input'))
+            return fNode.require_input;
 
-        if (fNode.hasOwnProperty('_enum'))
+        if (fNode.hasOwnProperty('enum'))
             return 'enum';
 
-        if (fNode.hasOwnProperty('_properties'))
+        if (fNode.hasOwnProperty('properties'))
             return 'object';
     }
 
@@ -1901,6 +1946,10 @@ function identifierize(str) {
 String.prototype.replaceAll = function(search, replacement) {
     return this.replace(new RegExp(search, 'gu'), replacement);
 };
+
+String.prototype.hasSummaryStyle = function(styleToken) {
+    return this.toLowerCase().split(' ').includes(styleToken);
+}
 
 Array.prototype.last = function() {
     return this[this.length - 1];

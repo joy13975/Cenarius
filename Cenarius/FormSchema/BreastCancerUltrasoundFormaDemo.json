@@ -4,83 +4,83 @@
     },
     "forma": {
         "基本資料": {
-            "_exclude_from_summary": true,
-            "_properties": {
+            "summary_style": "exclude",
+            "properties": {
                 "受檢者": {
-                    "_default_cols": 4,
-                    "_properties": {
+                    "default_cols": 4,
+                    "properties": {
                         "病歷號": {
-                            "_default_value": "A1337"
+                            "default_value": "A1337"
                         },
                         "姓名": {
-                            "_default_value": "王小明"
+                            "default_value": "王小明"
                         },
                         "今日檢查次數": {
-                            "_ending": "次",
-                            "_type": "integer",
-                            "_min": 0,
-                            "_default_value": 1
+                            "ending": "次",
+                            "type": "integer",
+                            "min": 0,
+                            "default_value": 1
                         }
                     }
                 },
                 "本次檢查": {
-                    "_default_cols": 4,
-                    "_properties": {
+                    "default_cols": 4,
+                    "properties": {
                         "日期": {
-                            "_type": "date"
+                            "type": "date"
                         },
                         "編號 ": {
-                            "_default_value": "B12938"
+                            "default_value": "B12938"
                         },
                         "次數": {
-                            "_ending": "次",
-                            "_type": "integer",
-                            "_min": 0,
-                            "_default_value": 1
+                            "ending": "次",
+                            "type": "integer",
+                            "min": 0,
+                            "default_value": 1
                         },
                         "操作者編號": {
-                            "_default_value": "C000301"
+                            "default_value": "C000301"
                         },
                         "判讀者編號": {
-                            "_default_value": "D000010"
+                            "default_value": "D000010"
                         },
                         "檢查機器編號": {
-                            "_default_value": "N/A"
+                            "default_value": "N/A"
                         },
                         "US Examination Mode": {
-                            "_cols": 8,
-                            "_enum": [
+                            "cols": 8,
+                            "enum": [
                                 "Screening US",
                                 "Diagnostic US",
                                 "Both"
                             ],
-                            "_default_value": 1
+                            "default_value": 1
                         }
                     }
                 }
             }
         },
         "檢查適應症": {
-            "_default_children_type": "boolean",
-            "_exclude_from_summary": true,
-            "_properties": {
+            "default_children_type": "boolean",
+            "summary_style": "exclude",
+            "properties": {
                 "00. Asymptomatic Screening": {
-                    "_cols": 12,
-                    "_default_value": true
+                    "cols": 12,
+                    "default_value": true
                 },
                 "10. Exam for symptomatic patient": {
-                    "_cols": 12,
-                    "_default_cols": 4,
-                    "_default_children_type": "boolean",
-                    "_properties": {
+                    "cols": 12,
+                    "default_cols": 4,
+                    "default_children_type": "boolean",
+                    "properties": {
                         "11. Pain": {},
                         "12. Palpable mass": {},
                         "13. Discharge": {}
                     }
                 },
                 "20. Screening Mammographic Category (0-5)": {
-                    "_cols": 12,
-                    "_enum": [
+                    "cols": 12,
+                    "enum": [
                         0,
                         1,
                         2,
@@ -90,37 +90,37 @@
                     ]
                 },
                 "Benign Lesion": {
-                    "_type": "subobject",
-                    "_default_children_type": "boolean",
-                    "_default_cols": 4,
-                    "_properties": {
+                    "type": "subobject",
+                    "default_children_type": "boolean",
+                    "default_cols": 4,
+                    "properties": {
                         "test_so_lv2": {
-                            "_type": "subobject",
-                            "_properties": {
+                            "type": "subobject",
+                            "properties": {
                                 "fill_me": {
-                                    "_default_value": "よかった"
+                                    "default_value": "よかった"
                                 },
                                 "fill_me2": {
-                                    "_type": "float",
-                                    "_default_value": 1337.9
+                                    "type": "float",
+                                    "default_value": 1337.9
                                 }
                             }
                         },
                         "location": {
-                            "_default_children_type": "boolean",
-                            "_cols": 8,
-                            "_grouping": "either",
-                            "_properties": {
+                            "default_children_type": "boolean",
+                            "cols": 8,
+                            "grouping": "either",
+                            "properties": {
                                 "general": {
-                                    "_properties": {
+                                    "properties": {
                                         "side": {
-                                            "_enum": [
+                                            "enum": [
                                                 "Right",
                                                 "Left"
                                             ]
                                         },
                                         "quarter": {
-                                            "_enum": [
+                                            "enum": [
                                                 "UOQ",
                                                 "UIQ",
                                                 "LOQ",
@@ -130,15 +130,15 @@
                                     }
                                 },
                                 "specific": {
-                                    "_properties": {
+                                    "properties": {
                                         "angle": {
-                                            "_type": "float",
-                                            "_ending": "o'clock",
-                                            "_number_step": 0.1
+                                            "type": "float",
+                                            "ending": "o'clock",
+                                            "number_step": 0.1
                                         },
                                         "distance": {
-                                            "_type": "float",
-                                            "_ending": "cm"
+                                            "type": "float",
+                                            "ending": "cm"
                                         }
                                     }
                                 }
@@ -146,70 +146,70 @@
                         },
                         "21. Mass": {},
                         "22. Calcification": {
-                            "_default_value": true
+                            "default_value": true
                         },
                         "23. Asymmetry": {},
                         "24. Architecture distortion": {},
                         "25. Others": {
-                            "_type": "string",
-                            "_force_checkbox": true,
-                            "_cols": 12
+                            "type": "string",
+                            "force_checkbox": true,
+                            "cols": 12
                         },
                         "26. Density of breast": {
-                            "_cols": 6,
-                            "_force_checkbox": true,
-                            "_enum": [
+                            "cols": 6,
+                            "force_checkbox": true,
+                            "enum": [
                                 "A",
                                 "B",
                                 "C",
                                 "D"
                             ],
-                            "_default_value": 2
+                            "default_value": 2
                         },
                         "27. Recomendation": {
-                            "_type": "string",
-                            "_force_checkbox": true,
-                            "_cols": 6
+                            "type": "string",
+                            "force_checkbox": true,
+                            "cols": 6
                         }
                     }
                 },
                 "30. F/U for previous noted benign lesions": {
-                    "_cols": 6,
-                    "_default_cols": 12,
-                    "_default_children_type": "boolean",
-                    "_properties": {
+                    "cols": 6,
+                    "default_cols": 12,
+                    "default_children_type": "boolean",
+                    "properties": {
                         "31. Fibroadenoma": {
-                            "_default_value": true
+                            "default_value": true
                         },
                         "32. Fibrocystic change": {},
                         "33. Cyst": {},
                         "34. Other": {
-                            "_require_input": "string",
-                            "_force_checkbox": true,
-                            "_default_value": "not sure"
+                            "require_input": "string",
+                            "force_checkbox": true,
+                            "default_value": "not sure"
                         }
                     }
                 },
                 "40. Surgically altered breast": {
-                    "_cols": 6,
-                    "_default_cols": 12,
-                    "_default_children_type": "boolean",
-                    "_properties": {
+                    "cols": 6,
+                    "default_cols": 12,
+                    "default_children_type": "boolean",
+                    "properties": {
                         "41. S/P biopsy/wide excision/BCS": {},
                         "42. S/P breast augmentation/Reconstruction": {}
                     }
                 },
                 "50. Other reasons for breast sono examination": {
-                    "_cols": 6
+                    "cols": 6
                 }
             }
         },
         "interpretation": {
-            "_exclude_from_summary": true,
-            "_properties": {
+            "summary_style": "exclude",
+            "properties": {
                 "US Category 分類": {
-                    "_cols": 4,
-                    "_enum": [
+                    "cols": 4,
+                    "enum": [
                         "0. Category 0",
                         "1. Category 1",
                         "2. Category 2",
@@ -222,8 +222,8 @@
                     ]
                 },
                 "Combined Mammogram And US Final Category": {
-                    "_cols": 8,
-                    "_enum": [
+                    "cols": 8,
+                    "enum": [
                         "0.Category 0",
                         "1.Category 1",
                         "2.Category 2",
@@ -236,26 +236,26 @@
                     ]
                 },
                 "biopsy_and_other_evaluation_suggestion": {
-                    "_cols": 12,
-                    "_default_cols": 3,
-                    "_enum": [{
-                            "_title": "0. No need biopsy",
-                            "_default_value": true
+                    "cols": 12,
+                    "default_cols": 3,
+                    "enum": [{
+                            "title": "0. No need biopsy",
+                            "default_value": true
                         },
                         "1. Aspiration cytology",
                         "2. Core biopsy",
                         "3. Open biopsy",
                         "4. Mammography",
                         "5. MRI", {
-                            "_title": "6. Other",
-                            "_require_input": "string",
-                            "_cols": 6
+                            "title": "6. Other",
+                            "require_input": "string",
+                            "cols": 6
                         }
                     ]
                 },
                 "pathology_results": {
-                    "_cols": 12,
-                    "_enum": [
+                    "cols": 12,
+                    "enum": [
                         "0. 未做biopsy",
                         "1. Benign",
                         "2. Malignant-Carcinoma in situ",
@@ -271,54 +271,55 @@
             }
         },
         "超音波腫瘤特性描述": {
-            "_help_text": "BI-RADS 4以上均需記錄。若BI-RADS 3之病灶數目大於或等於四個，則病灶特性描述至少需記錄4個，若少於四個，則全部記錄。",
-            "_type": "subobject",
-            "_properties": {
+            "help_text": "BI-RADS 4以上均需記錄。若BI-RADS 3之病灶數目大於或等於四個，則病灶特性描述至少需記錄4個，若少於四個，則全部記錄。",
+            "type": "subobject",
+            "summary_style": "no_break_after",
+            "properties": {
                 "左右側": {
-                    "_cols": 4,
-                    "_enum": [
+                    "cols": 4,
+                    "enum": [
                         "L (左)",
                         "R (右)"
                     ]
                 },
                 "方位": {
-                    "_cols": 4,
-                    "_ending": "o'clock",
-                    "_type": "integer",
-                    "_default_value": 2,
-                    "_min": 0,
-                    "_max": 24
+                    "cols": 4,
+                    "ending": "o'clock",
+                    "type": "integer",
+                    "default_value": 2,
+                    "min": 0,
+                    "max": 24
                 },
                 "距離乳頭距離": {
-                    "_cols": 4,
-                    "_type": "float",
-                    "_ending": "cm",
-                    "_default_value": 3.5
+                    "cols": 4,
+                    "type": "float",
+                    "ending": "cm",
+                    "default_value": 3.5
                 },
                 "最大徑": {
-                    "_cols": 4,
-                    "_type": "float",
-                    "_ending": "mm",
-                    "_default_value": 5
+                    "cols": 4,
+                    "type": "float",
+                    "ending": "mm",
+                    "default_value": 5
                 },
                 "shape": {
-                    "_cols": 4,
-                    "_enum": [
+                    "cols": 4,
+                    "enum": [
                         "1. Oval",
                         "2. Round",
                         "3. Irregular"
                     ]
                 },
                 "orientation": {
-                    "_cols": 4,
-                    "_enum": [
+                    "cols": 4,
+                    "enum": [
                         "1. Parallel",
                         "2. Not parallel"
                     ]
                 },
                 "margin": {
-                    "_cols": 6,
-                    "_enum": [
+                    "cols": 6,
+                    "enum": [
                         "1.Circumscribed",
                         "2.Indistinct",
                         "3.Angular",
@@ -327,8 +328,8 @@
                     ]
                 },
                 "echo_pattern": {
-                    "_cols": 6,
-                    "_enum": [
+                    "cols": 6,
+                    "enum": [
                         "1. Anechoic",
                         "2. Hyperechoic",
                         "3. Complex",
@@ -337,8 +338,8 @@
                     ]
                 },
                 "posterior_features": {
-                    "_cols": 12,
-                    "_enum": [
+                    "cols": 12,
+                    "enum": [
                         "1. No posterior acoustic features",
                         "2. Enhancement",
                         "3. Shadowing",
@@ -346,25 +347,25 @@
                     ]
                 },
                 "associated_features": {
-                    "_default_cols": 4,
-                    "_summary_break_style": "before",
-                    "_default_children_type": "boolean",
-                    "_properties": {
+                    "default_cols": 4,
+                    "summary_style": "break_before no_break_after_title no_break_after",
+                    "default_children_type": "boolean",
+                    "properties": {
                         "1. Architectural distortion": {},
                         "2. Duct Changes ": {},
                         "3. Skin changes/Skin Thickening": {},
                         "4. Skin changes/Skin Retraction": {
-                            "_default_value": true,
-                            "_cols": 6
+                            "default_value": true,
+                            "cols": 6
                         },
                         "5. Edema": {
-                            "_cols": 6
+                            "cols": 6
                         }
                     }
                 },
                 "vascularity": {
-                    "_cols": 12,
-                    "_enum": [
+                    "cols": 12,
+                    "enum": [
                         "0. Not assessed",
                         "1. Vascularity/Absent",
                         "2. Vascularity/Internal Vascularity",
@@ -372,13 +373,14 @@
                     ]
                 },
                 "surrounding_change": {
-                    "_default_cols": 4,
-                    "_default_children_type": "boolean",
-                    "_properties": {
+                    "default_cols": 4,
+                    "summary_style": "no_break_before no_break_after_title no_break_after",
+                    "default_children_type": "boolean",
+                    "properties": {
                         "1. Duct changes": {},
                         "2. Cooper’s ligament changes": {},
                         "3. Edema": {
-                            "_default_value": true
+                            "default_value": true
                         },
                         "4. Architectural distortion": {},
                         "5. Skin thickening": {},
@@ -386,27 +388,28 @@
                     }
                 },
                 "special_case": {
-                    "_default_cols": 4,
-                    "_default_children_type": "boolean",
-                    "_properties": {
+                    "default_cols": 4,
+                    "summary_style": "no_break_before no_break_after_title no_break_after",
+                    "default_children_type": "boolean",
+                    "properties": {
                         "1. Clustered microcysts": {},
                         "2. Complicated cysts": {},
                         "3. Mass in or on skin": {},
                         "4. Foreign body": {
-                            "_cols": 6
+                            "cols": 6
                         },
                         "5. Simple cyst": {
-                            "_cols": 6
+                            "cols": 6
                         },
                         "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)": {
-                            "_cols": 12,
-                            "_default_value": true
+                            "cols": 12,
+                            "default_value": true
                         },
                         "7. VascularAbnormalities/Mondor Disease": {
-                            "_cols": 6
+                            "cols": 6
                         },
                         "8. Postsurgical Fluid Collection": {
-                            "_cols": 6
+                            "cols": 6
                         },
                         "9. Fat Necrosis": {},
                         "10. Lymph nodes – intramammary": {},
@@ -414,14 +417,14 @@
                     }
                 },
                 "calcifications": {
-                    "_enum": [
+                    "enum": [
                         "1. Intraductal",
                         "2. Microcalcifications out of mass",
                         "3. Microcalcifications in mass"
                     ]
                 },
                 "elasticity_assessment": {
-                    "_enum": [
+                    "enum": [
                         "0. Not assessed",
                         "1. Soft",
                         "2. Intermediate",
@@ -429,18 +432,19 @@
                     ]
                 },
                 "檢查小結": {
-                    "_type": "big_string",
-                    "_cols": 12,
-                    "_default_value": "What is life?",
-                    "_summary_break_style": "before"
+                    "summary_style": "break_before",
+                    "type": "big_string",
+                    "cols": 12,
+                    "default_value": "What is life?",
+                    "summary_style": "break_before"
                 }
             }
         },
         "報告總結": {
-            "_type": "big_string",
-            "_max_string_length": 8096,
-            "_cols": 12,
-            "_default_value": "Life is about finding happiness."
+            "type": "big_string",
+            "max_string_length": 8096,
+            "cols": 12,
+            "default_value": "Life is about finding happiness."
         }
     }
 }
