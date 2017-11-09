@@ -17,14 +17,8 @@ namespace Cenarius.Controllers
     [Filters.GlobalErrorHandler]
     public class HomeController : Controller
     {
-        public HomeController()
-        {
-        }
-
-        ~HomeController()
-        {
-        }
-
+        const string sqlStr = "Server=tcp:cenarius.database.windows.net,1433;Initial Catalog=CenariusAppDB;Persist Security Info=False;User ID=illidan;Password=YouAreNotPrepared555;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+        
         public ActionResult Index()
         {
             var mvcName = typeof(Controller).Assembly.GetName();
@@ -49,14 +43,38 @@ namespace Cenarius.Controllers
         }
 
         [HttpPost]
-        public ActionResult Submit(GenericJson obj)
+        public ActionResult MakeTables(GenericJson obj)
         {
-            Debug.WriteLine("Received submit request");
+            Debug.WriteLine("Received MakeTables request");
 
             try
             {
-                var modelData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(obj.PostData);
+                using (var conn = new SqlConnection(sqlStr))
+                {
+                    conn.Open();
+                    obj.InitializeTables(conn);
+                }
+            }
+            catch (Exception e)
+            {
+                return Json(new { success = false, msg = "Failed to commit data to DB:\n" + e.Message });
+            }
 
+            return Json(new { success = true, msg = "" });
+        }
+
+        [HttpPost]
+        public ActionResult Submit(GenericJson obj)
+        {
+            Debug.WriteLine("Received Submit request");
+
+            try
+            {
+                using (var conn = new SqlConnection(sqlStr))
+                {
+                    conn.Open();
+                    obj.CommitData(conn);
+                }
             }
             catch (Exception e)
             {

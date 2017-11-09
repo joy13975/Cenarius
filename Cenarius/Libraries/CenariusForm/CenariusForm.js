@@ -34,13 +34,13 @@ var config = {
     minSubobjectInstance: 1,
 
     maxLength: {
-        float: '',
-        integer: '',
+        float: '-1',
+        integer: '-1',
         big_string: '4096',
-        string: '255',
-        boolean: '',
-        date: '',
-        label: ''
+        string: '1024',
+        boolean: '-1',
+        date: '-1',
+        label: '-1'
     }
 };
 
@@ -54,7 +54,7 @@ const HtmlInputTypeTable = Object.freeze({
     label: 'label'
 })
 
-const SQLTypeTable = Object.freeze({
+const SQLHintTable = Object.freeze({
     float: 'float',
     integer: 'integer',
     big_string: 'nvarchar',
@@ -124,10 +124,13 @@ function main(global, $) {
         const myFG = new FormGenerator(options.forma, options.formi);
         const formaDoms = myFG.genDoms();
 
+        const tableName = identifierize(String(myFG.formi['table_name']));
+        const mySqlGen = new SQLSchemaGenerator(myFG.forma, myFG.enumOptions, tableName);
+
         const contentDoms = DomMaker.genContent(headingText, formaDoms);
-        const ctrlDoms = DomMaker.genCtrlPanel(myFG);
+        const ctrlDoms = DomMaker.genCtrlPanel(myFG, mySqlGen);
         const summaryModalDoms = DomMaker.genSummaryModal(myFG);
-        const sqlModalDoms = DomMaker.genDebugModal();
+        const sqlModalDoms = DomMaker.genDebugModal(mySqlGen);
 
         const finalDom =
             $_$('div', {
@@ -577,7 +580,7 @@ class FormGenerator {
 
             // Create data node for containing the result string
             dNode[fieldID] = {
-                type: 'string'
+                type: 'enum'
             };
 
             // The value of 'true' is required - 'undefined' only works sometimes
@@ -635,7 +638,7 @@ class FormGenerator {
                 });
 
             const enumDNode = (dNode[fieldID] = {
-                type: 'string'
+                type: 'enum'
             });
 
             // Allow new values because some fields require input
@@ -703,6 +706,9 @@ class FormGenerator {
         const maxStringLength =
             isInt(fNode.max_string_length) ?
             fNode.max_string_length : config.maxLength[type];
+
+        if (fNode.type === 'string')
+            fNode.maxStringLength = maxStringLength;
 
         const textAlignment = isTextArea ?
             '' : 'text-align: right; ';
@@ -949,28 +955,39 @@ class SQLSchemaGenerator {
     static genIDColumn(tableName) {
         return {
             name: 'id',
-            sqlType: 'integer',
+            sqlHint: 'integer',
             notNull: true,
             autoIncrement: true,
             primaryKey: true
         };
     }
 
-    constructor(forma, tableName) {
+    constructor(forma, enumOptions, tableName) {
         this.forma = forma;
+        this.enumOptions = enumOptions;
         this.mainTableName = identifierize(tableName);
         this.enumOptionsTableName = this.mainTableName + '.enum_options';
         this.tables = [{
-            tableName: tableName,
-            fields: [SQLSchemaGenerator.genIDColumn()]
+            name: tableName,
+            columns: [SQLSchemaGenerator.genIDColumn()]
         }];
+
+        const sqlgSelf = this;
+
+        // Gen tables based on form schema 
+        _.each(Object.keys(sqlgSelf.forma), function(key) {
+            sqlgSelf.visitFormaNode(sqlgSelf.forma, key, sqlgSelf.tables[0]);
+        })
+
+        // Create auxiliary EnumOptions table
+        sqlgSelf.genEnumOptionsTable();
     }
 
     visitFormaNode(node, key, dest) {
         const sqlGenSelf = this;
         const next = node[key];
         const type = inferFNodeType(next);
-        const parentTableName = dest.tableName;
+        const parentTableName = dest.name;
 
         // console.log('sql gen: name=' + next.fieldID + ', type=' + type);
         switch (type) {
@@ -979,11 +996,11 @@ class SQLSchemaGenerator {
                     const soTableName = parentTableName +
                         '.' + identifierize(next.fieldID);
                     const soTable = {
-                        tableName: soTableName,
-                        fields: [
+                        name: soTableName,
+                        columns: [
                             SQLSchemaGenerator.genIDColumn(), {
                                 name: parentTableName + '_ref',
-                                sqlType: 'integer',
+                                sqlHint: 'integer',
                                 notNull: true,
                                 foreignRef: parentTableName
                             }
@@ -1009,29 +1026,58 @@ class SQLSchemaGenerator {
                 {
                     const newCol = {
                         name: next.fieldID,
-                        sqlType: SQLTypeTable[next.type],
-                        type: next.type
+                        sqlHint: SQLHintTable[next.type]
                     }
 
                     if (next.type === 'enum')
                         newCol.foreignRef = this.enumOptionsTableName;
+                    if (next.hasOwnProperty('maxStringLength'))
+                        newCol.maxLen = next.maxStringLength;
 
-                    dest.fields.push(newCol);
+                    dest.columns.push(newCol);
                 }
         }
     }
+
+    genEnumOptionsTable() {
+        const sqlgSelf = this;
+
+        const eoTable = {
+            name: sqlgSelf.enumOptionsTableName,
+            columns: [
+                SQLSchemaGenerator.genIDColumn(), {
+                    name: 'fieldID',
+                    sqlHint: SQLHintTable['string'],
+                    maxLen: 512
+                }, {
+                    name: 'value',
+                    sqlHint: SQLHintTable['string'],
+                    maxLen: 1024
+                }
+            ],
+            rows: []
+        }
+
+        _.each(sqlgSelf.enumOptions, (eo) => {
+            eoTable.rows.push(eo);
+        });
+
+        // Put this at the beginning to respect
+        // FKey ordering
+        this.tables.unshift(eoTable);
+    };
 
     static stringify(tableData) {
         const bracket = (s) => {
             return '[' + s + ']';
         };
-        const str = 'CREATE TABLE ' + bracket(tableData.tableName) + '\n' +
+        const str = 'CREATE TABLE ' + bracket(tableData.name) + '\n' +
             '(\n' +
-            mapJoin(tableData.fields, (fd) => {
+            mapJoin(tableData.columns, (fd) => {
                 const fdStr =
                     '    ' +
                     bracket(fd.name) +
-                    ' ' + fd.sqlType +
+                    ' ' + fd.sqlHint +
                     (fd.notNull === true ? ' NOT NULL' : '') +
                     (fd.autoIncrement === true ? ' IDENTITY(1,1)' : '') +
                     (fd.primaryKey === true ? ' PRIMARY KEY' : '') +
@@ -1045,16 +1091,11 @@ class SQLSchemaGenerator {
         return str;
     }
 
-    gen() {
-        const sqlgSelf = this;
-        _.each(Object.keys(sqlgSelf.forma), function(key) {
-            sqlgSelf.visitFormaNode(sqlgSelf.forma, key, sqlgSelf.tables[0]);
-        })
-
+    getSchema() {
         return mapJoin(this.tables, (td) => {
             return SQLSchemaGenerator.stringify(td);
         }, '\n');
-    }
+    };
 }
 
 class DomMaker {
@@ -1117,7 +1158,7 @@ class DomMaker {
         ]);
     };
 
-    static genCtrlPanel(formGen) {
+    static genCtrlPanel(formGen, sqlGen) {
         const resetFieldsBtn =
             $_$('button', {
                 type: 'button',
@@ -1193,8 +1234,6 @@ class DomMaker {
                 }), [' Debug']
             ]);
         $(genDebugBtn).on('click', function(e) {
-            const tableName = identifierize(String(formGen.formi['table_name']));
-
             const diHeaderDom =
                 $_$('ul', {
                     class: 'nav nav-tabs',
@@ -1209,7 +1248,7 @@ class DomMaker {
                 DomMaker.genTabRef('di-tables', 'Tables')
             );
             diHeaderDom.append(
-                DomMaker.genTabRef('di-forma', 'FormGen')
+                DomMaker.genTabRef('di-formgen', 'FormGen')
             );
             diHeaderDom.append(
                 DomMaker.genTabRef('di-data', 'Data')
@@ -1220,13 +1259,12 @@ class DomMaker {
                     name: 'debuginfo-tabcontent'
                 });
 
-            const sqlGen = new SQLSchemaGenerator(formGen.forma, tableName);
             diContentDom.append(
                 DomMaker.genTabPane('di-schema', [
                     $_$('pre', {
                         style: 'white-space: pre-wrap'
                     }, [
-                        sqlGen.gen()
+                        sqlGen.getSchema()
                     ])
                 ], {
                     class: 'active in'
@@ -1242,7 +1280,7 @@ class DomMaker {
                 ])
             );
             diContentDom.append(
-                DomMaker.genTabPane('di-forma', [
+                DomMaker.genTabPane('di-formgen', [
                     $_$('pre', {
                         style: 'white-space: pre-wrap'
                     }, [
@@ -1287,55 +1325,30 @@ class DomMaker {
                 id: 'submit_btn',
                 'data-dismiss': 'modal'
             }, ['Submit']);
-        $(submitBtn).on('click', function(e) {
-            e.stopPropagation();
+        $(submitBtn).on('click',
+            function(e) {
+                const loader = $_$('div', {
+                    class: 'loader'
+                });
+                $('#bootstrap-overrides').append(loader);
 
-            const loader = $_$('div', {
-                class: 'loader'
+                postDataToServer(
+                    '/Home/Submit',
+                    formGen.data,
+                    5000,
+                    function() {
+                        loader.remove();
+                    });
             });
-            $('#bootstrap-overrides').append(loader);
-
-            $.ajax({
-                url: '/home/submit',
-                type: 'POST',
-                data: JSON.stringify({
-                    PostData: JSON.stringify(formGen.data)
-                }),
-                processData: false,
-                dataType: 'json',
-                contentType: 'application/json',
-                timeout: 5000,
-                error: function(response, status) {
-                    if (status === 'timeout') {
-                        alert('Server timedout (5s)\nTry again in a minute');
-                    } else {
-                        alert('Error:\n' + response.error);
-                    }
-                },
-                success: function(response) {
-                    if (response.success === true) {
-                        showSnackbar('Submit OK!');
-                    } else {
-                        alert('Submit failed:\n' + response.msg);
-                    }
-                },
-                complete: function() {
-                    loader.remove();
-                }
-            });
-
-        });
 
         const copyBtn =
             $_$('button', {
                 type: 'button',
-                class: 'btn btn-success',
-                'data-dismiss': 'modal'
+                class: 'btn btn-success'
             }, ['Copy']);
 
         $(copyBtn).on('click',
             function(e) {
-                e.stopPropagation();
                 const res = copyToClipboard($(this).parent().siblings('.modal-body')[0]);
                 if (res)
                     showSnackbar('Copied to clipboard.');
@@ -1389,17 +1402,49 @@ class DomMaker {
         ]);
     };
 
-    static genDebugModal() {
+    static genDebugModal(sqlGen) {
+        const makeBtn =
+            $_$('button', {
+                type: 'button',
+                class: 'btn btn-danger',
+                style: 'margin: 3px; float:right'
+            }, ['Make It']);
+        $(makeBtn).on('click',
+            function(e) {
+                const loader = $_$('div', {
+                    class: 'loader'
+                });
+                $('#bootstrap-overrides').append(loader);
+
+                const timeout = 30000;
+                const sb = showSnackbar('This could take a while (<30s)...', timeout);
+
+                postDataToServer(
+                    '/Home/MakeTables',
+                    sqlGen.tables,
+                    timeout,
+                    function(res) {
+                        sb.remove();
+                        loader.remove();
+                    },
+                    function(res) {
+                        if (res.success === true) {
+                            showSnackbar('Tables have been initialized!');
+                        } else {
+                            alert('Initialization failed:\n' + res.msg);
+                        }
+                    }
+                );
+            });
+
         const copyBtn =
             $_$('button', {
                 type: 'button',
                 class: 'btn btn-success',
-                'data-dismiss': 'modal',
-                style: 'float:right'
+                style: 'margin: 3px; float:right'
             }, ['Copy']);
         $(copyBtn).on('click',
             function(e) {
-                e.stopPropagation();
                 const res = copyToClipboard($(this).parent()
                     .siblings('.modal-body')
                     .children('div[name=debuginfo-tabcontent]')
@@ -1434,7 +1479,8 @@ class DomMaker {
                         $_$('h4', {
                             class: 'modal-title'
                         }, ['Debug Info']),
-                        copyBtn
+                        copyBtn,
+                        makeBtn
                     ]),
                     $_$('div', {
                         class: 'modal-body'
@@ -1514,7 +1560,9 @@ class DomMaker {
 }
 
 class SummaryGenerator {
-    constructor() {};
+    constructor() {
+
+    };
 
     getPlainText(ph) {
         const singleLevelText =
@@ -1787,6 +1835,44 @@ class SummaryGenerator {
 }
 
 
+function postDataToServer(
+    url,
+    data,
+    timeout = 5000,
+    completeFunc = () => {},
+    succFunc = function(response) {
+        if (response.success === true) {
+            showSnackbar('Submit OK!');
+        } else {
+            alert('Submit failed:\n' + response.msg);
+        }
+    },
+    errorFunc = function(response, status) {
+        if (status === 'timeout') {
+            alert('Server timedout (' + timeout + 'ms)\nTry again in a minute');
+        } else {
+            alert('Error:\n' + response.error);
+            console.error('postDataToServer() got an error:');
+            console.error(response);
+        }
+    }) {
+    console.log('postDataToServer(' + url + ', ' + timeout + ')　');
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: JSON.stringify({
+            PostData: JSON.stringify(data)
+        }),
+        processData: false,
+        dataType: 'json',
+        contentType: 'application/json',
+        timeout: timeout,
+        complete: completeFunc,
+        error: errorFunc,
+        success: succFunc
+    });
+}
 
 function isRawType(fNodeType) {
     return fNodeType === 'string' ||
@@ -1831,20 +1917,26 @@ function updateAllFields() {
     $('input[type=checkbox]:not(.wrapper-checkbox)').trigger('change');
 }
 
-function showSnackbar(text, timeout = 3000) {
+function showSnackbar(text, timeout = 1500, fadeSpeed = 500) {
     const sb = document.createElement('div');
-    sb.setAttribute('class', 'snackbar show');
+    sb.setAttribute('class', 'snackbar');
     sb.innerHTML = text;
+
+    const $sb = $(sb);
+    $sb.hide();
 
     const parent = $('#bootstrap-overrides');
     parent.append(sb);
 
-    setTimeout(() => {
-        sb.setAttribute('class', 'snackbar')
+    $sb.fadeIn(fadeSpeed, () => {
         setTimeout(() => {
-            sb.remove();
+            $sb.fadeOut(fadeSpeed, () => {
+                $sb.remove()
+            });
         }, timeout);
-    }, timeout);
+    });
+
+    return sb;
 }
 
 function setCheckbox(ckbx, val) {
