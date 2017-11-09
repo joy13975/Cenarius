@@ -73,8 +73,18 @@ const SQLTypeTable = {
     big_string: 'nvarchar',
     string: 'nvarchar',
     boolean: 'bit',
-    date: 'date'
+    date: 'date',
+
+    // Any enum field references the enumOptions table using a FKey
+    enum: 'int'
 }
+
+const EnumMode = Object.freeze({
+    None: 0,
+    //SimpleSingle: 1, //Unused
+    ComplexSingle: 2,
+    Multi: 3,
+})
 
 const formCtrlUpdateEvents = 'keyup change focus';
 
@@ -150,13 +160,15 @@ function main(global, $) {
 class FormGenerator {
     constructor(forma, formi) {
         this.fieldID = 0;
-        this.forma = forma;
-        this.formi = formi;
+        this.forma = forma; // Form + schema data
+        this.formi = formi; // Information about the forma
         this.data = {};
         this.soMethods = {};
+        this.enumOptions = [];
+
         this.resetDefaultType();
         this.resetDefaultNCols();
-        this.unsetForceCheckbox();
+        this.resetEnumMode();
     }
 
     genDoms() {
@@ -168,7 +180,7 @@ class FormGenerator {
         );
     }
 
-    visitFormaNode(fNode, key, dNode) {
+    visitFormaNode(fNode, key, dNode, noDescend = false) {
         const fgSelf = this;
 
         // Convert strings into a proper fNode
@@ -206,13 +218,13 @@ class FormGenerator {
             fNext.hasOwnProperty('_default_cols') ? fNext._default_cols :
             '';
 
-        function sandwich(_dNode = dNode) {
+        function sandwich(_dNode = dNode, noDescend = false) {
             return _.map(Object.keys(children),
                 (nextKey) => {
                     fgSelf.setDefaultType(defaultType);
                     fgSelf.setDefaultNCols(defaultNCols);
 
-                    const resDom = fgSelf.visitFormaNode(children, nextKey, _dNode);
+                    const resDom = fgSelf.visitFormaNode(children, nextKey, _dNode, noDescend);
 
                     fgSelf.resetDefaultType();
                     fgSelf.resetDefaultNCols();
@@ -222,17 +234,31 @@ class FormGenerator {
             );
         };
 
+        if (noDescend &&
+            (inferredType == 'object' ||
+                inferredType == 'subobject' ||
+                inferredType == 'enum')) {
+            alert('Illigal forma node: noDescend was set, but encountered a ' + inferredType);
+            return undefined;
+        }
+
         switch (inferredType) {
             case 'object':
-                return fgSelf.genObj(fNext, key, name, sandwich, dNode);
+                {
+                    return fgSelf.genObj(fNext, key, name, sandwich, dNode);
+                }
             case 'subobject':
-                return fgSelf.genSubobj(fNext, key, name, sandwich, dNode);
+                {
+                    return fgSelf.genSubobj(fNext, key, name, sandwich, dNode);
+                }
             case 'enum':
-                return fgSelf.genEnum(fNext, key, name, sandwich, dNode);
-            case 'space':
-                return fgSelf.genSpace(fNext);
+                {
+                    return fgSelf.genEnum(fNext, key, name, sandwich, dNode);
+                }
             default:
-                return fgSelf.genField(fNext, inferredType, key, name, dNode);
+                {
+                    return fgSelf.genField(fNext, inferredType, key, name, dNode);
+                }
         }
     }
 
@@ -514,130 +540,129 @@ class FormGenerator {
             config.nCols.complexEnum;
 
         const needCheckbox =
-            this.forceCheckbox !== 'none' || (fNode._force_checkbox === true);
+            this.enumMode !== EnumMode.None || (fNode._force_checkbox === true);
 
         // Default value
         const defaultValue = fNode.hasOwnProperty('_default_value') ? fNode._default_value : 0;
 
-        return (() => {
-            if (simpleEnum) {
-                const selectOptions = [];
+        if (simpleEnum) {
+            const selectOptions = [];
 
-                // Prepend null option if checkbox will be added
-                if (needCheckbox)
-                    selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
+            // Prepend null option if checkbox will be added
+            if (needCheckbox)
+                selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
 
-                // Convert string items in array to objects
-                // that contain useful attributes
-                _.each(Object.keys(enumData), (enumKey) => {
-                    let item = enumData[enumKey];
-                    if (typeof item !== 'object') {
-                        item = (
-                            enumData[enumKey] = {
-                                _title: item
-                            });
-                    }
-                    item._fieldID =
-                        identifierize(fieldID + '_equals_' + item._title);
-                    item._type = 'boolean';
-
-                    dNode[item._fieldID] = {
-                        _type: 'bit'
-                    };
-
-                    selectOptions.push($_$('option', {}, [item._title]));
-                })
-
-                const selectDom = $_$('select', {
-                    class: 'selectpicker form-control',
-                    id: fieldID,
-                    name: fieldID,
-                    'data-live-search': true,
-                    defaultValue: defaultValue
-                }, selectOptions);
-                $(selectDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
-
-                // The value of 'true' is required - 'undefined' only works sometimes
-                const $defaultOption = $($(selectDom).children()[defaultValue]);
-                $defaultOption.attr('selected', true);
-                $defaultOption.attr('defaultOption', '');
-
-                const inputName = name + config.autoLabelColon + config.autoLabelSpace;
-                const inputDoms =
-                    [
-                        $_$('span', {
-                            class: 'input-group-addon cenarius-input-tag'
-                        }, [$_$('b', {}, [inputName])]),
-                        selectDom
-                    ];
-
-                const ckbxWrappedDoms =
-                    DomMaker.genCheckboxWrapper(
-                        fieldID,
-                        this.forceCheckbox,
-                        inputDoms,
-                        function() {
-                            if (!$(this).is(':checked')) {
-                                const $mySelectDom =
-                                    $($(this).siblings('span')
-                                        .children('span').children('select'));
-                                $($mySelectDom.children()).removeAttr('selected');
-
-                                // Unticking ckeckbox should lead to '--' being selected
-                                // Not the default value (which is from reset-fields)
-                                $($mySelectDom.children()[0]).attr('selected', true);
-                                $mySelectDom.trigger('change');
-                            }
-                        });
-
-                // Initial value is set by trigger in domReady()
-                $(selectDom).change(function() {
-                    _.map(Object.keys(enumData), (enumKey) => {
-                        dNode[enumData[enumKey]._fieldID]._value = needCheckbox　 ?
-                            (enumKey == this.selectedIndex - 1) :
-                            (enumKey == this.selectedIndex);
+            // Convert string items in array to objects
+            // that contain useful attributes
+            _.each(Object.keys(enumData), (enumKey) => {
+                let item = enumData[enumKey];
+                if (typeof item !== 'object') {
+                    item = (enumData[enumKey] = {
+                        _title: String(item),
+                        _type: 'string'
                     })
-                });
+                } else {
+                    item._type = inferFNodeType(item);
+                }
 
-                return $_$('div', {
-                    name: 'cenarius-input-group',
-                    class: 'col-md-' + nCols + ' ' + extraHtmlClass,
-                    excludeFromSummary: fNode._exclude_from_summary,
-                    summaryBreakStyle: fNode._summary_break_style,
-                    titleInSummary: fNode._title_in_summary
-                }, [
-                    $_$('div', {
-                        class: 'input-group'
-                    }, needCheckbox ? ckbxWrappedDoms : inputDoms)
-                ]);
-            } else {
-                const choiceTypeIcon =
+                selectOptions.push($_$('option', {}, [item._title]));
+            })
+
+            const selectDom = $_$('select', {
+                class: 'selectpicker form-control',
+                id: fieldID,
+                name: fieldID,
+                'data-live-search': true,
+                defaultValue: defaultValue
+            }, selectOptions);
+            $(selectDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
+
+            // Create data node for containing the result string
+            dNode[fieldID] = {
+                _type: 'string'
+            };
+
+            // The value of 'true' is required - 'undefined' only works sometimes
+            const $defaultOption = $($(selectDom).children()[defaultValue]);
+            $defaultOption.attr('selected', true);
+            $defaultOption.attr('defaultOption', '');
+
+            const inputName = name + config.autoLabelColon + config.autoLabelSpace;
+            const inputDoms =
+                [
                     $_$('span', {
-                        class: 'pull-right glyphicon glyphicon-tag' +
-                            (isMultiChoice ? 's' : ''),
-                        name: 'choice-type-icon'
+                        class: 'input-group-addon cenarius-input-tag'
+                    }, [$_$('b', {}, [inputName])]),
+                    selectDom
+                ];
+
+            const ckbxWrappedDoms =
+                DomMaker.genCheckboxWrapper(
+                    fieldID,
+                    this.enumMode,
+                    inputDoms,
+                    function() {
+                        if (!$(this).is(':checked')) {
+                            const $mySelectDom =
+                                $($(this).siblings('span')
+                                    .children('span').children('select'));
+                            $($mySelectDom.children()).removeAttr('selected');
+
+                            // Unticking ckeckbox should lead to '--' being selected
+                            // Not the default value (which is from reset-fields)
+                            $($mySelectDom.children()[0]).attr('selected', true);
+                            $mySelectDom.trigger('change');
+                        }
                     });
 
-                this.setForceCheckbox(isMultiChoice);
-                const dom =
-                    DomMaker.genPanel([name, choiceTypeIcon],
-                        sandwich(dNode),
-                        nCols, {
-                            name: (isMultiChoice ?
-                                'cenarius-multi-choice-group' :
-                                'cenarius-single-choice-group'),
-                            id: fieldID,
-                            excludeFromSummary: fNode._exclude_from_summary,
-                            summaryBreakStyle: fNode._summary_break_style,
-                            titleInSummary: fNode._title_in_summary
-                        }, {
-                            class: extraHtmlClass
-                        }
-                    );
-                this.unsetForceCheckbox();
-                return dom;
-            }
-        })();
+            // Initial value is set by trigger in domReady()
+            $(selectDom).change(function() {
+                dNode[fieldID]._value = $(this).val();
+            });
+
+            return $_$('div', {
+                name: 'cenarius-input-group',
+                class: 'col-md-' + nCols + ' ' + extraHtmlClass,
+                excludeFromSummary: fNode._exclude_from_summary,
+                summaryBreakStyle: fNode._summary_break_style,
+                titleInSummary: fNode._title_in_summary
+            }, [
+                $_$('div', {
+                    class: 'input-group'
+                }, needCheckbox ? ckbxWrappedDoms : inputDoms)
+            ]);
+        } else {
+            const choiceTypeIcon =
+                $_$('span', {
+                    class: 'pull-right glyphicon glyphicon-tag' +
+                        (isMultiChoice ? 's' : ''),
+                    name: 'choice-type-icon'
+                });
+
+            this.setEnumMode(isMultiChoice ? EnumMode.Multi : EnumMode.ComplexSingle);
+            const myDNode = (
+                dNode[fieldID] = {
+                    _type: 'enum'
+                });
+
+            const dom =
+                DomMaker.genPanel([name, choiceTypeIcon],
+                    sandwich(myDNode, true),
+                    nCols, {
+                        name: (isMultiChoice ?
+                            'cenarius-multi-choice-group' :
+                            'cenarius-single-choice-group'),
+                        id: fieldID,
+                        excludeFromSummary: fNode._exclude_from_summary,
+                        summaryBreakStyle: fNode._summary_break_style,
+                        titleInSummary: fNode._title_in_summary
+                    }, {
+                        class: extraHtmlClass
+                    }
+                );
+            this.resetEnumMode();
+            return dom;
+        }
     };
 
     genField(fNode, type, key, name, dNode) {
@@ -690,7 +715,7 @@ class FormGenerator {
         const fieldStyle = textAlignment;
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
         const needCheckbox =
-            this.forceCheckbox !== 'none' || fNode._force_checkbox === true;
+            this.enumMode !== 'none' || fNode._force_checkbox === true;
         const endingSpan = (() => {
             if (fNode.hasOwnProperty('_ending')) {
                 return $_$('span', {
@@ -710,6 +735,14 @@ class FormGenerator {
         const inputDoms =
             (() => {
                 switch (htmlInputType) {
+                    case 'space':
+                        {
+                            return $_$('div', {
+                                class: 'col-md-offset-' + nCols + ' ' + extraHtmlClass,
+                                style: 'height: 46px !important',
+                                excludeFromSummary: true
+                            });
+                        }
                     case 'label':
                         {
                             const labelDom =
@@ -725,7 +758,7 @@ class FormGenerator {
                                 type: 'checkbox',
                                 id: fieldID,
                                 name: fieldID,
-                                class: this.forceCheckbox === 'single' ? 'single-choice-checkbox' : '',
+                                class: this.enumMode === EnumMode.ComplexSingle ? 'single-choice-checkbox' : '',
                                 autocomplete: 'off',
                             }
 
@@ -800,7 +833,7 @@ class FormGenerator {
                                 const ckbxWrappedDoms =
                                     DomMaker.genCheckboxWrapper(
                                         fieldID,
-                                        this.forceCheckbox,
+                                        this.enumMode,
                                         regularFieldDoms,
                                         function() {
                                             const $this = $(this);
@@ -846,20 +879,6 @@ class FormGenerator {
         ]);
     };
 
-    genSpace(fNode) {
-        const nCols = fNode.hasOwnProperty('_cols') ? fNode._cols :
-            this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
-            config.nCols.input;
-        const extraHtmlClass = fNode.hasOwnProperty('_html_class') ?
-            fNode._html_class : '';
-
-        return $_$('div', {
-            class: 'col-md-offset-' + nCols + ' ' + extraHtmlClass,
-            style: 'height: 46px !important',
-            excludeFromSummary: true
-        });
-    }
-
     resetDefaultType() {
         // console.log('resetDefaultType()');
         this.setDefaultType(config.defaultType);
@@ -878,14 +897,14 @@ class FormGenerator {
         this.currentDefaultNCols = nCols;
     }
 
-    unsetForceCheckbox() {
-        this.forceCheckbox = 'none';
-        // console.log('setForceCheckbox(' + this.forceCheckbox + ')');
+    resetEnumMode() {
+        this.setEnumMode('none');
+        // console.log('resetEnumMode(' + this.enumMode + ')');
     }
 
-    setForceCheckbox(isMultiChoice) {
-        this.forceCheckbox = isMultiChoice ? 'multi' : 'single';
-        // console.log('setForceCheckbox(' + this.forceCheckbox + ')');
+    setEnumMode(mode) {
+        this.enumMode = mode;
+        // console.log('setEnumMode(' + this.enumMode + ')');
     }
 
     getNextID(key) {
@@ -893,7 +912,113 @@ class FormGenerator {
         this.fieldID++;
         return id;
     }
-};
+}
+
+class SQLSchemaGenerator {
+    static genIDColumn(tableName) {
+        return {
+            name: 'id',
+            sqlType: 'integer',
+            notNull: true,
+            autoIncrement: true,
+            primaryKey: true
+        };
+    }
+
+    constructor(forma, tableName) {
+        this.forma = forma;
+        this.mainTableName = identifierize(tableName);
+        this.tables = [{
+            tableName: tableName,
+            fields: [SQLSchemaGenerator.genIDColumn()]
+        }];
+    }
+
+    visitFormaNode(node, key, dest) {
+        const sqlGenSelf = this;
+        const next = node[key];
+        const type = next._type;
+        const parentTableName = dest.tableName;
+
+        // console.log('sql gen: name=' + next._fieldID + ', type=' + type);
+        switch (type) {
+            case 'subobject':
+                {
+                    const soTableName = parentTableName +
+                        '.' + identifierize(next._fieldID);
+                    const soTable = {
+                        tableName: soTableName,
+                        fields: [
+                            SQLSchemaGenerator.genIDColumn(), {
+                                name: parentTableName + '_ref',
+                                sqlType: 'integer',
+                                notNull: true,
+                                foreignRef: parentTableName
+                            }
+                        ]
+                    }
+                    this.tables.push(soTable);
+                    dest = this.tables.last();
+                }
+            case 'object':
+                {
+                    _.each(Object.keys(next._properties), function(childKey) {
+                        sqlGenSelf.visitFormaNode(next._properties, childKey, dest);
+                    })
+                    break;
+                }
+            case undefined:
+                {
+                    console.error('Undefined type');
+                    console.error(JSON.stringify(next, null, 2));
+                    break;
+                }
+            default:
+                {
+                    dest.fields.push({
+                        name: next._fieldID,
+                        sqlType: SQLTypeTable[next._type],
+                        _type: next._type
+                    });
+                }
+        }
+    }
+
+    static stringify(tableData) {
+        const bracket = (s) => {
+            return '[' + s + ']';
+        };
+        const str = 'CREATE TABLE ' + bracket(tableData.tableName) + '\n' +
+            '(\n' +
+            mapJoin(tableData.fields, (fd) => {
+                const fdStr =
+                    '    ' +
+                    bracket(fd.name) +
+                    ' ' + fd.sqlType +
+                    (fd.notNull === true ? ' NOT NULL' : '') +
+                    (fd.autoIncrement === true ? ' IDENTITY(1,1)' : '') +
+                    (fd.primaryKey === true ? ' PRIMARY KEY' : '') +
+                    (typeof fd.foreignRef === 'string' ?
+                        (' FOREIGN KEY REFERENCES ' + bracket(fd.foreignRef) + '(' +
+                            bracket('id') + ')') : '');
+                return fdStr;
+            }, ', \n') +
+            '\n);';
+
+        return str;
+    }
+
+    gen() {
+        const sqlgSelf = this;
+        _.each(Object.keys(sqlgSelf.forma), function(key) {
+            sqlgSelf.visitFormaNode(sqlgSelf.forma, key, sqlgSelf.tables[0]);
+        })
+
+        return mapJoin(this.tables, (td) => {
+            return SQLSchemaGenerator.stringify(td);
+        }, '\n');
+    }
+}
 
 class DomMaker {
     static genCheckboxWrapper(
@@ -907,7 +1032,7 @@ class DomMaker {
                 type: 'checkbox',
                 id: checkboxID,
                 name: checkboxID,
-                class: checkboxType === 'single' ? 'single-choice-checkbox' : '',
+                class: checkboxType === EnumMode.complexSingle ? 'single-choice-checkbox' : '',
                 autocomplete: 'off'
             });
         $(ckbxDom).change(ckbxDomOnChange);
@@ -1132,7 +1257,7 @@ class DomMaker {
                 class: 'loader'
             });
             $('#bootstrap-overrides').append(loader);
-            
+
             $.ajax({
                 url: '/home/submit',
                 type: 'POST',
@@ -1617,120 +1742,6 @@ class SummaryGenerator {
     };
 }
 
-class SQLSchemaGenerator {
-    static genIDColumn(tableName) {
-        return {
-            name: 'id',
-            sqlType: 'integer',
-            notNull: true,
-            autoIncrement: true,
-            primaryKey: true
-        };
-    }
-
-    constructor(forma, tableName) {
-        this.forma = forma;
-        this.mainTableName = identifierize(tableName);
-        this.tables = [{
-            tableName: tableName,
-            fields: [SQLSchemaGenerator.genIDColumn()]
-        }];
-    }
-
-    visitFormaNode(node, key, dest) {
-        const sqlGenSelf = this;
-        const next = node[key];
-        const type = next._type;
-        const parentTableName = dest.tableName;
-
-        // console.log('sql gen: name=' + next._fieldID + ', type=' + type);
-        switch (type) {
-            case 'subobject':
-                {
-                    const soTableName = parentTableName +
-                        '.' + identifierize(next._fieldID);
-                    const soTable = {
-                        tableName: soTableName,
-                        fields: [
-                            SQLSchemaGenerator.genIDColumn(), {
-                                name: parentTableName + '_ref',
-                                sqlType: 'integer',
-                                notNull: true,
-                                foreignRef: parentTableName
-                            }
-                        ]
-                    }
-                    this.tables.push(soTable);
-                    dest = this.tables.last();
-                }
-            case 'object':
-                {
-                    _.each(Object.keys(next._properties), function(childKey) {
-                        sqlGenSelf.visitFormaNode(next._properties, childKey, dest);
-                    })
-                    break;
-                }
-            case 'enum':
-                {
-                    const enumItems = next.hasOwnProperty('_enum') ?
-                        next._enum : next._enum_multi;
-                    _.each(Object.keys(enumItems), function(childKey) {
-                        sqlGenSelf.visitFormaNode(enumItems, childKey, dest);
-                    });
-                    break;
-                }
-            case undefined:
-                {
-                    console.error('Undefined type');
-                    console.error(JSON.stringify(next, null, 2));
-                    break;
-                }
-            default:
-                {
-                    dest.fields.push({
-                        name: next._fieldID,
-                        sqlType: SQLTypeTable[next._type]
-                    });
-                }
-        }
-    }
-
-    static stringify(tableData) {
-        const bracket = (s) => {
-            return '[' + s + ']';
-        };
-        const str = 'CREATE TABLE ' + bracket(tableData.tableName) + '\n' +
-            '(\n' +
-            mapJoin(tableData.fields, (fd) => {
-                const fdStr =
-                    '    ' +
-                    bracket(fd.name) +
-                    ' ' + fd.sqlType +
-                    (fd.notNull === true ? ' NOT NULL' : '') +
-                    (fd.autoIncrement === true ? ' IDENTITY(1,1)' : '') +
-                    (fd.primaryKey === true ? ' PRIMARY KEY' : '') +
-                    (typeof fd.foreignRef === 'string' ?
-                        (' FOREIGN KEY REFERENCES ' + bracket(fd.foreignRef) + '(' +
-                            bracket('id') + ')') : '');
-                return fdStr;
-            }, ', \n') +
-            '\n);';
-
-        return str;
-    }
-
-    gen() {
-        const sqlgSelf = this;
-        _.each(Object.keys(sqlgSelf.forma), function(key) {
-            sqlgSelf.visitFormaNode(sqlgSelf.forma, key, sqlgSelf.tables[0]);
-        })
-
-        return mapJoin(this.tables, (td) => {
-            return SQLSchemaGenerator.stringify(td);
-        }, '\n');
-    }
-}
-
 
 
 function isRawType(fNodeType) {
@@ -1752,6 +1763,8 @@ function inferFNodeType(fNode, defaultType = 'string') {
             return 'object';
     }
 
+    // When objType is a raw type (string, number, boolean)
+    // defaultType takes dominance
     return defaultType;
 }
 
