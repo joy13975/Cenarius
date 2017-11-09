@@ -66,7 +66,8 @@ const SQLTypeTable = Object.freeze({
     enum: 'int'
 })
 
-const formCtrlUpdateEvents = 'keyup change focus';
+const NoneIdentifierCharRegexStr = Object.freeze(/[^a-zA-Z\d\u4e00-\u9eff]+/);
+const formCtrlUpdateEvents = Object.freeze('keyup change focus');
 
 function domReady() {
     // Fix button stuck in focus when alert shows up
@@ -451,25 +452,34 @@ class FormGenerator {
         };
 
         // Prepare panel heading 
-        const panelHeadingFunc = (headingDoms = []) => {
-            headingDoms.push(
-                $_$('div', {
-                    style: 'float: right;'
-                }, [
-                    delTabBtn,
-                    newTabBtn
-                ])
-            );
-
+        const panelHeadingFunc = (headingDoms) => {
             return DomMaker.genPanelHeading(headingDoms, 'overflow: hidden');
         };
 
-        const headingDoms = [name];
-        if (fNode.hasOwnProperty('_help_text'))
-            headingDoms.push($_$('div', {
-                class: 'alert alert-info',
-                style: ''
-            }, [fNode._help_text]));
+        const addDelBtns =
+            $_$('div', {
+                style: 'float: right; '
+            }, [
+                delTabBtn,
+                newTabBtn
+            ]);
+
+        const headingDoms = [
+            $_$('div', {
+                class: 'col-md-10'
+            }, name),
+            $_$('div', {
+                class: 'col-md-2',
+            }, [addDelBtns])
+        ];
+
+        if (fNode.hasOwnProperty('_help_text')) {
+            headingDoms.push(
+                $_$('div', {
+                    class: 'alert alert-info col-md-12',
+                    style: ''
+                }, [fNode._help_text]));
+        }
 
         const nCols =
             fNode.hasOwnProperty('_cols') ?
@@ -1832,18 +1842,39 @@ function getNameFromKey(key) {
     }
 }
 
+const NonAlphaNumeric = new RegExp('[^a-zA-Z0-9]', 'g');
 function titleize(str) {
-    return str.replace(/\w\S*/g, (txt) => {
-        return txt[0].toUpperCase() + txt.substring(1).toLowerCase();
-    });
+    let capNext = true;
+    let newStr = '';
+
+    for(let i = 0; i < str.length; i++)
+    {
+        let c = str.charAt(i);
+        if(c.match(NonAlphaNumeric) !== null)
+        {
+            capNext = true;
+        }
+        else
+        {
+            if(capNext)
+            {
+                c = c.toUpperCase();
+                capNext = false;
+            }
+        }
+
+        newStr += c;
+    }
+
+    return newStr;
 }
 
 function identifierize(str) {
-    return str.replaceAll(/[^a-zA-Z\d]+/, '_').toLowerCase().replace(/^[0-9]/, '_$&');
+    return str.replaceAll(NoneIdentifierCharRegexStr, '_').toLowerCase().replace(/^[0-9]/, '_$&');
 }
 
 String.prototype.replaceAll = function(search, replacement) {
-    return this.replace(new RegExp(search, 'g'), replacement);
+    return this.replace(new RegExp(search, 'gu'), replacement);
 };
 
 Array.prototype.last = function() {

@@ -3,24 +3,19 @@
         "table_name": "breat_cancer_ultrasound"
     },
     "forma": {
-        "basic_info": {
-            "_title": "基本資料",
+        "基本資料": {
             "_exclude_from_summary": true,
             "_properties": {
-                "patient": {
-                    "_title": "受檢者",
+                "受檢者": {
                     "_default_cols": 4,
                     "_properties": {
-                        "patient_id": {
-                            "_title": "病歷號",
+                        "病歷號": {
                             "_default_value": "A1337"
                         },
-                        "patient_name": {
-                            "_title": "姓名",
+                        "姓名": {
                             "_default_value": "王小明"
                         },
-                        "patient_no_of_checks_today": {
-                            "_title": "今日檢查次數",
+                        "今日檢查次數": {
                             "_ending": "次",
                             "_type": "integer",
                             "_min": 0,
@@ -28,39 +23,31 @@
                         }
                     }
                 },
-                "current_checkup": {
-                    "_title": "本次檢查",
+                "本次檢查": {
                     "_default_cols": 4,
                     "_properties": {
-                        "report_date": {
-                            "_title": "日期",
+                        "日期": {
                             "_type": "date"
                         },
-                        "report_id": {
-                            "_title": "編號 ",
+                        "編號 ": {
                             "_default_value": "B12938"
                         },
-                        "report_no_of_checks": {
-                            "_title": "次數 ",
+                        "次數": {
                             "_ending": "次",
                             "_type": "integer",
                             "_min": 0,
                             "_default_value": 1
                         },
-                        "operator_id": {
-                            "_title": "操作者編號",
+                        "操作者編號": {
                             "_default_value": "C000301"
                         },
-                        "interpreter_id": {
-                            "_title": "判讀者編號",
+                        "判讀者編號": {
                             "_default_value": "D000010"
                         },
-                        "machine_id": {
-                            "_title": "檢查機器編號 ",
+                        "檢查機器編號": {
                             "_default_value": "N/A"
                         },
-                        "us_examination_mode": {
-                            "_title": "US Examination Mode",
+                        "US Examination Mode": {
                             "_cols": 8,
                             "_enum": [
                                 "Screening US",
@@ -73,18 +60,15 @@
                 }
             }
         },
-        "indications": {
-            "_title": "檢查適應症",
+        "檢查適應症": {
             "_default_children_type": "boolean",
             "_exclude_from_summary": true,
             "_properties": {
-                "00_asymptomatic_screening": {
-                    "_title": "00. Asymptomatic Screening",
+                "00. Asymptomatic Screening": {
                     "_cols": 12,
                     "_default_value": true
                 },
-                "10_exam_for_symptomatic_patient": {
-                    "_title": "10. Exam for symptomatic patient",
+                "10. Exam for symptomatic patient": {
                     "_cols": 12,
                     "_default_cols": 4,
                     "_default_children_type": "boolean",
@@ -94,8 +78,7 @@
                         "13. Discharge": {}
                     }
                 },
-                "20_screening_mammographic_category": {
-                    "_title": "20. Screening Mammographic Category (0-5)",
+                "20. Screening Mammographic Category (0-5)": {
                     "_cols": 12,
                     "_enum": [
                         0,
@@ -106,8 +89,7 @@
                         5
                     ]
                 },
-                "benign_lesions": {
-                    "_title": "Benign Lesion(s)",
+                "Benign Lesion": {
                     "_type": "subobject",
                     "_default_children_type": "boolean",
                     "_default_cols": 4,
@@ -162,26 +144,18 @@
                                 }
                             }
                         },
-                        "mass": {
-                            "_title": "21. Mass"
-                        },
-                        "calcification": {
-                            "_title": "22. Calcification",
+                        "21. Mass": {},
+                        "22. Calcification": {
                             "_default_value": true
                         },
-                        "asymmetry": {
-                            "_title": "23. Asymmetry"
-                        },
-                        "architecture_distortion": {
-                            "_title": "24. Architecture distortion"
-                        },
+                        "23. Asymmetry": {},
+                        "24. Architecture distortion": {},
                         "25. Others": {
                             "_type": "string",
                             "_force_checkbox": true,
                             "_cols": 12
                         },
-                        "density_of_breast": {
-                            "_title": "26. Density of breast",
+                        "26. Density of breast": {
                             "_cols": 6,
                             "_force_checkbox": true,
                             "_enum": [
@@ -192,16 +166,14 @@
                             ],
                             "_default_value": 2
                         },
-                        "recommendation": {
-                            "_title": "27. Recomendation",
+                        "27. Recomendation": {
                             "_type": "string",
                             "_force_checkbox": true,
                             "_cols": 6
                         }
                     }
                 },
-                "30_f_u_for_previous_noted_benign_lesions": {
-                    "_title": "30. F/U for previous noted benign lesions",
+                "30. F/U for previous noted benign lesions": {
                     "_cols": 6,
                     "_default_cols": 12,
                     "_default_children_type": "boolean",
@@ -227,8 +199,7 @@
                         "42. S/P breast augmentation/Reconstruction": {}
                     }
                 },
-                "50_other_reasons_for_breast_sono_examination": {
-                    "_title": "50. Other reasons for breast sono examination",
+                "50. Other reasons for breast sono examination": {
                     "_cols": 6
                 }
             }
@@ -236,8 +207,7 @@
         "interpretation": {
             "_exclude_from_summary": true,
             "_properties": {
-                "us_category": {
-                    "_title": "US Category 分類",
+                "US Category 分類": {
                     "_cols": 4,
                     "_enum": [
                         "0. Category 0",
@@ -251,8 +221,7 @@
                         "6. Category 6"
                     ]
                 },
-                "combined_mammogram_and_us_final_category": {
-                    "_title": "Combined Mammogram And US Final Category",
+                "Combined Mammogram And US Final Category": {
                     "_cols": 8,
                     "_enum": [
                         "0.Category 0",
@@ -301,21 +270,18 @@
                 }
             }
         },
-        "tumour_details": {
-            "_title": "超音波腫瘤特性描述",
+        "超音波腫瘤特性描述": {
             "_help_text": "BI-RADS 4以上均需記錄。若BI-RADS 3之病灶數目大於或等於四個，則病灶特性描述至少需記錄4個，若少於四個，則全部記錄。",
             "_type": "subobject",
             "_properties": {
-                "side": {
-                    "_title": "左右側",
+                "左右側": {
                     "_cols": 4,
                     "_enum": [
                         "L (左)",
                         "R (右)"
                     ]
                 },
-                "position": {
-                    "_title": "方位",
+                "方位": {
                     "_cols": 4,
                     "_ending": "o'clock",
                     "_type": "integer",
@@ -323,15 +289,13 @@
                     "_min": 0,
                     "_max": 24
                 },
-                "distance": {
-                    "_title": "距離乳頭距離",
+                "距離乳頭距離": {
                     "_cols": 4,
                     "_type": "float",
                     "_ending": "cm",
                     "_default_value": 3.5
                 },
-                "max_diameter": {
-                    "_title": "最大徑",
+                "最大徑": {
                     "_cols": 4,
                     "_type": "float",
                     "_ending": "mm",
@@ -464,8 +428,7 @@
                         "3. Hard"
                     ]
                 },
-                "tumour_summary": {
-                    "_title": "檢查小結",
+                "檢查小結": {
                     "_type": "big_string",
                     "_cols": 12,
                     "_default_value": "What is life?",
@@ -473,8 +436,7 @@
                 }
             }
         },
-        "overall_summary": {
-            "_title": "報告總結",
+        "報告總結": {
             "_type": "big_string",
             "_max_string_length": 8096,
             "_cols": 12,
