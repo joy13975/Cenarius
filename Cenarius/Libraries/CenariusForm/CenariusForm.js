@@ -140,7 +140,7 @@ function main(global, $) {
 
 class FormGenerator {
     constructor(forma, formi) {
-        this.fieldID = 0;
+        this.fieldIDCounter = 0;
         this.forma = forma; // Form + schema data
         this.formi = formi; // Information about the forma
         this.data = {};
@@ -154,14 +154,15 @@ class FormGenerator {
 
     genDoms() {
         const sgSelf = this;
-        return _.map(Object.keys(this.forma),
-            function(key) {
-                return sgSelf.visitFormaNode(sgSelf.forma, key, sgSelf.data);
-            }
-        );
+        const doms = _.map(Object.keys(sgSelf.forma),
+            function(topLvKey) {
+                return sgSelf.visitFormaNode(sgSelf.forma, topLvKey, sgSelf.data);
+            });
+
+        return doms;
     }
 
-    visitFormaNode(fNode, key, dNode, noDescend = false) {
+    visitFormaNode(fNode, key, dNode) {
         const fgSelf = this;
 
         // Convert strings into a proper fNode
@@ -217,11 +218,11 @@ class FormGenerator {
             );
         };
 
-        if (noDescend &&
+        if (this.inComplexEnum &&
             (inferredType == 'object' ||
                 inferredType == 'subobject' ||
                 inferredType == 'enum')) {
-            alert('Illigal forma node: noDescend was set, but encountered a ' + inferredType);
+            alert('Illigal forma node: inComplexEnum=true but encountered ' + inferredType);
             return undefined;
         }
 
@@ -291,7 +292,7 @@ class FormGenerator {
     genObj(fNode, key, name, sandwich, dNode) {
         console.log('genObj(' + key + ')');
 
-        //Not a field so do not increment this.fieldID
+        //Not a field so do not increment this.fieldIDCounter
         const fieldID = key + '_grouping';
 
         const headingDoms = [name];
@@ -349,7 +350,7 @@ class FormGenerator {
                 name: 'subobject-tabcontent'
             });
 
-        const fidBeforeSandwich = this.fieldID;
+        const fidBeforeSandwich = this.fieldIDCounter;
         const makeSOI = () => {
             const keys = _.map(Object.keys(soDNode._instances), (k) => {
                 return Number(k);
@@ -497,6 +498,7 @@ class FormGenerator {
     };
 
     genEnum(fNode, key, name, sandwich, dNode) {
+        const fgSelf = this;
         console.log('genEnum(' + key + ')');
 
         const fieldID = this.getNextID(key);
@@ -539,11 +541,19 @@ class FormGenerator {
             if (needCheckbox)
                 selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
 
+            fgSelf.enumOptions.push({
+                fieldID: fieldID + '::AllowNewValues',
+                value: false
+            });
             _.each(Object.keys(enumData), (enumKey) => {
                 const item = enumData[enumKey];
                 const optionName = typeof item === 'object' ? item._title : String(item);
 
                 selectOptions.push($_$('option', {}, [optionName]));
+                fgSelf.enumOptions.push({
+                    fieldID: fieldID,
+                    value: optionName
+                });
             })
 
             const selectDom = $_$('select', {
@@ -616,15 +626,20 @@ class FormGenerator {
                     name: 'choice-type-icon'
                 });
 
-            const enumDNode = {
+            const enumDNode = (dNode[fieldID] = {
                 _type: 'string'
-            };
-            dNode[fieldID] = enumDNode;
+            });
 
-            this.setComplexEnumMode(true);
+            // Allow new values because some fields require input
+            fgSelf.enumOptions.push({
+                fieldID: fieldID + '::AllowNewValues',
+                value: true
+            });
+
+            this.setComplexEnumMode(fieldID);
             const dom =
                 DomMaker.genPanel([name, choiceTypeIcon],
-                    sandwich(enumDNode, true),
+                    sandwich(enumDNode, ),
                     nCols, {
                         name: 'cenarius-single-choice-group',
                         id: fieldID,
@@ -736,7 +751,7 @@ class FormGenerator {
                                 type: 'checkbox',
                                 id: fieldID,
                                 name: fieldID,
-                                class: this.inComplexEnum ? 'single-choice-checkbox' : '',
+                                class: freezeInComplexEnum ? 'single-choice-checkbox' : '',
                                 autocomplete: 'off',
                             }
 
@@ -754,6 +769,13 @@ class FormGenerator {
                                     myDNode._value = $(this).is(':checked');
                                 }
                             });
+
+                            if (freezeInComplexEnum) {
+                                this.enumOptions.push({
+                                    fieldID: freezeInComplexEnum,
+                                    value: name
+                                });
+                            }
 
                             const ckbxDoms =
                                 [
@@ -826,7 +848,7 @@ class FormGenerator {
                                 const ckbxWrappedDoms =
                                     DomMaker.genCheckboxWrapper(
                                         fieldID,
-                                        this.inComplexEnum,
+                                        freezeInComplexEnum,
                                         regularFieldDoms,
                                         function() {
                                             const $this = $(this);
@@ -897,18 +919,18 @@ class FormGenerator {
     }
 
     resetComplexEnumMode() {
-        this.setComplexEnumMode(false);
+        this.setComplexEnumMode('');
         // console.log('resetComplexEnumMode(' + this.inComplexEnum + ')');
     }
 
-    setComplexEnumMode(mode) {
-        this.inComplexEnum = mode;
+    setComplexEnumMode(enumID) {
+        this.inComplexEnum = enumID;
         // console.log('setComplexEnumMode(' + this.inComplexEnum + ')');
     }
 
     getNextID(key) {
-        const id = identifierize(key + '_f' + this.fieldID);
-        this.fieldID++;
+        const id = identifierize(key + '_f' + this.fieldIDCounter);
+        this.fieldIDCounter++;
         return id;
     }
 }
@@ -1177,7 +1199,7 @@ class DomMaker {
                 DomMaker.genTabRef('di-tables', 'Tables')
             );
             diHeaderDom.append(
-                DomMaker.genTabRef('di-forma', 'Forma')
+                DomMaker.genTabRef('di-forma', 'FormGen')
             );
             diHeaderDom.append(
                 DomMaker.genTabRef('di-data', 'Data')
@@ -1214,7 +1236,7 @@ class DomMaker {
                     $_$('pre', {
                         style: 'white-space: pre-wrap'
                     }, [
-                        JSON.stringify(formGen.forma, null, 2)
+                        JSON.stringify(formGen, null, 2)
                     ])
                 ])
             );
@@ -1843,21 +1865,17 @@ function getNameFromKey(key) {
 }
 
 const NonAlphaNumeric = new RegExp('[^a-zA-Z0-9]', 'g');
+
 function titleize(str) {
     let capNext = true;
     let newStr = '';
 
-    for(let i = 0; i < str.length; i++)
-    {
+    for (let i = 0; i < str.length; i++) {
         let c = str.charAt(i);
-        if(c.match(NonAlphaNumeric) !== null)
-        {
+        if (c.match(NonAlphaNumeric) !== null) {
             capNext = true;
-        }
-        else
-        {
-            if(capNext)
-            {
+        } else {
+            if (capNext) {
                 c = c.toUpperCase();
                 capNext = false;
             }
