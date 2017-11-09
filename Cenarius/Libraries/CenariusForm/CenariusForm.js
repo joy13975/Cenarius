@@ -1568,19 +1568,19 @@ class SummaryGenerator {
             '(#)' +
             (noBreakAfterTitle ? '... ' : '<br>');
 
-        str += mapJoin(tabHeaders.children(), function(tabHeader) {
-            console.log('child of: ' + name)
-            const tabName = sgSelf.getPlainText($(tabHeader));
-            let tabHref = $(tabHeader).children('a')[0].getAttribute('href');
-            const tabID = tabHref.substring(tabHref.lastIndexOf('#'));
-            const tabBody = $(tabContent).children(tabID);
+        str += mapJoin(tabHeaders.children(),
+            function(tabHeader) {
+                const tabName = sgSelf.getPlainText($(tabHeader));
+                let tabHref = $(tabHeader).children('a')[0].getAttribute('href');
+                const tabID = tabHref.substring(tabHref.lastIndexOf('#'));
+                const tabBody = $(tabContent).children(tabID);
 
-            const tabBodyStr = mapJoin($(tabBody).children(), function(tabBodyElt) {
-                return sgSelf.visitDomNode(tabBodyElt);
-            });
+                const tabBodyStr = mapJoin($(tabBody).children(), function(tabBodyElt) {
+                    return sgSelf.visitDomNode(tabBodyElt);
+                });
 
-            return tabName + ':<br>' + tabBodyStr + '<br><br>';
-        }, '<br>');
+                return tabName + ':<br>' + tabBodyStr + '<br><br>';
+            }, '<br>');
 
         str += noBreakAfter ? ' ' : '<br>';
 
