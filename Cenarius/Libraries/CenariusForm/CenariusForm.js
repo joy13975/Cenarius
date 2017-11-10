@@ -36,8 +36,8 @@ var config = {
     maxLength: {
         float: '-1',
         integer: '-1',
-        big_string: '4096',
-        string: '1024',
+        big_string: '2048',
+        string: '512',
         boolean: '-1',
         date: '-1',
         label: '-1'
@@ -79,6 +79,7 @@ const SummaryStyleTable = Object.freeze({
 
 const NoneIdentifierCharRegexStr = Object.freeze(/[^a-zA-Z\d\u4e00-\u9eff]+/);
 const formCtrlUpdateEvents = Object.freeze('keyup change focus');
+const enumOptionsAllowNewEntryStr = Object.freeze('::AllowNewEntry');
 
 function domReady() {
     // Fix button stuck in focus when alert shows up
@@ -347,7 +348,7 @@ class FormGenerator {
 
         const soDNode = {
             name: fieldID,
-            type: fNode.type,
+            sqlHint: 'subobject',
             instances: {}
         };
         dNode.push(soDNode);
@@ -555,7 +556,7 @@ class FormGenerator {
                 selectOptions.push($_$('option', {}, [config.defaultEnumOptionText]));
 
             fgSelf.enumOptions.push({
-                fieldID: fieldID + '::AllowNewValues',
+                fieldID: fieldID + enumOptionsAllowNewEntryStr,
                 value: false
             });
             _.each(Object.keys(enumData), (enumKey) => {
@@ -614,7 +615,7 @@ class FormGenerator {
             // Create data node for containing the result string
             const myDNode = {
                 name: fieldID,
-                type: 'enum'
+                sqlHint: 'enum'
             };
             dNode.push(myDNode);
 
@@ -641,13 +642,13 @@ class FormGenerator {
 
             const myDNode = {
                 name: fieldID,
-                type: 'enum'
+                sqlHint: 'enum'
             };
             dNode.push(myDNode);
 
             // Allow new values because some fields require input
             fgSelf.enumOptions.push({
-                fieldID: fieldID + '::AllowNewValues',
+                fieldID: fieldID + enumOptionsAllowNewEntryStr,
                 value: true
             });
 
@@ -678,7 +679,7 @@ class FormGenerator {
         // Complex enums simply fill parent dNode.value
         const myDNode = this.inComplexEnum ? dNode : {
             name: fieldID,
-            type: fNode.type
+            sqlHint: SQLHintTable[fNode.type]
         };
 
         // Type related flags
@@ -709,10 +710,11 @@ class FormGenerator {
 
         // String flags
         const maxStringLength =
-            isInt(fNode.max_string_length) ?
-            fNode.max_string_length : config.maxLength[type];
+            Math.min(4000, isInt(fNode.max_string_length) ?
+                fNode.max_string_length : config.maxLength[type]);
+        // 4k is Sql nvarchar max len
 
-        if (fNode.type === 'string')
+        if (htmlInputType === 'text')
             fNode.maxStringLength = maxStringLength;
 
         const textAlignment = isTextArea ?
@@ -1171,40 +1173,41 @@ class DomMaker {
                     class: 'glyphicon glyphicon-trash'
                 }), [' Clear Fields']
             ]);
-        $(resetFieldsBtn).on('click', function(e) {
-            if (confirm('Are you sure you want to reset (clear) all fields?')) {
-                // Spawn new SOI first, then clear individual fields
-                _.each(Object.keys(formGen.soMethods), (somKey) => {
-                    const som = formGen.soMethods[somKey];
-                    som.clearSOI();
-                    som.genMinSOI();
-                });
+        $(resetFieldsBtn).on('click',
+            function(e) {
+                if (confirm('Are you sure you want to reset (clear) all fields?')) {
+                    // Spawn new SOI first, then clear individual fields
+                    _.each(Object.keys(formGen.soMethods), (somKey) => {
+                        const som = formGen.soMethods[somKey];
+                        som.clearSOI();
+                        som.genMinSOI();
+                    });
 
-                $('input').each(function() {
-                    const $this = $(this);
-                    const propType = $this.prop('type');
-                    if (propType === 'checkbox') {
-                        setCheckbox($this, false);
-                    } else if (propType === 'number') {
-                        $this.prop('value', 0);
-                    } else if (propType === 'date') {
-                        $this.prop('value', (new Date()).toISOString().slice(0, 10));
-                    } else {
+                    $('input').each(function() {
+                        const $this = $(this);
+                        const propType = $this.prop('type');
+                        if (propType === 'checkbox') {
+                            setCheckbox($this, false);
+                        } else if (propType === 'number') {
+                            $this.prop('value', 0);
+                        } else if (propType === 'date') {
+                            $this.prop('value', (new Date()).toISOString().slice(0, 10));
+                        } else {
+                            $this.prop('value', '');
+                        }
+                    })
+
+                    $('textarea').each(function() {
+                        const $this = $(this);
                         $this.prop('value', '');
-                    }
-                })
+                    })
 
-                $('textarea').each(function() {
-                    const $this = $(this);
-                    $this.prop('value', '');
-                })
-
-                _.each($('select').children(), (sc) => {
-                    sc.removeAttribute('selected');
-                });
-                $($('select').children()[0]).attr('selected', true);
-            }
-        })
+                    _.each($('select').children(), (sc) => {
+                        sc.removeAttribute('selected');
+                    });
+                    $($('select').children()[0]).attr('selected', true);
+                }
+            })
 
         const genSumBtn =
             $_$('button', {

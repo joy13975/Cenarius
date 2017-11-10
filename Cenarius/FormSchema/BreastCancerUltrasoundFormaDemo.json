@@ -442,7 +442,7 @@
         },
         "報告總結": {
             "type": "big_string",
-            "max_string_length": 8096,
+            "max_string_length": 4000,
             "cols": 12,
             "default_value": "Life is about finding happiness."
         }
