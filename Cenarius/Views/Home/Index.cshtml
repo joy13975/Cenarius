@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>@ViewData["Title"]</title>
+    <title>Cenarius</title>
 
     <!-- css deps -->
     <link rel="stylesheet" href="../../Libraries/Bootstrap/bootstrap.min.css" />
@@ -13,17 +13,32 @@
     <script type="text/javascript" src="../../Libraries/JQuery/jquery.min.js"></script>
     <script type="text/javascript" src="../../Libraries/Underscore/underscore-min.js"></script>
     <script type="text/javascript" src="../../Libraries/Bootstrap/bootstrap.min.js"></script>
-
-    <script type="text/javascript" src="../../Libraries/CenariusForm/CenariusForm.js"></script>
-
 </head>
 
-<body>
-    <cenarius-form></cenarius-form>
-
-    <script type="text/javascript">
-        $('cenarius-form').cenarius('@ViewData["Heading"]', @Html.Raw(ViewData["Forma"]));
-        console.log('(ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])');
-    </script>
+<body style="background: #2f5437" id="bootstrap-overrides">
+    <div class="panel panel-default forma-uploader">
+        <div class="panel-heading">
+            <font style="text-align: center">
+                <h2>
+                    <b>
+                        Upload New Forma
+                    </b>
+                </h2>
+            </font>
+        </div>
+        <form action="~/UploadForma" method="post" enctype='multipart/form-data'>
+            <div class="panel-body">
+                <div class="container-fluid" style="margin-top: 40px; margin-left: 30px;">
+                    <div class="row">
+                        <input type="file" name="formaFile" accept=".json"/>
+                        <button type="submit" class="btn btn-primary" style="float: right; margin-top: -30px; margin-right: 30px">
+                            <span class="glyphicon glyphicon-cloud-upload" style="font-size: 25px"></span>
+                            <font size="5">Submit</font>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

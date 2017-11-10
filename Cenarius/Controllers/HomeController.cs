@@ -6,6 +6,10 @@ using Cenarius.Models;
 using System.Data.SqlClient;
 using System.Web.Hosting;
 using Newtonsoft.Json;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
 
 namespace Cenarius.Controllers
 {
@@ -13,7 +17,7 @@ namespace Cenarius.Controllers
     public class HomeController : Controller
     {
         private string sqlStr = "Server=tcp:cenarius.database.windows.net,1433;Initial Catalog=CenariusAppDB;Persist Security Info=False;User ID={your_username};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-        JObject forma;
+        string formaPath = "~/FormSchema/";
 
         private class SqlCred
         {
@@ -23,11 +27,6 @@ namespace Cenarius.Controllers
 
         public HomeController()
         {
-            string bcuPathHeader = "~/FormSchema/BreastCancerUltrasound";
-            string formaPath = HostingEnvironment.MapPath(bcuPathHeader + "FormaDemo.json");
-            string formaStr = System.IO.File.ReadAllText(formaPath);
-            this.forma = JObject.Parse(formaStr);
-
             string scPath = HostingEnvironment.MapPath("~/SqlCredentials.json");
             string scStr = System.IO.File.ReadAllText(scPath);
             SqlCred sqlCreds = JsonConvert.DeserializeObject<SqlCred>(scStr);
@@ -37,18 +36,78 @@ namespace Cenarius.Controllers
 
         public ActionResult Index()
         {
+            return New("BCU");
+        }
+
+        [HttpPost]
+        public ActionResult UploadForma(HttpPostedFileBase formaFile)
+        {
+            try
+            {
+                string fn = formaFile.FileName;
+
+                // Check that file name is usable
+                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formaPath));
+                if (files.Where(f => Path.GetFileName(f).ToLower() == fn).Count() > 0)
+                {
+                    ViewData["Heading"] = "Upload Error";
+                    ViewData["Message"] = "Forma name \"" + fn + "\" is taken by existing files";
+                    return View("Error");
+                }
+
+                // Try parsing file to check that it's a good JSON
+                StreamReader sr = new StreamReader(formaFile.InputStream);
+                JObject jsonData = JObject.Parse(sr.ReadToEnd());
+
+                // Store file
+                Debug.WriteLine("Upload checks ok for \"" + fn + "\"; writing...");
+                string outputPath = Path.Combine(HostingEnvironment.MapPath(formaPath), fn);
+                System.IO.File.WriteAllText(outputPath, JsonConvert.SerializeObject(jsonData));
+                return RedirectToAction("New", new { name = fn.Replace(".json", "")});
+            }
+            catch (Exception e)
+            {
+                ViewData["Heading"] = "Unhandled Upload Error";
+                ViewData["Message"] = e.Message + "\n\n\n" + e.StackTrace;
+                return View("Error");
+            }
+        }
+
+        public ActionResult New(string name)
+        {
             var mvcName = typeof(Controller).Assembly.GetName();
             var isMono = Type.GetType("Mono.Runtime") != null;
 
             ViewData["Version"] = mvcName.Version.Major + "." + mvcName.Version.Minor;
             ViewData["Runtime"] = isMono ? "Mono" : ".NET";
 
-            ViewData["Title"] = "新光醫院 [乳房超音波診斷] 資料輸入頁面";
-            ViewData["Heading"] = "【附表二】乳房超音波檢查報告單";
+            string filePath = Path.Combine(HostingEnvironment.MapPath(formaPath), (name + ".json"));
+            string fileContent;
+            try
+            {
+                fileContent = System.IO.File.ReadAllText(filePath);
+                JObject data = JObject.Parse(fileContent);
 
-            ViewData["Forma"] = this.forma.ToString(Newtonsoft.Json.Formatting.Indented);
+                ViewData["Title"] = (string)data["formi"]["title"];
+                ViewData["Heading"] = (string)data["formi"]["heading"];
+                ViewData["Forma"] = data.ToString(Newtonsoft.Json.Formatting.Indented);
 
-            return View();
+                return View();
+            }
+            catch (Exception e)
+            {
+                ViewData["Heading"] = "Could not open specified forma: \"" + name + "\"";
+
+                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formaPath));
+
+                ViewData["Message"] = "Hint: did you specify a forma name? e.g. /new?name=bcu\n" +
+                    "If you did, then this file does not exist on the server.\n" +
+                    "If you didn't, then try specifying a forma name.\n\n" +
+                    "Available forma files are: \n" +
+                    string.Join(",\n", files.Select(f => Path.GetFileName(f)).ToList());
+                Debug.WriteLine(e.Message + "\n\n" + e.StackTrace);
+                return View("Error");
+            }
         }
 
         [HttpPost]

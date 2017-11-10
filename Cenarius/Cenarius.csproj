@@ -132,6 +132,8 @@
     <Content Include="Libraries\CenariusForm\cenarius-jsonform.js" />
     <Content Include="Libraries\JQuery\jquery.min.js" />
     <Content Include="Libraries\Underscore\underscore-min.js" />
+    <Content Include="Views\Home\New.cshtml" />
+    <Content Include="Views\Home\Error.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />

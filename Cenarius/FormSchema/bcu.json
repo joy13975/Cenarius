@@ -1,6 +1,8 @@
 {
     "formi": {
-        "table_name": "breast_cancer_ultrasound"
+        "table_name": "breast_cancer_ultrasound",
+        "title": "新光醫院 [乳房超音波診斷] 資料輸入頁面",
+        "heading": "【附表二】乳房超音波檢查報告單"
     },
     "forma": {
         "基本資料": {
@@ -9,12 +11,8 @@
                 "受檢者": {
                     "default_cols": 4,
                     "properties": {
-                        "病歷號": {
-                            "default_value": "A1337"
-                        },
-                        "姓名": {
-                            "default_value": "王小明"
-                        },
+                        "病歷號": {},
+                        "姓名": {},
                         "今日檢查次數": {
                             "ending": "次",
                             "type": "integer",
@@ -29,21 +27,15 @@
                         "日期": {
                             "type": "date"
                         },
-                        "編號 ": {
-                            "default_value": "B12938"
-                        },
+                        "編號 ": {},
                         "次數": {
                             "ending": "次",
                             "type": "integer",
                             "min": 0,
                             "default_value": 1
                         },
-                        "操作者編號": {
-                            "default_value": "C000301"
-                        },
-                        "判讀者編號": {
-                            "default_value": "D000010"
-                        },
+                        "操作者編號": {},
+                        "判讀者編號": {},
                         "檢查機器編號": {
                             "default_value": "N/A"
                         },
@@ -53,8 +45,7 @@
                                 "Screening US",
                                 "Diagnostic US",
                                 "Both"
-                            ],
-                            "default_value": 1
+                            ]
                         }
                     }
                 }
@@ -65,8 +56,7 @@
             "summary_style": "exclude",
             "properties": {
                 "00. Asymptomatic Screening": {
-                    "cols": 12,
-                    "default_value": true
+                    "cols": 12
                 },
                 "10. Exam for symptomatic patient": {
                     "cols": 12,
@@ -94,18 +84,6 @@
                     "default_children_type": "boolean",
                     "default_cols": 4,
                     "properties": {
-                        "test_so_lv2": {
-                            "type": "subobject",
-                            "properties": {
-                                "fill_me": {
-                                    "default_value": "よかった"
-                                },
-                                "fill_me2": {
-                                    "type": "float",
-                                    "default_value": 1337.9
-                                }
-                            }
-                        },
                         "location": {
                             "default_children_type": "boolean",
                             "cols": 8,
@@ -145,9 +123,7 @@
                             }
                         },
                         "21. Mass": {},
-                        "22. Calcification": {
-                            "default_value": true
-                        },
+                        "22. Calcification": {},
                         "23. Asymmetry": {},
                         "24. Architecture distortion": {},
                         "25. Others": {
@@ -163,8 +139,7 @@
                                 "B",
                                 "C",
                                 "D"
-                            ],
-                            "default_value": 2
+                            ]
                         },
                         "27. Recomendation": {
                             "type": "string",
@@ -178,15 +153,12 @@
                     "default_cols": 12,
                     "default_children_type": "boolean",
                     "properties": {
-                        "31. Fibroadenoma": {
-                            "default_value": true
-                        },
+                        "31. Fibroadenoma": {},
                         "32. Fibrocystic change": {},
                         "33. Cyst": {},
                         "34. Other": {
                             "require_input": "string",
-                            "force_checkbox": true,
-                            "default_value": "not sure"
+                            "force_checkbox": true
                         }
                     }
                 },
@@ -238,10 +210,8 @@
                 "biopsy_and_other_evaluation_suggestion": {
                     "cols": 12,
                     "default_cols": 3,
-                    "enum": [{
-                            "title": "0. No need biopsy",
-                            "default_value": true
-                        },
+                    "enum": [
+                        "0. No need biopsy",
                         "1. Aspiration cytology",
                         "2. Core biopsy",
                         "3. Open biopsy",
@@ -286,21 +256,18 @@
                     "cols": 4,
                     "ending": "o'clock",
                     "type": "integer",
-                    "default_value": 2,
                     "min": 0,
                     "max": 24
                 },
                 "距離乳頭距離": {
                     "cols": 4,
                     "type": "float",
-                    "ending": "cm",
-                    "default_value": 3.5
+                    "ending": "cm"
                 },
                 "最大徑": {
                     "cols": 4,
                     "type": "float",
-                    "ending": "mm",
-                    "default_value": 5
+                    "ending": "mm"
                 },
                 "shape": {
                     "cols": 4,
@@ -355,7 +322,6 @@
                         "2. Duct Changes ": {},
                         "3. Skin changes/Skin Thickening": {},
                         "4. Skin changes/Skin Retraction": {
-                            "default_value": true,
                             "cols": 6
                         },
                         "5. Edema": {
@@ -380,7 +346,6 @@
                         "1. Duct changes": {},
                         "2. Cooper’s ligament changes": {},
                         "3. Edema": {
-                            "default_value": true
                         },
                         "4. Architectural distortion": {},
                         "5. Skin thickening": {},
@@ -400,8 +365,7 @@
                             "cols": 4,
                         },
                         "6. VascularAbnormalities/AVM (Arteriovenousmalformations/pseudoaneurysms)": {
-                            "cols": 8,
-                            "default_value": true
+                            "cols": 8
                         },
                         "7. VascularAbnormalities/Mondor Disease": {},
                         "8. Postsurgical Fluid Collection": {},
@@ -435,7 +399,6 @@
                     "summary_style": "break_before",
                     "type": "big_string",
                     "cols": 12,
-                    "default_value": "What is life?",
                     "summary_style": "break_before"
                 }
             }
@@ -443,8 +406,7 @@
         "報告總結": {
             "type": "big_string",
             "max_string_length": 4000,
-            "cols": 12,
-            "default_value": "Life is about finding happiness."
+            "cols": 12
         }
     }
 }

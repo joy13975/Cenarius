@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- css deps -->
+    <link rel="stylesheet" href="../../Libraries/Bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="../../Libraries/CenariusForm/CenariusForm.css" />
+
+    <!-- js deps -->
+    <script type="text/javascript" src="../../Libraries/JQuery/jquery.min.js"></script>
+    <script type="text/javascript" src="../../Libraries/Underscore/underscore-min.js"></script>
+    <script type="text/javascript" src="../../Libraries/Bootstrap/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="../../Libraries/CenariusForm/CenariusForm.js"></script>
+
+</head>
+
+<body>
+    <cenarius-form></cenarius-form>
+
+    <script type="text/javascript">
+        $('cenarius-form').cenarius('@ViewData["Heading"]', @Html.Raw(ViewData["Forma"]));
+        console.log('(ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])');
+    </script>
+</body>
+</html>
