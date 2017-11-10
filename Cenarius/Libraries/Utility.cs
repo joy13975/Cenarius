@@ -18,6 +18,5 @@ namespace Cenarius.Libraries
             {"bit", SqlDbType.Bit},
             {"date", SqlDbType.Date}
         };
-
     }
 }

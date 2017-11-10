@@ -98,8 +98,10 @@ namespace Cenarius.Models
                         " VALUES (" + fidPName + "," + valPName + ")";
                     SqlCommand addAllowNewEntryCmd =
                         new SqlCommand(addAllowNewEntryCmdTxt, this.MyConnection, this.MyTransaction);
-                    addAllowNewEntryCmd.Parameters.Add(fidPName, SqlDbType.NVarChar, -1).Value = enumDNode.name;
-                    addAllowNewEntryCmd.Parameters.Add(valPName, SqlDbType.NVarChar, -1).Value = enumDNode.value;
+                    addAllowNewEntryCmd.Parameters.Add(fidPName, SqlDbType.NVarChar, -1).Value =
+                        (Object) enumDNode.name ?? DBNull.Value;
+                    addAllowNewEntryCmd.Parameters.Add(valPName, SqlDbType.NVarChar, -1).Value =
+                        (Object) enumDNode.value ?? DBNull.Value;
                     addAllowNewEntryCmd.Prepare();
 
                     int newEnumOptionID = (int)addAllowNewEntryCmd.ExecuteScalar();
@@ -131,8 +133,10 @@ namespace Cenarius.Models
 
             SqlCommand selEnumOptionCmd =
                 new SqlCommand(selEnumOptionCmdTxt, this.MyConnection, this.MyTransaction);
-            selEnumOptionCmd.Parameters.Add(fidPName, SqlDbType.NVarChar, -1).Value = enumDNode.name;
-            selEnumOptionCmd.Parameters.Add(valPName, SqlDbType.NVarChar, -1).Value = enumDNode.value;
+            selEnumOptionCmd.Parameters.Add(fidPName, SqlDbType.NVarChar, -1).Value = 
+                (Object) enumDNode.name ?? DBNull.Value;
+            selEnumOptionCmd.Parameters.Add(valPName, SqlDbType.NVarChar, -1).Value =
+                (Object)enumDNode.value ?? DBNull.Value;
             selEnumOptionCmd.Prepare();
 
             List<int> foundIDs = new List<int>();
@@ -194,7 +198,7 @@ namespace Cenarius.Models
                     Debug.WriteLine("Enum field: " + dn.name + ", val: " + dn.value);
 
                     insertRowsCmd.Parameters.Add("@" + dn.name, SqlDbType.Int, -1).Value =
-                        this.QueryEnumOptions(dn);
+                        dn.value == "--" ? DBNull.Value : (Object) this.QueryEnumOptions(dn);
                 }
                 else
                 {
@@ -203,7 +207,8 @@ namespace Cenarius.Models
                     SqlDbType sqlType;
                     if (!Utility.SqlHintToSqlType.TryGetValue(dn.sqlHint, out sqlType))
                         throw new Exception("SqlHint \"" + dn.sqlHint + "\" could not be mapped to type");
-                    insertRowsCmd.Parameters.Add("@" + dn.name.Replace(".", "_"), sqlType, -1).Value = dn.value;
+                    insertRowsCmd.Parameters.Add("@" + dn.name.Replace(".", "_"), sqlType, -1).Value =
+                        (Object) dn.value ?? DBNull.Value;
                 }
             }
 
