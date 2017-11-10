@@ -82,7 +82,8 @@ namespace Cenarius.Models
                 bool allowed = aneVals.ElementAt(0).ToLower() == "true";
                 if (!allowed)
                 {
-                    throw new Exception("Adding new Enum Option is not allowed");
+                    throw new Exception("Adding new Enum Option is not allowed\n" +
+                        "Enum Name: " + enumDNode.name + ", Value: " + enumDNode.value);
                 }
                 else
                 {
