@@ -1,24 +1,40 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Web;
 using System.Web.Mvc;
-using System.Web.Mvc.Ajax;
-using System.Web.Script.Serialization;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using Cenarius.Models;
 using System.Data.SqlClient;
-using System.Data;
+using System.Web.Hosting;
+using Newtonsoft.Json;
 
 namespace Cenarius.Controllers
 {
     [Filters.GlobalErrorHandler]
     public class HomeController : Controller
     {
-        const string sqlStr = "Server=tcp:cenarius.database.windows.net,1433;Initial Catalog=CenariusAppDB;Persist Security Info=False;User ID=illidan;Password=YouAreNotPrepared555;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-        
+        private string sqlStr = "Server=tcp:cenarius.database.windows.net,1433;Initial Catalog=CenariusAppDB;Persist Security Info=False;User ID={your_username};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+        JObject forma;
+
+        private class SqlCred
+        {
+            public string username { get; set; }
+            public string password { get; set; }
+        }
+
+        public HomeController()
+        {
+            string bcuPathHeader = "~/FormSchema/BreastCancerUltrasound";
+            string formaPath = HostingEnvironment.MapPath(bcuPathHeader + "FormaDemo.json");
+            string formaStr = System.IO.File.ReadAllText(formaPath);
+            this.forma = JObject.Parse(formaStr);
+
+            string scPath = HostingEnvironment.MapPath("~/SqlCredentials.json");
+            string scStr = System.IO.File.ReadAllText(scPath);
+            SqlCred sqlCreds = JsonConvert.DeserializeObject<SqlCred>(scStr);
+            sqlStr = sqlStr.Replace("{your_username}", sqlCreds.username)
+                .Replace("{your_password}", sqlCreds.password);
+        }
+
         public ActionResult Index()
         {
             var mvcName = typeof(Controller).Assembly.GetName();
@@ -30,14 +46,7 @@ namespace Cenarius.Controllers
             ViewData["Title"] = "新光醫院 [乳房超音波診斷] 資料輸入頁面";
             ViewData["Heading"] = "【附表二】乳房超音波檢查報告單";
 
-            string bcuPathHeader = "~/FormSchema/BreastCancerUltrasound";
-
-
-            string formaPath = HttpContext.Server.MapPath(bcuPathHeader + "FormaDemo.json");
-            string formaStr = System.IO.File.ReadAllText(formaPath);
-            JObject forma = JObject.Parse(formaStr);
-
-            ViewData["Forma"] = forma.ToString(Newtonsoft.Json.Formatting.Indented);
+            ViewData["Forma"] = this.forma.ToString(Newtonsoft.Json.Formatting.Indented);
 
             return View();
         }

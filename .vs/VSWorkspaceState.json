@@ -2,10 +2,13 @@
   "ExpandedNodes": [
     "",
     "\\Cenarius",
+    "\\Cenarius\\Controllers",
+    "\\Cenarius\\FormSchema",
+    "\\Cenarius\\Libraries",
     "\\Cenarius\\Views",
     "\\Cenarius\\Views\\Home",
     "\\Cenarius\\Views\\Shared"
   ],
-  "SelectedNode": "\\Cenarius\\Views\\Home\\Index.cshtml",
+  "SelectedNode": "\\Cenarius.sln",
   "PreviewInSolutionExplorer": false
 }
