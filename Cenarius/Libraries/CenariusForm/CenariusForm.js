@@ -1154,7 +1154,6 @@ class DomMaker {
             $_$('form', {
                 class: 'row',
                 name: 'cenarius-form',
-                action: '/Home/Test1',
                 method: 'post'
             }, [$_$('div', {
                 class: 'col-md-12',

@@ -36,7 +36,7 @@ namespace Cenarius.Controllers
 
         public ActionResult Index()
         {
-            return New("BCU");
+            return View();
         }
 
         [HttpPost]
@@ -100,7 +100,7 @@ namespace Cenarius.Controllers
 
                 string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formaPath));
 
-                ViewData["Message"] = "Hint: did you specify a forma name? e.g. /new?name=bcu\n" +
+                ViewData["Message"] = "Hint: did you specify a forma name? e.g. /Home/New?name=bcu\n" +
                     "If you did, then this file does not exist on the server.\n" +
                     "If you didn't, then try specifying a forma name.\n\n" +
                     "Available forma files are: \n" +
