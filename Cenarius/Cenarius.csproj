@@ -99,7 +99,9 @@
     </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Libraries\Utility.cs" />
+    <Compile Include="Models\DataCommitter.cs" />
     <Compile Include="Models\GenericJson.cs" />
+    <Compile Include="Models\TableInitializer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\jquery-1.10.2.intellisense.js" />

@@ -1336,19 +1336,27 @@ class DomMaker {
             }, ['Submit']);
         $(submitBtn).on('click',
             function(e) {
+                var copy = $.extend(true, {}, e);
+                e.stopPropagation();
+
                 const loader = $_$('div', {
                     class: 'loader'
                 });
                 $('#bootstrap-overrides').append(loader);
+
+                const timeout = 10000;
+                const sb = showSnackbar("Submitting...", timeout);
 
                 postDataToServer(
                     '/Home/Submit', {
                         mainTableName: formGen.mainTableName,
                         data: formGen.data
                     },
-                    5000,
+                    timeout,
                     function() {
                         loader.remove();
+                        $(sb).fadeOut();
+                        $(copy.target.parentNode).trigger(copy);
                     });
             });
 
@@ -1435,7 +1443,7 @@ class DomMaker {
                     sqlGen.tables,
                     timeout,
                     function(res) {
-                        sb.remove();
+                        $(sb).fadeOut();
                         loader.remove();
                     },
                     function(res) {

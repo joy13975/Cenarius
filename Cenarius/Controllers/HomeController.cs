@@ -52,11 +52,13 @@ namespace Cenarius.Controllers
                 using (var conn = new SqlConnection(sqlStr))
                 {
                     conn.Open();
-                    obj.InitializeTables(conn);
+                    new TableInitializer(conn).InitializeTables(obj.postData);
                 }
             }
             catch (Exception e)
             {
+                Debug.WriteLine("Failed MakeTables()");
+                Debug.WriteLine(e);
                 return Json(new { success = false, msg = "Failed to commit data to DB:\n" + e.Message });
             }
 
@@ -73,11 +75,13 @@ namespace Cenarius.Controllers
                 using (var conn = new SqlConnection(sqlStr))
                 {
                     conn.Open();
-                    obj.CommitData(conn);
+                    new DataCommitter(conn).CommitData(obj.postData);
                 }
             }
             catch (Exception e)
             {
+                Debug.WriteLine("Failed Submit()");
+                Debug.WriteLine(e);
                 return Json(new { success = false, msg = "Failed to commit data to DB:\n" + e.Message });
             }
 

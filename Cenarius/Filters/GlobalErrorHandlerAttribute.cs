@@ -11,6 +11,8 @@ namespace Cenarius.Filters
     {
         public void OnException(ExceptionContext filterContext)
         {
+            Debug.WriteLine("GlobalErrorHandlerOnException()");
+
             filterContext.ExceptionHandled = true;
             filterContext.Result = new JsonResult
             {
