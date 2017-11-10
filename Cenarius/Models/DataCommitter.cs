@@ -15,10 +15,12 @@ namespace Cenarius.Models
         private string MainTableName;
         private string EnumOptionsTableName;
         private SqlConnection MyConnection;
+        private SqlTransaction MyTransaction;
 
         public DataCommitter(SqlConnection conn)
         {
             this.MyConnection = conn;
+            this.MyTransaction = conn.BeginTransaction();
         }
 
         private class ParentRecord
@@ -55,7 +57,8 @@ namespace Cenarius.Models
             string fidPName = "@fieldID";
             string selAllowNewEntryCmdTxt = "SELECT * FROM [" + this.EnumOptionsTableName + "]" +
                     " WHERE fieldID = " + fidPName;
-            SqlCommand selAllowNewEntryCmd = new SqlCommand(selAllowNewEntryCmdTxt, this.MyConnection);
+            SqlCommand selAllowNewEntryCmd =
+                new SqlCommand(selAllowNewEntryCmdTxt, this.MyConnection, this.MyTransaction);
             selAllowNewEntryCmd.Parameters.Add(fidPName, SqlDbType.NVarChar, -1).Value = enumDNode.name + "::AllowNewEntry";
             selAllowNewEntryCmd.Prepare();
 
@@ -93,7 +96,8 @@ namespace Cenarius.Models
                         " (fieldID, value)" +
                         " OUTPUT INSERTED.id" +
                         " VALUES (" + fidPName + "," + valPName + ")";
-                    SqlCommand addAllowNewEntryCmd = new SqlCommand(addAllowNewEntryCmdTxt, this.MyConnection);
+                    SqlCommand addAllowNewEntryCmd =
+                        new SqlCommand(addAllowNewEntryCmdTxt, this.MyConnection, this.MyTransaction);
                     addAllowNewEntryCmd.Parameters.Add(fidPName, SqlDbType.NVarChar, -1).Value = enumDNode.name;
                     addAllowNewEntryCmd.Parameters.Add(valPName, SqlDbType.NVarChar, -1).Value = enumDNode.value;
                     addAllowNewEntryCmd.Prepare();
@@ -125,7 +129,8 @@ namespace Cenarius.Models
                 " WHERE fieldID = " + fidPName +
                 " AND value = " + valPName;
 
-            SqlCommand selEnumOptionCmd = new SqlCommand(selEnumOptionCmdTxt, this.MyConnection);
+            SqlCommand selEnumOptionCmd =
+                new SqlCommand(selEnumOptionCmdTxt, this.MyConnection, this.MyTransaction);
             selEnumOptionCmd.Parameters.Add(fidPName, SqlDbType.NVarChar, -1).Value = enumDNode.name;
             selEnumOptionCmd.Parameters.Add(valPName, SqlDbType.NVarChar, -1).Value = enumDNode.value;
             selEnumOptionCmd.Prepare();
@@ -164,7 +169,7 @@ namespace Cenarius.Models
 
             // Insert these rows into table (so far only EnumOptions has this)
             List<string> colNames = dns.Select(dn => dn.name).ToList();
-            SqlCommand insertRowsCmd = new SqlCommand(null, this.MyConnection);
+            SqlCommand insertRowsCmd = new SqlCommand(null, this.MyConnection, this.MyTransaction);
 
             // If parent is not null then we need an FKey column
             if (hasParent)
@@ -176,9 +181,9 @@ namespace Cenarius.Models
             }
 
             string insertRowsCmdTxt = "INSERT INTO [" + tableName + "]" +
-                 " (" + (string.Join(", ", colNames.Select(cn => "["+cn+"]").ToList())) + ")" +
+                 " (" + (string.Join(", ", colNames.Select(cn => "[" + cn + "]").ToList())) + ")" +
                  " OUTPUT INSERTED.id" +
-                 " VALUES (" + (string.Join(", ", colNames.Select(cn => "@" + cn.Replace(".","_")))) + ")";
+                 " VALUES (" + (string.Join(", ", colNames.Select(cn => "@" + cn.Replace(".", "_")))) + ")";
 
             insertRowsCmd.CommandText = insertRowsCmdTxt;
 
@@ -245,9 +250,22 @@ namespace Cenarius.Models
 
             this.MainTableName = ds.mainTableName;
             this.EnumOptionsTableName = MainTableName + Utility.EnumOptionsSuffix;
-            this.VisitDataNodes(ds.mainTableName, ds.data);
 
-            return;
+            try
+            {
+                this.VisitDataNodes(ds.mainTableName, ds.data);
+                this.MyTransaction.Commit();
+            }
+            catch(Exception e)
+            {
+                this.MyTransaction.Rollback();
+
+                Debug.WriteLine(e.Message);
+                Debug.WriteLine(e.StackTrace);
+                throw new Exception("Failed to submit data\n" +
+                    "Reason: " + e.Message + "\n\n\n" +
+                    "Info: " + e.StackTrace);
+            }
         }
     }
 }

@@ -208,7 +208,7 @@ button.debug-btn{
     position: fixed; /* Sit on top of the screen */
     z-index: 2000; /* Add a z-index if needed */
     left: 50%; /* Center the snackbar */
-    top: 30px; /* 30px from the bottom */
+	top: 80%;
     max-width: 600px;
     white-space: pre-wrap;
 }
@@ -221,8 +221,8 @@ button.debug-btn{
 	position: absolute;
 	top: calc(50vh - 60px);
 	left: calc(50vw - 60px);
-    border: 16px solid #f3f3f3; /* Light grey */
-    border-top: 16px solid #3498db; /* Blue */
+    border: 16px solid #85e2a0;
+    border-top: 16px solid #e0ffe9;
     border-radius: 50%;
     width: 120px;
     height: 120px;

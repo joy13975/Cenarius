@@ -1430,30 +1430,33 @@ class DomMaker {
             }, ['Make It']);
         $(makeBtn).on('click',
             function(e) {
-                const loader = $_$('div', {
-                    class: 'loader'
-                });
-                $('#bootstrap-overrides').append(loader);
+                if (confirm("About to create tables for this forma. Only proceed if you know what you're doing!\n\n" +
+                        "即將生成資料庫架構, 不懂這是什麼意思的話請按取消!")) {
+                    const loader = $_$('div', {
+                        class: 'loader'
+                    });
+                    $('#bootstrap-overrides').append(loader);
 
-                const timeout = 30000;
-                const sb = showSnackbar('This could take a while (<30s)...', timeout);
+                    const timeout = 30000;
+                    const sb = showSnackbar('This could take a while (<30s)...', timeout);
 
-                postDataToServer(
-                    '/Home/MakeTables',
-                    sqlGen.tables,
-                    timeout,
-                    function(res) {
-                        $(sb).fadeOut();
-                        loader.remove();
-                    },
-                    function(res) {
-                        if (res.success === true) {
-                            showSnackbar('Tables have been initialized!');
-                        } else {
-                            alert('Initialization failed:\n' + res.msg);
+                    postDataToServer(
+                        '/Home/MakeTables',
+                        sqlGen.tables,
+                        timeout,
+                        function(res) {
+                            $(sb).fadeOut();
+                            loader.remove();
+                        },
+                        function(res) {
+                            if (res.success === true) {
+                                showSnackbar('Tables have been initialized!');
+                            } else {
+                                alert('Initialization failed:\n' + res.msg);
+                            }
                         }
-                    }
-                );
+                    );
+                }
             });
 
         const copyBtn =
@@ -1861,16 +1864,17 @@ function postDataToServer(
     completeFunc = () => {},
     succFunc = function(response) {
         if (response.success === true) {
-            showSnackbar('Submit OK!');
+            showSnackbar('Submit OK!\n上傳成功');
         } else {
-            alert('Submit failed:\n' + response.msg);
+            alert('Submit failed\n上傳失敗\n\nReason: ' + response.msg);
         }
     },
     errorFunc = function(response, status) {
         if (status === 'timeout') {
-            alert('Server timedout (' + timeout + 'ms)\nTry again in a minute');
+            alert('Server timedout (' + timeout + 'ms)　- Please try again in a minute\n' +
+                '伺服器逾時，請稍後再重試');
         } else {
-            alert('Error:\n' + response.error);
+            alert('Error\n錯誤\n\n' + response.error);
             console.error('postDataToServer() got an error:');
             console.error(response);
         }
