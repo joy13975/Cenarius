@@ -13,15 +13,18 @@ Excel -> (Intermediate JSON Forma) -> Web Form + SQL DB Schema + Data Binding
 [.] Core<br>
 &nbsp;&nbsp;&nbsp;[x] Form data summarizer<br>
 &nbsp;&nbsp;&nbsp;[x] DB schema generator (SQL/NoSQL)<br>
+&nbsp;&nbsp;&nbsp;[x] Auto create DB<br>
 &nbsp;&nbsp;&nbsp;[.] Client side data binding<br>
-&nbsp;&nbsp;&nbsp;[.] Server side data binding<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[x] Field to obj
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[.] Obj to field
+&nbsp;&nbsp;&nbsp;[x] Server side data binding<br>
 &nbsp;&nbsp;&nbsp;[ ] Excel to JSON Forma translator<br>
 [ ] Move CenariusForm to server side (JS? C#?)<br>
 ## To-fix-or-add:
 [ ] New field: precise date-time (now only date)<br>
 [ ] New field: file upload<br>
 [ ] Either-group should clear input whenever switched<br>
-[ ] Somehow deal with Chinese characters when identifierizing field titles<br>
+[x] Somehow deal with Chinese characters when identifierizing field titles<br>
 ## Low priority TODOs:
 [ ] Section folding button<br>
 [ ] Field validation<br>
