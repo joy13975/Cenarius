@@ -345,6 +345,7 @@ class FormGenerator {
         // Increase field ID to avoid duplicate SO names
         const fieldID = this.getNextSubobjID(key);
         fNode.fieldID = fieldID;
+        const fidBeforeSandwich = Object.freeze(this.fieldIDCounter);
 
         const soDNode = {
             name: fieldID,
@@ -365,7 +366,6 @@ class FormGenerator {
                 name: 'subobject-tabcontent'
             });
 
-        const fidBeforeSandwich = this.fieldIDCounter;
         const makeSOI = () => {
             const keys = _.map(Object.keys(soDNode.instances), (k) => {
                 return Number(k);
@@ -380,7 +380,7 @@ class FormGenerator {
 
             soDNode.instances[idx] = [];
 
-            fgSelf.fieldID = fidBeforeSandwich;
+            fgSelf.fieldIDCounter = fidBeforeSandwich;
             $(soTabHeaderDom).append(
                 DomMaker.genTabRef(
                     soID,
@@ -1343,8 +1343,8 @@ class DomMaker {
                 });
                 $('#bootstrap-overrides').append(loader);
 
-                const timeout = 10000;
-                const sb = showSnackbar("Submitting...", timeout);
+                const timeout = 30000;
+                const sb = showSnackbar("Submitting... (<30s)", timeout);
 
                 postDataToServer(
                     '/Home/Submit', {
@@ -1436,8 +1436,8 @@ class DomMaker {
                     });
                     $('#bootstrap-overrides').append(loader);
 
-                    const timeout = 30000;
-                    const sb = showSnackbar('This could take a while (<30s)...', timeout);
+                    const timeout = 60000;
+                    const sb = showSnackbar('This could take a while (<60s)...', timeout);
 
                     postDataToServer(
                         '/Home/MakeTables',

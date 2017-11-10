@@ -77,7 +77,7 @@ namespace Cenarius.Models
             {
                 // Should not be; every enum creates one 
                 // AllowNewEntry row
-                throw new Exception("Could not find ::AllowNewEntry value for enum");
+                throw new Exception("Could not find ::AllowNewEntry value for enum " + enumDNode.name);
             }
             else if (aneVals.Count == 1)
             {
