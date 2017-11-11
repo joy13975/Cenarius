@@ -876,6 +876,7 @@ class FormGenerator {
                                                     .children(inputTag);
                                                 $(inputDom).val('');
                                                 $(inputDom).trigger('change');
+                                                console.log('hiii')
                                             }
                                         });
                                 return ckbxWrappedDoms;
