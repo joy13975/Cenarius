@@ -82,39 +82,7 @@ const formCtrlUpdateEvents = Object.freeze('keyup change focus');
 const enumOptionsAllowNewEntryStr = Object.freeze('::AllowNewEntry');
 
 function domReady() {
-    // Fix button stuck in focus when alert shows up
-    $('.btn').click(function(event) {
-        $(this).blur();
-    });
-
-    // Textarea auto resize
-    // Credits to https://stackoverflow.com/questions/454202/creating-a-textarea-with-auto-resize
-    $('textarea').each(function() {
-        this.setAttribute('style', 'height:' + (this.scrollHeight) + 'px;overflow-y:hidden;');
-    }).on('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
-
-    $('textarea').keyup(function() {
-        const valLen = $(this).val().length;
-        let counterSpan = $(this).siblings('span[name=textarea-counter]');
-        const oldCounter = $(counterSpan).html();
-        $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
-    });
-
-    $('input[type=checkbox].single-choice-checkbox').on('change', function() {
-        const $currentCkbx = $(this);
-        if ($currentCkbx.prop('checked')) {
-            $currentCkbx.parent().parent().siblings().each(function() {
-                const $otherField = $(this);
-                $otherField.children('div').children('input[type=checkbox]').each(function() {
-                    if ($(this).prop('checked'))
-                        $(this).trigger('click');
-                });
-            });
-        }
-    });
+    attachStaticHandlers();
 
     // Set initial state for checkboxes
     updateAllFields();
@@ -741,7 +709,7 @@ class FormGenerator {
                 return undefined;
             }
         })();
-        const freezeInComplexEnum = this.inComplexEnum;
+        const inComplexEnum = Object.freeze(this.inComplexEnum);
 
         // Generate the field html which might include an input addon and an ending
         const inputDoms =
@@ -770,28 +738,54 @@ class FormGenerator {
                                 type: 'checkbox',
                                 id: fieldID,
                                 name: fieldID,
-                                class: freezeInComplexEnum ? 'single-choice-checkbox' : '',
+                                class: inComplexEnum ? 'single-choice-checkbox' : '',
                                 autocomplete: 'off',
                             }
 
-                            if (defaultValue === true) ckbxProps.checked = true;
                             const ckbxInputDom = $_$('input', ckbxProps);
+                            if (defaultValue === true)
+                                $(ckbxInputDom).attr('checked', true);
+
+                            if (inComplexEnum)
+                                $(ckbxInputDom).on('change',
+                                    updateComplexSingleChoiceCkbx);
 
                             // Value should be title of field if this 
                             // checkbox is under a Complex enum
                             // but only when checkbox is checked
                             $(ckbxInputDom).on('change', function() {
-                                if (freezeInComplexEnum) {
-                                    if ($(this).is(':checked'))
+                                if (inComplexEnum) {
+                                    if ($(this).is(':checked')) {
                                         myDNode.value = name;
+                                    }
                                 } else {
                                     myDNode.value = $(this).is(':checked');
                                 }
                             });
 
-                            if (freezeInComplexEnum) {
+                            const chbkxDispDom =
+                                $_$('label', {
+                                    readonly: true,
+                                    class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
+                                }, [
+                                    $_$('span', {
+                                        class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
+                                    })
+                                ]);
+
+                            const ckbxBtnDom =
+                                $_$('label', {
+                                    class: 'btn btn-default cenarius-ckbx-lbl'
+                                }, [name]);
+
+                            $(ckbxBtnDom).on('click', function() {
+                                $(ckbxInputDom).attr('checked', !$(ckbxInputDom).attr('checked'));
+                                $(ckbxInputDom).trigger('change');
+                            });
+
+                            if (inComplexEnum) {
                                 this.enumOptions.push({
-                                    fieldID: freezeInComplexEnum,
+                                    fieldID: inComplexEnum,
                                     value: name
                                 });
                             }
@@ -799,19 +793,8 @@ class FormGenerator {
                             const ckbxDoms =
                                 [
                                     ckbxInputDom,
-                                    $_$('label', {
-                                        for: fieldID,
-                                        readonly: true,
-                                        class: 'btn btn-default cenarius-ckbx-btn checkbox-displayer'
-                                    }, [
-                                        $_$('span', {
-                                            class: 'glyphicon glyphicon-ok cenarius-chbkx-icon'
-                                        })
-                                    ]),
-                                    $_$('label', {
-                                        for: fieldID,
-                                        class: 'btn btn-default cenarius-ckbx-lbl'
-                                    }, [name])
+                                    chbkxDispDom,
+                                    ckbxBtnDom
                                 ];
                             return ckbxDoms;
                         }
@@ -837,11 +820,31 @@ class FormGenerator {
 
                             const regularInputDom =
                                 $_$(inputTag, regularInputProps, [defaultValue]);
-                            $(regularInputDom).on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
+                            const $regularInputDom = $(regularInputDom);
 
-                            $(regularInputDom).on('change', function(e) {
+                            if (inputTag === 'textarea') {
+                                // Textarea auto resize
+                                // Credits to https://stackoverflow.com/questions/454202/creating-a-textarea-with-auto-resize
+                                regularInputDom.setAttribute('style', 'height:' + (this.scrollHeight) + 'px;overflow-y:hidden;');
+                                $regularInputDom.on('input', function() {
+                                    this.style.height = 'auto';
+                                    this.style.height = (this.scrollHeight) + 'px';
+                                });
+
+                                // Textarea auto char count
+                                $regularInputDom.on(formCtrlUpdateEvents, function() {
+                                    const valLen = $(this).val().length;
+                                    const counterSpan = $(this).siblings('span[name=textarea-counter]');
+                                    const oldCounter = $(counterSpan).html();
+                                    $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
+                                });
+                            }
+
+                            $regularInputDom.on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
+
+                            $regularInputDom.on('change', function(e) {
                                 const $inputDomSelf = $(this);
-                                if (freezeInComplexEnum) {
+                                if (inComplexEnum) {
                                     // In a single complex enum the emptying of a field 
                                     // should not affect the data node value because
                                     // another option would be setting it anyway
@@ -863,11 +866,10 @@ class FormGenerator {
                                 regularFieldDoms.push(endingSpan);
 
                             if (needCheckbox) {
-                                // This should only happen in complex enums
                                 const ckbxWrappedDoms =
                                     DomMaker.genCheckboxWrapper(
                                         fieldID,
-                                        freezeInComplexEnum,
+                                        inComplexEnum,
                                         regularFieldDoms,
                                         function() {
                                             const $this = $(this);
@@ -876,7 +878,6 @@ class FormGenerator {
                                                     .children(inputTag);
                                                 $(inputDom).val('');
                                                 $(inputDom).trigger('change');
-                                                console.log('hiii')
                                             }
                                         });
                                 return ckbxWrappedDoms;
@@ -1107,7 +1108,7 @@ class SQLSchemaGenerator {
 class DomMaker {
     static genCheckboxWrapper(
         fieldID,
-        isComplexEnum,
+        inComplexEnum,
         fieldDoms,
         ckbxDomOnChange = () => {}) {
         const checkboxID = fieldID + '_wckbx';
@@ -1116,9 +1117,13 @@ class DomMaker {
                 type: 'checkbox',
                 id: checkboxID,
                 name: checkboxID,
-                class: 'wrapper-checkbox ' + (isComplexEnum ? 'single-choice-checkbox' : ''),
+                class: 'wrapper-checkbox ' + (inComplexEnum ? 'single-choice-checkbox' : ''),
                 autocomplete: 'off'
             });
+
+        if (inComplexEnum)
+            $(ckbxDom).on('change', updateComplexSingleChoiceCkbx);
+
         $(ckbxDom).on('change', ckbxDomOnChange);
 
         return [
@@ -1195,11 +1200,13 @@ class DomMaker {
                         } else {
                             $this.prop('value', '');
                         }
+                        $this.trigger('change');
                     })
 
                     $('textarea').each(function() {
                         const $this = $(this);
                         $this.prop('value', '');
+                        $this.trigger('change');
                     })
 
                     _.each($('select').children(), (sc) => {
@@ -1754,7 +1761,7 @@ class SummaryGenerator {
         } else if (eltExists($ckbxElt)) {
             // Regular checkbox field
             id = $ckbxElt.attr('id');
-            if ($ckbxElt.prop('checked')) {
+            if ($ckbxElt.attr('checked')) {
                 if (eltExists($cbkxWrapper)) {
                     const $wrapperSpan = $cbkxWrapper.children('span');
                     title = $wrapperSpan.children('span.input-group-addon').text();
@@ -1905,6 +1912,7 @@ function isRawType(fNodeType) {
 
 function inferFNodeType(fNode, defaultType = 'string') {
     const objType = typeof fNode;
+
     if (objType === 'object') {
         if (fNode.hasOwnProperty('type'))
             return fNode.type;
@@ -1922,6 +1930,30 @@ function inferFNodeType(fNode, defaultType = 'string') {
     // When objType is a raw type (string, number, boolean)
     // defaultType takes dominance
     return defaultType;
+}
+
+function attachStaticHandlers(domRoot = document) {
+    const $domRoot = $(domRoot);
+
+    // Fix button stuck in focus when alert shows up
+    $domRoot.find('.btn').on('click', function(event) {
+        $(this).blur();
+    });
+}
+
+function updateComplexSingleChoiceCkbx(e) {
+    const $currentCkbx = $(this);
+    if ($currentCkbx.attr('checked')) {
+        $currentCkbx.parent().parent().siblings().each(
+            function() {
+                const $otherField = $(this);
+                $otherField.children('div').children('input[type=checkbox]').each(function() {
+                    if ($(this).attr('checked')) {
+                        setCheckbox(this, false);
+                    }
+                });
+            });
+    }
 }
 
 function formCtrlUpdateCkbx(e) {
@@ -1964,9 +1996,11 @@ function showSnackbar(text, timeout = 1500, fadeSpeed = 500) {
 
 function setCheckbox(ckbx, val) {
     const $ckbx = $(ckbx);
-    const checked = $ckbx.prop('checked');
-    if ((val && !checked) || (checked && !val))
-        $ckbx.trigger('click');
+    const checked = $ckbx.attr('checked');
+    if ((val && !checked) || (checked && !val)) {
+        $ckbx.attr('checked', val);
+        $ckbx.trigger('change');
+    }
 }
 
 
