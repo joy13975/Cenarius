@@ -99,11 +99,16 @@
     </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Libraries\Utility.cs" />
+    <Compile Include="Models\SearchViewModel.cs" />
     <Compile Include="Models\DataCommitter.cs" />
     <Compile Include="Models\GenericJson.cs" />
     <Compile Include="Models\TableInitializer.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="App_Data\LocalCenarius.mdf" />
+    <Content Include="App_Data\LocalCenarius_log.ldf">
+      <DependentUpon>LocalCenarius.mdf</DependentUpon>
+    </Content>
     <Content Include="Formo\bcu.json" />
     <Content Include="Formo\bcu_demo.json" />
     <Content Include="Formo\test.json" />
@@ -120,6 +125,7 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Views\Home\Documentation.html" />
+    <None Include="Views\Home\Search.cshtml" />
     <Content Include="Views\Web.config" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
@@ -128,18 +134,9 @@
     <Content Include="Web.config" />
     <Content Include="Global.asax" />
     <Content Include="packages.config" />
-    <Content Include="Libraries\fonts\glyphicons-halflings-regular.eot" />
-    <Content Include="Libraries\fonts\glyphicons-halflings-regular.svg" />
-    <Content Include="Libraries\fonts\glyphicons-halflings-regular.ttf" />
-    <Content Include="Libraries\fonts\glyphicons-halflings-regular.woff" />
-    <Content Include="Libraries\Bootstrap\bootstrap.min.css" />
-    <Content Include="Libraries\Bootstrap\bootstrap.min.js" />
     <Content Include="Libraries\CenariusForm\CenariusForm.css" />
     <Content Include="Libraries\CenariusForm\CenariusForm.js" />
     <Content Include="Libraries\CenariusForm\CenariusFormUtils.js" />
-    <Content Include="Libraries\CenariusForm\cenarius-jsonform.js" />
-    <Content Include="Libraries\JQuery\jquery.min.js" />
-    <Content Include="Libraries\Underscore\underscore-min.js" />
     <Content Include="Views\Home\New.cshtml" />
     <Content Include="Views\Home\Error.cshtml" />
   </ItemGroup>
@@ -150,7 +147,6 @@
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Libraries\fonts\glyphicons-halflings-regular.woff2" />
     <None Include="Libraries\CenariusForm\CenariusFormConfig.json" />
     <Content Include="Scripts\jquery-1.10.2.min.map" />
   </ItemGroup>

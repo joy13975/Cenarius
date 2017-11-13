@@ -235,7 +235,7 @@ button.debug-btn{
     100% { transform: rotate(360deg); }
 }
 
-#bootstrap-overrides div.forma-uploader {
+#bootstrap-overrides div.formo-uploader {
 	height: 200px; 
 	width: 500px; 
 	position: fixed; 
@@ -272,4 +272,62 @@ button.debug-btn{
 #bootstrap-overrides mark-var {
     background-color: #ededed;
     color: #2d77ff;
+}
+
+.index-body {
+	background-color: #2f5437;
+	background: url(/Img/index_bg.png); 
+	background-color: #2f5437;
+	background-repeat: no-repeat; 
+	background-position: center -10%;
+	background-size: auto 100vh
+}
+
+.search-body {
+	background-color: #544680;
+	background: url(/Img/search_bg.png); 
+	background-color: #544680;
+	background-repeat: no-repeat; 
+	background-position: center -10%;
+	background-size: auto 100vh
+}
+
+#bootstrap-overrides div.search-content {
+    height: 100vh;
+}
+
+#bootstrap-overrides div.record-searcher {
+	position: fixed;
+    top: 10vh;
+    left: 0;
+	height: 200px; 
+	width: 100%;
+}
+
+
+#formo-search-bar {
+  width: 100%;
+  font-size: 16px;
+  border: 1px solid #ddd;
+}
+
+#formo-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+#formo-list li a {
+  border: 1px solid #ddd;
+  margin-top: -1px; /* Prevent double borders */
+  background-color: #f6f6f6;
+  padding: 12px;
+  text-decoration: none;
+  font-size: 18px;
+  color: black;
+  display: block
+}
+
+#formo-list li a:hover:not(.header) {
+  background-color: #eee;
 }

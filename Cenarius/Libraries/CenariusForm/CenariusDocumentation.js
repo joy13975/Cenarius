@@ -185,7 +185,7 @@ const subobjExample = {
 	}
 }
 
-const documentationForma = {
+const documentationFormo = {
 	formi: docFormi,
 	forma: {
 		introduction: {
@@ -201,7 +201,7 @@ const documentationForma = {
 						'*Cenarius can also generate static webpages, such as this documentation.\n' +
 						'*Cenarius uses bootstrap, so knowing the grid system (columns, especially) helps laying out your next form.\n' +
 						'*Cenarius is mostly client-side code for now.\n' +
-						'*<i>Formo</i> stands for <i>form options</i>; each formo contains a <i>formi</i> (FORM Info) and a <i>forma</i> (FORM schemA).'
+						'*<i>Formo</i> stands for <i>form options</i>; each formo contains a <i>formi</i> (<u>FORM</u> <u>I</u>nfo) and a <i>forma</i> (<u>FORM</u> schem<u>A</u>).'
 				}
 			}
 		},
@@ -221,7 +221,7 @@ const documentationForma = {
 						'Connection Timeout=30;"' +
 						'</mark-str>\n' +
 						'\n' +
-						'4. Replace this string as <mark-var>sqlStr</mark-var> in <mark-path>Cenarius/Controllers/HomeController.cs</mark-path>\n' +
+						'4. Replace this string as <mark-var>sqlStr</mark-var> in <mark-path>Cenarius/Libraries/Utility.cs</mark-path>\n' +
 						'5. Copy <mark-path>Cenarius/SqlCredentials.json.example</mark-path> to <mark-path>Cenarius/SqlCredentials.json</mark-path> ' +
 						'and replace the username & password with your actual username & password\n' +
 						'6. You can now debug or deploy this solution'
@@ -233,22 +233,23 @@ const documentationForma = {
 			properties: {
 				actions_text: {
 					content: '<b>Frontend</b>:\n' +
-						'  <i>/Home/Documentation</i>\n' +
+						'  <i>~/Home/Documentation</i>\n' +
 						'    Displays this documentation.\n' +
-						'  <i>/Home/Index</i>\n' +
+						'  <i>~/Home/Index</i>\n' +
 						'    Allows uploading of new Formo JSON files.\n' +
-						'  <i>/Home/New?name=' + angBrackets('formo_name') + '</i>\n' +
+						'  <i>~/Home/New?name=' + angBrackets('formo_name') + '</i>\n' +
 						'    Displays the form webpage specified by the formo named ' + angBrackets('formo_name') + '.\n' +
-						'  <i>/Home/Search?name=' + angBrackets('formo_name') + '</i>\n' +
+						'  <i>~/Home/Search?name=' + angBrackets('formo_name') + '</i>\n' +
 						'    [Unimplemented] Allows searching and editing of records for a the formo named ' + angBrackets('formo_name') + '.\n' +
 						'\n' +
 						'<b>API</b>:\n' +
-						'  <i>/Home/UploadFormo</i>\n' +
+						'  <i>~/Home/UploadFormo</i>\n' +
 						'    Accepts a JSON formo as post data from user; verifies that it\'s indeed JSON, and save it on the server.\n' +
-						'  <i>/Home/MakeTables</i>\n' +
+						'  <i>~/Home/MakeTables</i>\n' +
 						'    Accepts decorated formo as post data from user; creates database structure based on data strcuture specified by a formo.\n' +
-						'  <i>/Home/Submit</i>\n' +
-						'    Accepts data object as post data from user; attempts to insert to tables corresponding to the current formo'
+						'  <i>~/Home/Submit</i>\n' +
+						'    Accepts data object as post data from user; attempts to insert to tables corresponding to the current formo',
+					style: 'text-align: left'
 				}
 			}
 		},
@@ -558,14 +559,15 @@ const documentationForma = {
 									properties: {
 										custom_text1: {
 											content: 'A custom element is a flexible node that allows HTML elements that are not one of the Cenarius types. ' +
-											'Note that because of how flexible a custom element can be, input fields specified by a custom element may not be mapped correctly to a backend data variable.'
+												'Note that because of how flexible a custom element can be, input fields specified by a custom element may not be mapped correctly to a backend data variable.'
 										},
 										custom_code1: {
 											type: 'code',
 											language: 'js',
 											style: 'height: 170px',
 											content: '"custom_field_example": ' +
-												escapeHtml(JSON.stringify(custom_field_example, null, 4))},
+												escapeHtml(JSON.stringify(custom_field_example, null, 4))
+										},
 										custom_result_text1: {
 											content: 'Result: '
 										},

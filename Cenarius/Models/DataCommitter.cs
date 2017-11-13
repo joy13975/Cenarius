@@ -17,10 +17,16 @@ namespace Cenarius.Models
         private SqlConnection MyConnection;
         private SqlTransaction MyTransaction;
 
-        public DataCommitter(SqlConnection conn)
+        public DataCommitter()
         {
-            this.MyConnection = conn;
-            this.MyTransaction = conn.BeginTransaction();
+            this.MyConnection = new SqlConnection(Utility.sqlStr);
+            this.MyConnection.Open();
+            this.MyTransaction = this.MyConnection.BeginTransaction();
+        }
+
+        ~DataCommitter()
+        {
+            this.MyConnection.Close();
         }
 
         private class ParentRecord
@@ -195,20 +201,22 @@ namespace Cenarius.Models
             {
                 if (dn.sqlHint == "enum")
                 {
-                    Debug.WriteLine("Enum field: " + dn.name + ", val: " + dn.value);
+                    Debug.WriteLine("Enum field: " + dn.name +
+                        ", val: \"" + (dn.value ?? "<null>") + "\"");
 
                     insertRowsCmd.Parameters.Add("@" + dn.name, SqlDbType.Int, -1).Value =
                         dn.value == "--" ? DBNull.Value : (Object) this.QueryEnumOptions(dn);
                 }
                 else
                 {
-                    Debug.WriteLine("Regular " + dn.sqlHint + " field: " + dn.name + ", val: " + dn.value);
+                    Debug.WriteLine("Regular " + dn.sqlHint + " field: " + dn.name + 
+                        ", val: \"" + (dn.value ?? "<null>") + "\"");
 
                     SqlDbType sqlType;
                     if (!Utility.SqlHintToSqlType.TryGetValue(dn.sqlHint, out sqlType))
                         throw new Exception("SqlHint \"" + dn.sqlHint + "\" could not be mapped to type");
                     insertRowsCmd.Parameters.Add("@" + dn.name.Replace(".", "_"), sqlType, -1).Value =
-                        (Object) dn.value ?? DBNull.Value;
+                        (dn.value == null || dn.value.Count() == 0) ? DBNull.Value : (Object) dn.value;
                 }
             }
 
@@ -248,7 +256,7 @@ namespace Cenarius.Models
             return;
         }
 
-        public void CommitData(string postData)
+        public bool CommitData(string postData)
         {
             Debug.WriteLine("CommitData()");
             DataSet ds = JsonConvert.DeserializeObject<DataSet>(postData);
@@ -260,16 +268,16 @@ namespace Cenarius.Models
             {
                 this.VisitDataNodes(ds.mainTableName, ds.data);
                 this.MyTransaction.Commit();
+                return true;
             }
             catch(Exception e)
             {
                 this.MyTransaction.Rollback();
-
-                Debug.WriteLine(e.Message);
-                Debug.WriteLine(e.StackTrace);
-                throw new Exception("Failed to submit data\n" +
+                
+                Debug.WriteLine("Failed to submit data\n" +
                     "Reason: " + e.Message + "\n\n\n" +
                     "Info: " + e.StackTrace);
+                return false;
             }
         }
     }

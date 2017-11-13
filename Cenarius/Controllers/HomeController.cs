@@ -10,33 +10,41 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using Cenarius.Libraries;
 
 namespace Cenarius.Controllers
 {
     [Filters.GlobalErrorHandler]
     public class HomeController : Controller
     {
-        private string sqlStr = "Server=tcp:cenarius.database.windows.net,1433;Initial Catalog=CenariusAppDB;Persist Security Info=False;User ID={your_username};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-        string formoPath = "~/Formo/";
-
-        private class SqlCred
-        {
-            public string username { get; set; }
-            public string password { get; set; }
-        }
 
         public HomeController()
         {
-            string scPath = HostingEnvironment.MapPath("~/SqlCredentials.json");
-            string scStr = System.IO.File.ReadAllText(scPath);
-            SqlCred sqlCreds = JsonConvert.DeserializeObject<SqlCred>(scStr);
-            sqlStr = sqlStr.Replace("{your_username}", sqlCreds.username)
-                .Replace("{your_password}", sqlCreds.password);
+            try
+            {
+                string scPath = HostingEnvironment.MapPath("~/SqlCredentials.json");
+                string scStr = System.IO.File.ReadAllText(scPath);
+                Utility.SetSqlUserPwd(JsonConvert.DeserializeObject<Utility.SqlCred>(scStr));
+            }catch(Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                Debug.WriteLine(e.StackTrace);
+                Debug.WriteLine("Couuld not parse SqlCrendentials.json properly. " +
+                    "Did you forget to create a custom file containing your SQL username and password from " +
+                    "SqlCrendentials.json.example? (See documentation - Setup)");
+
+                Environment.Exit(1);
+            }
         }
 
         public ActionResult Index()
         {
             return View();
+        }
+
+        public ActionResult Search(string name)
+        {
+            return View(new SearchViewModel(name));
         }
 
         public ActionResult Documentation()
@@ -52,7 +60,7 @@ namespace Cenarius.Controllers
                 string fn = formoFile.FileName;
 
                 // Check that file name is usable
-                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formoPath));
+                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(Utility.FormoPath));
                 if (files.Where(f => Path.GetFileName(f).ToLower() == fn).Count() > 0)
                 {
                     ViewData["Heading"] = "Upload Error";
@@ -63,12 +71,15 @@ namespace Cenarius.Controllers
                 // Try parsing file to check that it's a good JSON
                 StreamReader sr = new StreamReader(formoFile.InputStream);
                 JObject jsonData = JObject.Parse(sr.ReadToEnd());
+                string test_table_name = (string)jsonData["formi"]["table_name"];
+
+                // TODO: check that no other formo has the same table_name
 
                 // Store file
                 Debug.WriteLine("Upload checks ok for \"" + fn + "\"; writing...");
-                string outputPath = Path.Combine(HostingEnvironment.MapPath(formoPath), fn);
+                string outputPath = Path.Combine(HostingEnvironment.MapPath(Utility.FormoPath), fn);
                 System.IO.File.WriteAllText(outputPath, JsonConvert.SerializeObject(jsonData));
-                return RedirectToAction("New", new { name = fn.Replace(".json", "")});
+                return RedirectToAction("New", new { name = fn.Replace(".json", "") });
             }
             catch (Exception e)
             {
@@ -86,7 +97,7 @@ namespace Cenarius.Controllers
             ViewData["Version"] = mvcName.Version.Major + "." + mvcName.Version.Minor;
             ViewData["Runtime"] = isMono ? "Mono" : ".NET";
 
-            string filePath = Path.Combine(HostingEnvironment.MapPath(formoPath), (name + ".json"));
+            string filePath = Path.Combine(HostingEnvironment.MapPath(Utility.FormoPath), (name + ".json"));
             string fileContent;
             try
             {
@@ -103,7 +114,7 @@ namespace Cenarius.Controllers
             {
                 ViewData["Heading"] = "Could not open specified formo: \"" + name + "\"";
 
-                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formoPath));
+                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(Utility.FormoPath));
 
                 ViewData["Message"] = "Hint: did you specify a formo file name? e.g. /Home/New?name=bcu\n" +
                     "If you did, then this file does not exist on the server.\n" +
@@ -120,22 +131,15 @@ namespace Cenarius.Controllers
         {
             Debug.WriteLine("Received MakeTables request");
 
-            try
+            if(new TableInitializer().InitializeTables(obj.postData))
             {
-                using (var conn = new SqlConnection(sqlStr))
-                {
-                    conn.Open();
-                    new TableInitializer(conn).InitializeTables(obj.postData);
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Failed MakeTables()");
-                Debug.WriteLine(e);
-                return Json(new { success = false, msg = "Failed to commit data to DB:\n" + e.Message });
-            }
 
-            return Json(new { success = true, msg = "" });
+                return Json(new { success = true, msg = "" });
+            }
+            else
+            {
+                return Json(new { success = false, msg = "Failed to create tables in DB:\n"});
+            }
         }
 
         [HttpPost]
@@ -143,22 +147,14 @@ namespace Cenarius.Controllers
         {
             Debug.WriteLine("Received Submit request");
 
-            try
+            if(new DataCommitter().CommitData(obj.postData))
             {
-                using (var conn = new SqlConnection(sqlStr))
-                {
-                    conn.Open();
-                    new DataCommitter(conn).CommitData(obj.postData);
-                }
+                return Json(new { success = true, msg = "" });
             }
-            catch (Exception e)
+            else
             {
-                Debug.WriteLine("Failed Submit()");
-                Debug.WriteLine(e);
-                return Json(new { success = false, msg = "Failed to commit data to DB:\n" + e.Message });
+                return Json(new { success = false, msg = "Failed to commit data to DB"});
             }
-
-            return Json(new { success = true, msg = "" });
         }
     }
 }

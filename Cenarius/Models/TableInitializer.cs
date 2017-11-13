@@ -15,9 +15,15 @@ namespace Cenarius.Models
     {
         private SqlConnection MyConnection;
 
-        public TableInitializer(SqlConnection conn)
+        public TableInitializer()
         {
-            this.MyConnection = conn;
+            this.MyConnection = new SqlConnection(Utility.sqlStr);
+            this.MyConnection.Open();
+        }
+
+        ~TableInitializer()
+        {
+            this.MyConnection.Close();
         }
 
         private class ColumnInfo
@@ -38,7 +44,7 @@ namespace Cenarius.Models
             public List<JObject> rows { get; set; }
         }
 
-        public void InitializeTables(string postData)
+        public bool InitializeTables(string postData)
         {
             Debug.WriteLine("InitializeTables()");
             using (SqlTransaction stx = this.MyConnection.BeginTransaction())
@@ -120,16 +126,16 @@ namespace Cenarius.Models
                     }
 
                     stx.Commit();
+                    return true;
                 }
                 catch (Exception e)
                 {
                     stx.Rollback();
-
-                    Debug.WriteLine(e.Message);
-                    Debug.WriteLine(e.StackTrace);
-                    throw new Exception("Failed to create tables for this forma\n" +
+                    
+                    Debug.WriteLine("Failed to create tables for this forma\n" +
                         "Reason: " + e.Message + "\n\n\n" +
                         "Info: " + e.StackTrace);
+                    return false;
                 }
             }
         }

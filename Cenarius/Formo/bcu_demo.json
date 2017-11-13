@@ -1,6 +1,6 @@
 {
 	"formi": {
-		"table_name": "breast_cancer_ultrasound",
+		"table_name": "breast_cancer_ultrasound_demo",
 		"title": "新光醫院 [乳房超音波診斷] 資料輸入頁面",
 		"heading": "【附表二】乳房超音波檢查報告單"
 	},
