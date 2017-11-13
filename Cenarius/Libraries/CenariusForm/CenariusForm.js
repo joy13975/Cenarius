@@ -23,16 +23,7 @@ var config = {
     autoLabelSpace: '',
     defaultEnumOptionText: '--',
 
-    nCols: {
-        object: '12',
-        subobject: '12',
-        enum: '6',
-        complexEnum: '12',
-        input: '6'
-    },
-
-    minSubobjectInstance: 1,
-
+    defaultNCols: 12,
     maxLength: {
         float: '-1',
         integer: '-1',
@@ -51,7 +42,10 @@ const HtmlInputTypeTable = Object.freeze({
     string: 'text',
     boolean: 'checkbox',
     date: 'date',
-    label: 'label'
+    label: 'label',
+    custom: 'custom',
+    code: 'code',
+    space: 'space'
 })
 
 const SQLHintTable = Object.freeze({
@@ -81,7 +75,21 @@ const NoneIdentifierCharRegexStr = Object.freeze(/[^a-zA-Z\d\u4e00-\u9eff]+/);
 const formCtrlUpdateEvents = Object.freeze('keyup change focus');
 const enumOptionsAllowNewEntryStr = Object.freeze('::AllowNewEntry');
 
+var glFormo = {};
+
 function domReady() {
+    if (glFormo.formi.no_ctrl_panel === true) {
+        $('div[name=cenarius-content]').each(function() {
+            $(this).height('100vh')
+        });
+    }
+
+    if (glFormo.formi.hasOwnProperty('background_color')) {
+        $('div[name=cenarius-content]').each(function() {
+            $(this).css('background-color', (glFormo.formi.background_color));
+        });
+    }
+
     attachStaticHandlers();
 
     // Set initial state for checkboxes
@@ -89,21 +97,27 @@ function domReady() {
 }
 
 function main(global, $) {
-    $.fn.cenarius = function(headingText, options) {
-        const myFG = new FormGenerator(options.forma, options.formi);
+    $.fn.cenarius = function(formo) {
+        glFormo = formo;
+
+        const myFG = new FormGenerator(formo.forma, formo.formi);
         const formaDoms = myFG.genDoms();
 
         const mySqlGen = new SQLSchemaGenerator(myFG);
 
-        const contentDoms = DomMaker.genContent(headingText, formaDoms);
-        const ctrlDoms = DomMaker.genCtrlPanel(myFG, mySqlGen);
-        const summaryModalDoms = DomMaker.genSummaryModal(myFG);
-        const sqlModalDoms = DomMaker.genDebugModal(mySqlGen);
+        const doms = [];
+        doms.push(DomMaker.genContent(formo.formi.heading, formaDoms));
+
+        if (formo.formi.no_ctrl_panel !== true) {
+            doms.push(DomMaker.genCtrlPanel(myFG, mySqlGen));
+            doms.push(DomMaker.genSummaryModal(myFG));
+            doms.push(DomMaker.genDebugModal(mySqlGen));
+        }
 
         const finalDom =
             $_$('div', {
                 id: 'bootstrap-overrides'
-            }, [contentDoms, ctrlDoms, summaryModalDoms, sqlModalDoms]);
+            }, doms);
 
         this.replaceWith(finalDom);
     }
@@ -162,9 +176,7 @@ class FormGenerator {
             fNode[key];
 
         // Extract flags
-        const name =
-            fNext.hasOwnProperty('title') ? fNext.title :
-            getNameFromKey(key);
+        const name = fNext.title || getNameFromKey(key);
 
         fNext.type = inferredType;
 
@@ -173,17 +185,12 @@ class FormGenerator {
         // console.log('content: ');
         // console.log(JSON.stringify(fNext, null, 2));
 
-        const children =
-            fNext.hasOwnProperty('properties') ? fNext.properties :
-            fNext.hasOwnProperty('enum') ? fNext.enum : {};
+        const children = fNext.properties || (fNext.enum || {});
 
-        const defaultChildrenType =
-            fNext.hasOwnProperty('default_children_type') ? fNext.default_children_type :
+        const defaultChildrenType = fNext.default_children_type ||
             (inferredType === 'enum' ? 'boolean' : 'string');
 
-        const defaultNCols =
-            fNext.hasOwnProperty('default_cols') ? fNext.default_cols :
-            '';
+        const defaultNCols = fNext.default_cols || '';
 
         function sandwich(_dNode = dNode) {
             return _.map(Object.keys(children),
@@ -290,9 +297,7 @@ class FormGenerator {
             [this.genEitherGroup(fieldID, sandwichDoms)] :
             sandwichDoms;
 
-        const nCols =
-            fNode.hasOwnProperty('cols') ?
-            fNode.cols : config.nCols.object;
+        const nCols = fNode.cols || config.defaultNCols;
 
         return DomMaker.genPanel(
             headingDoms,
@@ -301,7 +306,7 @@ class FormGenerator {
                 name: 'cenarius-object-group',
                 summaryStyle: fNode.summary_style || ''
             }, {
-                class: fNode.html_class
+                class: fNode.html_class || ''
             }
         );
     };
@@ -377,10 +382,12 @@ class FormGenerator {
             ]);
         $(newTabBtn).on('click', makeSOI);
 
+        const minInstances = fNode.min_instances || 1;
+
         // Generate initial minimum number of subobj
         const genMinSOI = () => {
             const curr = $(soTabHeaderDom).children().length;
-            for (let i = curr; i < config.minSubobjectInstance; i++)
+            for (let i = curr; i < minInstances; i++)
                 makeSOI();
         }
         genMinSOI();
@@ -450,10 +457,10 @@ class FormGenerator {
 
         const headingDoms = [
             $_$('div', {
-                class: 'col-md-10'
+                class: 'col-md-8'
             }, name),
             $_$('div', {
-                class: 'col-md-2',
+                class: 'col-md-4',
             }, [addDelBtns])
         ];
 
@@ -465,9 +472,7 @@ class FormGenerator {
                 }, [fNode.help_text]));
         }
 
-        const nCols =
-            fNode.hasOwnProperty('cols') ?
-            fNode.cols : config.nCols.subobject;
+        const nCols = fNode.cols || config.defaultNCols;
 
         return DomMaker.genPanel(
             headingDoms, [soTabHeaderDom, soTabContentDom],
@@ -502,19 +507,17 @@ class FormGenerator {
             }
         });
 
-        const extraHtmlClass =
-            fNode.hasOwnProperty('html_class') ?
-            fNode.html_class : '';
-        const nCols = fNode.hasOwnProperty('cols') ? fNode.cols :
-            this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
-            simpleEnum ? config.nCols.enum :
-            config.nCols.complexEnum;
+        const extraHtmlClass = fNode.html_class || '';
+        const nCols = fNode.cols ||
+            (this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
+                simpleEnum ? config.defaultNCols :
+                config.defaultNCols);
 
         const needCheckbox =
             this.inComplexEnum || (fNode.force_checkbox === true);
 
         // Default value
-        const defaultValue = fNode.hasOwnProperty('default_value') ? fNode.default_value : 0;
+        const defaultValue = fNode.default_value || 0;
 
         if (simpleEnum) {
             const selectOptions = [];
@@ -656,25 +659,25 @@ class FormGenerator {
         const inputTag = isTextArea ? 'textarea' : 'input';
 
         // Value related flags
-        let defaultValue = '';
-        if (fNode.hasOwnProperty('default_value')) {
-            defaultValue = fNode.default_value;
-        } else {
-            if (htmlInputType === 'number') {
-                defaultValue = '0';
-            } else if (htmlInputType === 'date') {
-                defaultValue = (new Date()).toISOString().slice(0, 10);
+        let defaultValue = fNode.default_value || '';
+        if (htmlInputType === 'date') {
+            const dateToday = (new Date()).toISOString().slice(0, 10);
+            if (defaultValue.length == 0) {
+                defaultValue = dateToday;
+            } else {
+                try {
+                    defaultValue = (new Date(defaultValue)).toISOString().slice(0, 10);
+                } catch (err) {
+                    defaultValue = dateToday;
+                }
             }
         }
 
         // Number flags
         const numStep = type === 'integer' ? 1 :
-            (fNode.hasOwnProperty('number_step') ?
-                fNode.number_step : config.defaultNumberStep);
-        const numMin = fNode.hasOwnProperty('min') ?
-            fNode.min : '';
-        const numMax = fNode.hasOwnProperty('max') ?
-            fNode.max : '';
+            (fNode.step || config.defaultNumberStep);
+        const numMin = fNode.min || '';
+        const numMax = fNode.max || '';
 
         // String flags
         const maxStringLength =
@@ -688,18 +691,17 @@ class FormGenerator {
         const textAlignment = isTextArea ?
             '' : 'text-align: right; ';
         const textAreaRows = isTextArea ?
-            (fNode.hasOwnProperty('textarea_rows') ?
-                fNode.textarea_rows : '5') : '';
+            (fNode.textarea_rows || '5') : '';
 
         const fieldStyle = textAlignment;
         const fieldName = name + config.autoLabelColon + config.autoLabelSpace;
         const needCheckbox =
             this.inComplexEnum || fNode.force_checkbox === true;
-        const endingSpan = (() => {
-            if (fNode.hasOwnProperty('ending')) {
+        const suffixSpan = (() => {
+            if (fNode.hasOwnProperty('suffix')) {
                 return $_$('span', {
                     class: 'input-group-addon cenarius-input-tag'
-                }, [fNode.ending]);
+                }, [fNode.suffix]);
             } else if (type === 'big_string') {
                 return $_$('span', {
                     class: 'input-group-addon cenarius-input-tag',
@@ -711,26 +713,67 @@ class FormGenerator {
         })();
         const inComplexEnum = Object.freeze(this.inComplexEnum);
 
-        // Generate the field html which might include an input addon and an ending
+        const nCols = fNode.cols ||
+            (this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
+                config.defaultNCols);
+        const extraHtmlClass = fNode.html_class || '';
+
+        // Generate the field html which might include an input addon and an suffix
         const inputDoms =
             (() => {
                 switch (htmlInputType) {
                     case 'space':
                         {
-                            return $_$('div', {
+                            const height = fNode.height || '46px';
+                            console.log('Height: ' + height);
+                            return [$_$('div', {
                                 class: 'col-md-offset-' + nCols + ' ' + extraHtmlClass,
-                                style: 'height: 46px !important',
+                                style: 'height: ' + height + ' !important',
                                 summaryStyle: 'exclude'
-                            });
+                            })];
                         }
                     case 'label':
                         {
+                            const labelTag = fNode.tag || 'pre';
+                            const lableClass = fNode.html_class || 'unstyled-pre';
+                            const labelStyle = fNode.style || '';
+                            const labelContent = fNode.content || '';
+
                             const labelDom =
-                                $_$('div', {
-                                    class: 'alert alert-success',
-                                    style: 'text-align: center'
-                                }, [fieldName]);
+                                $_$(labelTag, {
+                                    class: lableClass,
+                                    style: labelStyle
+                                }, [labelContent]);
+
                             return [labelDom];
+                        }
+                    case 'custom':
+                        {
+                            const customTag = fNode.tag || 'p';
+                            const customClass = fNode.html_class || '';
+                            const customStyle = fNode.style || '';
+                            const customContent = fNode.content || '';
+
+                            const customDom =
+                                $_$(customTag, {
+                                    class: customClass,
+                                    style: customStyle
+                                }, [customContent]);
+
+                            return [customDom];
+                        }
+                    case 'code':
+                        {
+                            const codeContent = fNode.content || '';
+                            const codeStyle = fNode.style || '';
+
+                            const codeDom =
+                                $_$('pre', {
+                                    class: 'prettyprint lang-' + (fNode.language || ''),
+                                    style: codeStyle
+                                }, [codeContent]);
+
+                            return [codeDom];
                         }
                     case 'checkbox':
                         {
@@ -831,13 +874,16 @@ class FormGenerator {
                                     this.style.height = (this.scrollHeight) + 'px';
                                 });
 
-                                // Textarea auto char count
-                                $regularInputDom.on(formCtrlUpdateEvents, function() {
-                                    const valLen = $(this).val().length;
-                                    const counterSpan = $(this).siblings('span[name=textarea-counter]');
-                                    const oldCounter = $(counterSpan).html();
-                                    $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
-                                });
+                                // Textarea auto char count - only if no suffix specified
+                                if (!fNode.hasOwnProperty('suffix')) {
+                                    $regularInputDom.on(formCtrlUpdateEvents, function() {
+                                        const valLen = $(this).val().length;
+                                        const counterSpan = $(this).siblings('span[name=textarea-counter]');
+                                        const oldCounter = $(counterSpan).html();
+
+                                        $(counterSpan).html(valLen + oldCounter.substring(oldCounter.indexOf('<br>')));
+                                    });
+                                }
                             }
 
                             $regularInputDom.on(formCtrlUpdateEvents, formCtrlUpdateCkbx);
@@ -862,8 +908,8 @@ class FormGenerator {
                                     regularInputDom
                                 ];
 
-                            if (isSet(endingSpan))
-                                regularFieldDoms.push(endingSpan);
+                            if (isSet(suffixSpan))
+                                regularFieldDoms.push(suffixSpan);
 
                             if (needCheckbox) {
                                 const ckbxWrappedDoms =
@@ -895,12 +941,6 @@ class FormGenerator {
                         }
                 }
             })();
-
-        const nCols = fNode.hasOwnProperty('cols') ? fNode.cols :
-            this.currentDefaultNCols !== '' ? this.currentDefaultNCols :
-            config.nCols.input;
-        const extraHtmlClass = fNode.hasOwnProperty('html_class') ?
-            fNode.html_class : '';
 
         // Complex enums simply fill parent dNode.value
         if (!this.inComplexEnum)
@@ -1156,6 +1196,7 @@ class DomMaker {
             $_$('div', {
                 class: 'row',
                 name: 'cenarius-header',
+                style: 'text-align: center'
             }, [$_$('h1', {}, [headingText])]),
             $_$('form', {
                 class: 'row',
@@ -1749,7 +1790,7 @@ class SummaryGenerator {
         let title = $(igas[0]).text();
         let id = '';
         let val = '';
-        let ending = igas.length > 1 ? $(igas[1]).text() : '';
+        let suffix = igas.length > 1 ? $(igas[1]).text() : '';
         let addPeriod = true;
 
         if (eltExists($alertElt)) {
@@ -1780,21 +1821,21 @@ class SummaryGenerator {
 
             // Do not inlcude counter text
             if ($(igas[1]).attr('name') === 'textarea-counter')
-                ending = '';
+                suffix = '';
         } else {
             // Regular input field
             id = $body.children('input').attr('id');
             val = $body.children('input').val();
         }
 
-        if (ending.length > 0)
-            ending = ' ' + ending;
+        if (suffix.length > 0)
+            suffix = ' ' + suffix;
 
         return (breakBefore ? '<br>' : '') +
             (noTitle ? '' : (title + ': ')) +
             (breakAfterTitle ? '<br>' : '') +
             val +
-            ending +
+            suffix +
             (addPeriod ? '. ' : '') +
             (breakAfter ? '<br>' : '');
     };
@@ -1925,6 +1966,9 @@ function inferFNodeType(fNode, defaultType = 'string') {
 
         if (fNode.hasOwnProperty('properties'))
             return 'object';
+
+        if (fNode.hasOwnProperty('content'))
+            return 'label';
     }
 
     // When objType is a raw type (string, number, boolean)

@@ -17,7 +17,7 @@ namespace Cenarius.Controllers
     public class HomeController : Controller
     {
         private string sqlStr = "Server=tcp:cenarius.database.windows.net,1433;Initial Catalog=CenariusAppDB;Persist Security Info=False;User ID={your_username};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-        string formaPath = "~/FormSchema/";
+        string formoPath = "~/Formo/";
 
         private class SqlCred
         {
@@ -39,29 +39,34 @@ namespace Cenarius.Controllers
             return View();
         }
 
+        public ActionResult Documentation()
+        {
+            return new FilePathResult("~/Views/Home/Documentation.html", "text/html");
+        }
+
         [HttpPost]
-        public ActionResult UploadForma(HttpPostedFileBase formaFile)
+        public ActionResult UploadFormo(HttpPostedFileBase formoFile)
         {
             try
             {
-                string fn = formaFile.FileName;
+                string fn = formoFile.FileName;
 
                 // Check that file name is usable
-                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formaPath));
+                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formoPath));
                 if (files.Where(f => Path.GetFileName(f).ToLower() == fn).Count() > 0)
                 {
                     ViewData["Heading"] = "Upload Error";
-                    ViewData["Message"] = "Forma name \"" + fn + "\" is taken by existing files";
+                    ViewData["Message"] = "Formo name \"" + fn + "\" is taken by existing files";
                     return View("Error");
                 }
 
                 // Try parsing file to check that it's a good JSON
-                StreamReader sr = new StreamReader(formaFile.InputStream);
+                StreamReader sr = new StreamReader(formoFile.InputStream);
                 JObject jsonData = JObject.Parse(sr.ReadToEnd());
 
                 // Store file
                 Debug.WriteLine("Upload checks ok for \"" + fn + "\"; writing...");
-                string outputPath = Path.Combine(HostingEnvironment.MapPath(formaPath), fn);
+                string outputPath = Path.Combine(HostingEnvironment.MapPath(formoPath), fn);
                 System.IO.File.WriteAllText(outputPath, JsonConvert.SerializeObject(jsonData));
                 return RedirectToAction("New", new { name = fn.Replace(".json", "")});
             }
@@ -81,7 +86,7 @@ namespace Cenarius.Controllers
             ViewData["Version"] = mvcName.Version.Major + "." + mvcName.Version.Minor;
             ViewData["Runtime"] = isMono ? "Mono" : ".NET";
 
-            string filePath = Path.Combine(HostingEnvironment.MapPath(formaPath), (name + ".json"));
+            string filePath = Path.Combine(HostingEnvironment.MapPath(formoPath), (name + ".json"));
             string fileContent;
             try
             {
@@ -90,20 +95,20 @@ namespace Cenarius.Controllers
 
                 ViewData["Title"] = (string)data["formi"]["title"];
                 ViewData["Heading"] = (string)data["formi"]["heading"];
-                ViewData["Forma"] = data.ToString(Newtonsoft.Json.Formatting.Indented);
+                ViewData["Formo"] = data.ToString(Newtonsoft.Json.Formatting.Indented);
 
                 return View();
             }
             catch (Exception e)
             {
-                ViewData["Heading"] = "Could not open specified forma: \"" + name + "\"";
+                ViewData["Heading"] = "Could not open specified formo: \"" + name + "\"";
 
-                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formaPath));
+                string[] files = Directory.GetFiles(HostingEnvironment.MapPath(formoPath));
 
-                ViewData["Message"] = "Hint: did you specify a forma name? e.g. /Home/New?name=bcu\n" +
+                ViewData["Message"] = "Hint: did you specify a formo file name? e.g. /Home/New?name=bcu\n" +
                     "If you did, then this file does not exist on the server.\n" +
-                    "If you didn't, then try specifying a forma name.\n\n" +
-                    "Available forma files are: \n" +
+                    "If you didn't, then try specifying a formo name.\n\n" +
+                    "Available formo files are: \n" +
                     string.Join(",\n", files.Select(f => Path.GetFileName(f)).ToList());
                 Debug.WriteLine(e.Message + "\n\n" + e.StackTrace);
                 return View("Error");

@@ -1,9 +1,8 @@
 ﻿<!DOCTYPE html>
 <html>
-
-<head>
-    <meta charset="utf-8" />
-    <title>@ViewData["Title"]</title>
+    <head>
+        <meta charset="utf-8" />
+        <title>Cenarius Documentation</title>
         <!-- css deps -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
         <link rel="stylesheet" href="../../Libraries/CenariusForm/CenariusForm.css" />
@@ -14,14 +13,11 @@
         <script type="text/javascript" src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
         <script type="text/javascript" src="../../Libraries/CenariusForm/CenariusForm.js"></script>
         <script type="text/javascript" src="../../Libraries/CenariusForm/CenariusDocumentation.js"></script>
-</head>
-
-<body>
-    <cenarius-form></cenarius-form>
-
-    <script type="text/javascript">
-        $('cenarius-form').cenarius(@Html.Raw(ViewData["Formo"]));
-        console.log('(ASP.NET version: @ViewData["Version"] using @ViewData["RunTime"])');
-    </script>
-</body>
+    </head>
+    <body>
+        <cenarius-form></cenarius-form>
+        <script type="text/javascript">
+        $('cenarius-form').cenarius(documentationForma);
+        </script>
+    </body>
 </html>
