@@ -251,12 +251,12 @@ button.debug-btn{
 	word-break: keep-all;
 	font-family: "Arial";
 	overflow-y: auto;
-	text-align: justify;
 }
 
-#bootstrap-overrides .unstyled-pre {
+#bootstrap-overrides .plain-pre {
 	border: 0;
 	background-color: transparent;
+	text-align: justify;
 }
 
 #bootstrap-overrides mark-path {

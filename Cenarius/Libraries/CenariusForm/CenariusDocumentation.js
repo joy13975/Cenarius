@@ -142,7 +142,7 @@ const custom_field_example = {
 	content: 'This is a custom well'
 }
 
-const objExample = {
+const obj_example1 = {
 	default_cols: 6,
 	properties: {
 		str_field_example1: str_field_example1,
@@ -163,7 +163,30 @@ const objExample = {
 	}
 }
 
-const subobjExample = {
+const obj_example2 = {
+	default_cols: 6,
+	grouping: 'either',
+	properties: {
+		another_object: {
+			default_cols: 6,
+			properties: {
+				'Some More Text': {},
+				'Some Enum': {
+					'enum': ['some choice 1', 2, 'choice 3']
+				}
+			}
+		},
+		yet_another_object: {
+			type: 'object',
+			properties: {
+				str_field_example1: str_field_example1,
+				integer_field_example1: integer_field_example1
+			}
+		}
+	}
+}
+
+const subobj_example = {
 	type: 'subobject',
 	properties: {
 		str_field_example1: str_field_example1,
@@ -196,7 +219,7 @@ const documentationFormo = {
 						'  1. Generates a HTML webpage allowing input to the specified data structure,\n' +
 						'  2. Automatically scaffolds the backend database structure (for now, MSSQL),\n' +
 						'  3. Manages the UI-Server-DB communication, and\n' +
-						'  4. Serves the form to users automatically through URL query\n' +
+						'  4. Serves the form to users automatically through URL query.\n' +
 						'\n' +
 						'*Cenarius can also generate static webpages, such as this documentation.\n' +
 						'*Cenarius uses bootstrap, so knowing the grid system (columns, especially) helps laying out your next form.\n' +
@@ -223,8 +246,8 @@ const documentationFormo = {
 						'\n' +
 						'4. Replace this string as <mark-var>sqlStr</mark-var> in <mark-path>Cenarius/Libraries/Utility.cs</mark-path>\n' +
 						'5. Copy <mark-path>Cenarius/SqlCredentials.json.example</mark-path> to <mark-path>Cenarius/SqlCredentials.json</mark-path> ' +
-						'and replace the username & password with your actual username & password\n' +
-						'6. You can now debug or deploy this solution'
+						'and replace the username & password with your actual username & password,\n' +
+						'6. You can now debug or deploy this solution,'
 				}
 			}
 		},
@@ -239,8 +262,8 @@ const documentationFormo = {
 						'    Allows uploading of new Formo JSON files.\n' +
 						'  <i>~/Home/New?name=' + angBrackets('formo_name') + '</i>\n' +
 						'    Displays the form webpage specified by the formo named ' + angBrackets('formo_name') + '.\n' +
-						'  <i>~/Home/Search?name=' + angBrackets('formo_name') + '</i>\n' +
-						'    [Unimplemented] Allows searching and editing of records for a the formo named ' + angBrackets('formo_name') + '.\n' +
+						'  <i>~/Home/Search\n' +
+						'    Guides the user through a series of steps to do searching and editing (TODO) of records.\n' +
 						'\n' +
 						'<b>API</b>:\n' +
 						'  <i>~/Home/UploadFormo</i>\n' +
@@ -248,7 +271,7 @@ const documentationFormo = {
 						'  <i>~/Home/MakeTables</i>\n' +
 						'    Accepts decorated formo as post data from user; creates database structure based on data strcuture specified by a formo.\n' +
 						'  <i>~/Home/Submit</i>\n' +
-						'    Accepts data object as post data from user; attempts to insert to tables corresponding to the current formo',
+						'    Accepts data object as post data from user; attempts to insert to tables corresponding to the current formo.',
 					style: 'text-align: left'
 				}
 			}
@@ -287,14 +310,33 @@ const documentationFormo = {
 							content: 'The forma describes the object hierarchy and input types of each field.'
 						},
 						forma_node_attributes: {
-							content: 'Forma Node Attributes:</b>\n' +
+							content: 'General Forma Node Attributes:</b>\n' +
 								'  <mark-var>title</mark-var>: ' +
 								'Sets the panel heading title for this node. If not set, it defaults to titleized.\n' +
+								'  <mark-var>suffix</mark-var>: ' +
+								'Adds a suffix for uses such as unit for string|big_string|number fields.\n' +
 								'  <mark-var>type</mark-var>: ' +
 								'Sets the node type. This field can be omitted if the node fits one of the following:\n' +
-								'    -It has <mark-var>properties</mark-var>, meaning it <i>should</i> be an object\n' +
-								'    -It has <mark-var>enum</mark-var>, meaning it <i>should</i> be an enum\n' +
-								'    -It has <mark-var>content</mark-var>, meaning it <i>should</i> be an label\n'
+								'    -It has <mark-var>properties</mark-var>, meaning it <i>should</i> be an object.\n' +
+								'    -It has <mark-var>enum</mark-var>, meaning it <i>should</i> be an enum.\n' +
+								'    -It has <mark-var>content</mark-var>, meaning it <i>should</i> be an label.\n' +
+								'  <mark-var>cols</mark-var>: ' +
+								'Sets the width of the current node (as in the column of bootstrap\'s grid system)\n' +
+								'  <mark-var>default_cols</mark-var>: ' +
+								'Sets the default \"cols\" attribute for a grouping node\'s children (recursive).\n' +
+								'  <mark-var>default_value</mark-var>: ' +
+								'Sets the default value for an input field.\n' +
+								'  <mark-var>summary_style</mark-var>: ' +
+								'Sets the summary style. Implemented styles are: \n' +
+								$_$('code', {
+									class: 'prettyprint'
+								}, [JSON.stringify(SummaryStyleTable, null, 2)]).outerHTML + '\n' +
+								'  <mark-var>default_children_type</mark-var>: ' +
+								'Sets the default \"type\" attribute for a grouping node\'s children (recursive).\n' +
+								'  <mark-var>help_text</mark-var>: ' +
+								'Adds a help text to a grouping node.\n' +
+								'  <mark-var>max_string_length</mark-var>: ' +
+								'Sets a max number of bytes for a string or big_string field.\n'
 						},
 						grouping_types: {
 							title: 'III.B.i - Grouping Types',
@@ -311,13 +353,32 @@ const documentationFormo = {
 											type: 'code',
 											language: 'js',
 											style: 'height: 500px',
-											content: '"some_object": ' +
-												escapeHtml(JSON.stringify(objExample, null, 4))
+											content: '"obj_example1": ' +
+												escapeHtml(JSON.stringify(obj_example1, null, 4))
 										},
 										obj_result_text1: {
 											content: 'Result: '
 										},
-										some_object: objExample
+										some_object1: obj_example1,
+										obj_text2: {
+											content: 'Objects can have a <mark-var>grouping</mark-var> attribute; if it is set to <mark-str>either</mark-str>, ' +
+												'it would create multiple tabs from its properties.\n' +
+												'Example: '
+										},
+										obj_code2: {
+											type: 'code',
+											language: 'js',
+											style: 'height: 500px',
+											content: '"obj_example2": ' +
+												escapeHtml(JSON.stringify(obj_example2, null, 4))
+										},
+										obj_result_text2: {
+											content: 'Result: '
+										},
+										obj_example2: obj_example2,
+										obj_text3: {
+											content: 'Note that each of <i>either</i> group\'s direct children must be an object themselves.'
+										},
 									}
 								},
 								subobject: {
@@ -333,12 +394,12 @@ const documentationFormo = {
 											language: 'js',
 											style: 'height: 380px',
 											content: '"some_object": ' +
-												escapeHtml(JSON.stringify(subobjExample, null, 4))
+												escapeHtml(JSON.stringify(subobj_example, null, 4))
 										},
 										so_result_text1: {
 											content: 'Result: '
 										},
-										some_object: subobjExample
+										some_object: subobj_example
 									}
 								}
 							}

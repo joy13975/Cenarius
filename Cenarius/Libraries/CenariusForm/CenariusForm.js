@@ -739,7 +739,7 @@ class FormGenerator {
                     case 'label':
                         {
                             const labelTag = fNode.tag || 'pre';
-                            const lableClass = fNode.html_class || 'unstyled-pre';
+                            const lableClass = fNode.html_class || 'plain-pre';
                             const labelStyle = fNode.style || '';
                             const labelContent = fNode.content || '';
 
