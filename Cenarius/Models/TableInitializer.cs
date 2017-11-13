@@ -57,13 +57,17 @@ namespace Cenarius.Models
                         List<string> columnStrs = new List<string>();
                         foreach (ColumnInfo column in table.columns)
                         {
-                            int nvarcharMaxLen = column.maxLen;
-                            if (nvarcharMaxLen == 0)
-                                nvarcharMaxLen = 512;
+                            int maxLen = column.maxLen;
+                            if (maxLen == 0)
+                                maxLen = 512;
+
+                            bool needLen = column.sqlHint == "nvarchar" ||
+                                column.sqlHint == "varchar";
+
                             string colStr =
                                 "[" + column.name + "]" +
                                 " " + column.sqlHint +
-                                (column.sqlHint == "nvarchar" ? "(" + nvarcharMaxLen + ")" : "") +
+                                (needLen ? ("(" + maxLen + ")") : "") +
                                 (column.notNull ? " NOT NULL" : "") +
                                 (column.autoIncrement ? " IDENTITY(1,1)" : "") +
                                 (column.primaryKey ? " PRIMARY KEY" : "") +

@@ -297,8 +297,7 @@ button.debug-btn{
 }
 
 #bootstrap-overrides div.record-searcher {
-	position: fixed;
-    top: 10vh;
+  	width: 100%;
     left: 0;
 	height: 200px; 
 	width: 100%;

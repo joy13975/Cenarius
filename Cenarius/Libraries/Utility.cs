@@ -32,6 +32,7 @@ namespace Cenarius.Libraries
             {"float", SqlDbType.Float},
             {"integer", SqlDbType.Int},
             {"nvarchar", SqlDbType.NVarChar},
+            {"varchar", SqlDbType.VarChar},
             {"bit", SqlDbType.Bit},
             {"date", SqlDbType.Date}
         };

@@ -24,6 +24,8 @@ var config = {
     defaultEnumOptionText: '--',
 
     defaultNCols: 12,
+
+    // Max lengths are in BYTES!!
     maxLength: {
         float: '-1',
         integer: '-1',
@@ -78,16 +80,18 @@ const enumOptionsAllowNewEntryStr = Object.freeze('::AllowNewEntry');
 var glFormo = {};
 
 function domReady() {
-    if (glFormo.formi.no_ctrl_panel === true) {
-        $('div[name=cenarius-content]').each(function() {
-            $(this).height('100vh')
-        });
-    }
+    if (glFormo && glFormo.formi) {
+        if (glFormo.formi.no_ctrl_panel === true) {
+            $('div[name=cenarius-content]').each(function() {
+                $(this).height('100vh')
+            });
+        }
 
-    if (glFormo.formi.hasOwnProperty('background_color')) {
-        $('div[name=cenarius-content]').each(function() {
-            $(this).css('background-color', (glFormo.formi.background_color));
-        });
+        if (glFormo.formi.hasOwnProperty('background_color')) {
+            $('div[name=cenarius-content]').each(function() {
+                $(this).css('background-color', (glFormo.formi.background_color));
+            });
+        }
     }
 
     attachStaticHandlers();
@@ -1026,6 +1030,11 @@ class SQLSchemaGenerator {
             sqlgSelf.visitFormaNode(formGen.forma, key, sqlgSelf.tables[0]);
         })
 
+        // Attach a summary field to every main table
+        const summarySchema = genSummarySchema();
+        summarySchema.maxLen = 4000;
+        sqlgSelf.tables[0].columns.push(summarySchema);
+
         // Create auxiliary EnumOptions table
         this.genEnumOptionsTable();
     }
@@ -1297,12 +1306,9 @@ class DomMaker {
                     name: 'debuginfo-tabheaders'
                 });
             diHeaderDom.append(
-                DomMaker.genTabRef('di-schema', 'Schema', {
+                DomMaker.genTabRef('di-tables', 'Tables', {
                     class: 'active'
                 })
-            );
-            diHeaderDom.append(
-                DomMaker.genTabRef('di-tables', 'Tables')
             );
             diHeaderDom.append(
                 DomMaker.genTabRef('di-formgen', 'FormGen')
@@ -1317,24 +1323,15 @@ class DomMaker {
                 });
 
             diContentDom.append(
-                DomMaker.genTabPane('di-schema', [
-                    $_$('pre', {
-                        style: 'white-space: pre-wrap'
-                    }, [
-                        sqlGen.getSchema()
-                    ])
-                ], {
-                    class: 'active in'
-                })
-            );
-            diContentDom.append(
                 DomMaker.genTabPane('di-tables', [
                     $_$('pre', {
                         style: 'white-space: pre-wrap'
                     }, [
                         JSON.stringify(sqlGen.tables, null, 2)
                     ])
-                ])
+                ], {
+                    class: 'active in'
+                })
             );
             diContentDom.append(
                 DomMaker.genTabPane('di-formgen', [
@@ -1395,10 +1392,14 @@ class DomMaker {
                 const timeout = 30000;
                 const sb = showSnackbar("Submitting... (<30s)", timeout);
 
+                const summarySchema = genSummarySchema();
+                summarySchema.value = $(this).parent().siblings('.modal-body').children('p')[0]
+                    .innerHTML;
+                const dataToSend = formGen.data.concat([summarySchema]);
                 postDataToServer(
                     '/Home/Submit', {
                         mainTableName: formGen.mainTableName,
-                        data: formGen.data
+                        data: dataToSend
                     },
                     timeout,
                     function() {
@@ -1904,6 +1905,12 @@ class SummaryGenerator {
     };
 }
 
+function genSummarySchema() {
+    return {
+        name: 'summary',
+        sqlHint: 'nvarchar'
+    };
+}
 
 function postDataToServer(
     url,

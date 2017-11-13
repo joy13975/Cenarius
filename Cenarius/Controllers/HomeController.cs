@@ -17,7 +17,6 @@ namespace Cenarius.Controllers
     [Filters.GlobalErrorHandler]
     public class HomeController : Controller
     {
-
         public HomeController()
         {
             try
@@ -42,9 +41,9 @@ namespace Cenarius.Controllers
             return View();
         }
 
-        public ActionResult Search(string name)
+        public ActionResult Search(string tableName, string colName, string pattern)
         {
-            return View(new SearchViewModel(name));
+            return View(new SearchViewModel(tableName, colName, pattern));
         }
 
         public ActionResult Documentation()
